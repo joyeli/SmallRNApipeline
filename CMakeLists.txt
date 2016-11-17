@@ -4,8 +4,9 @@ project (AGO)
 set( CMAKE_VERBOSE_MAKEFILE ON )
 set( OPTIMIZE -O3 )
 set( DEBUG "-g")
+set( WARN "-Wno-ignored-attributes -Wno-multichar -Wreturn-type -Wno-terminate" )
 
-set( CMAKE_CXX_FLAGS "-std=c++17 -ftemplate-backtrace-limit=0 ${OPTIMIZE} ${DEBUG} " )
+set( CMAKE_CXX_FLAGS "-std=c++17 -ftemplate-backtrace-limit=0 ${OPTIMIZE} ${DEBUG} ${WARN} " )
 
 set( CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/local/lib/" )
 
@@ -31,6 +32,7 @@ find_package( Boost COMPONENTS
     iostreams )
 find_package( Threads )
 find_package( ZLIB )
+find_package( CURL )
 find_package( GTest REQUIRED )
 
 if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
@@ -46,6 +48,6 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
     execute_process( COMMAND ln -sf ../include )
 
     add_executable( pipeline_builder src/application/pipeline_builder/main.cpp )
-    target_link_libraries( pipeline_builder ${Boost_LIBRARIES} ) 
+    target_link_libraries( pipeline_builder ${Boost_LIBRARIES} ${CURL_LIBRARIES} ) 
 
 endif()

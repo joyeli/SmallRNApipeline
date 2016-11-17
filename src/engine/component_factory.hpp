@@ -2,8 +2,10 @@
 #include <AGO/engine/component.hpp>
 #include <memory>
 #include <string>
-#include <AGO/components/test.hpp>
 #include <AGO/engine/data_pool.hpp>
+#include <AGO/components/test.hpp>
+#include <AGO/components/fastq_in.hpp>
+#include <AGO/components/aligner_tailor.hpp>
 
 namespace ago {
 namespace engine {
@@ -36,6 +38,8 @@ class ComponentFactory
 
         if( identifier == "" ){ /* TODO a error handle */ }
         ID_MAP_TYPE( "Test" , component::Test )
+        ID_MAP_TYPE( "FastqIn" , component::FastqIn )
+        ID_MAP_TYPE( "AlignerTailor" , component::AlignerTailor )
         /* TODO ADD COMPONENT HERE */
         else { /* TODO another error handle */ }
 

@@ -80,7 +80,6 @@ class Main
     {
         auto pipeline( build_pipeline() );
         pipeline();
-        data_pool_.write_result_schema();
     }
 };
 
