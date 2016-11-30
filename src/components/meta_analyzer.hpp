@@ -20,6 +20,10 @@ class MetaAnalyzer : public engine::NamedComponent
     virtual void start() override
     {
         auto& db( this->mut_data_pool() );
+        auto& monitor = db.monitor();
+
+        monitor.set_monitor( "Component MetaAnalyzer", 1 );
+
         std::string output_path( db.output_dir().string() );
 
         std::vector< std::string > idxlen( get_index( db.analyzer_result_samples, ".LenDist_GMPM_ppm" ));
@@ -30,6 +34,8 @@ class MetaAnalyzer : public engine::NamedComponent
 
         ago::algorithm::MetaAnalyzer meta;
 
+        monitor.set_monitor( "MetaAnalyzing", 10 );
+
         meta.quantile_transfer(
               db.quantile_result_samples
             , db.analyzer_result_samples
@@ -38,6 +44,9 @@ class MetaAnalyzer : public engine::NamedComponent
             , ".LenDist"
             , "GMPM"
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.quantile_transfer(
               db.quantile_result_samples
             , db.analyzer_result_samples
@@ -46,6 +55,9 @@ class MetaAnalyzer : public engine::NamedComponent
             , ".LenDist"
             , "GM"
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.quantile_transfer(
               db.quantile_result_samples
             , db.analyzer_result_samples
@@ -54,11 +66,17 @@ class MetaAnalyzer : public engine::NamedComponent
             , ".LenDist"
             , "PM"
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.tailing_ratio(
               db.quantile_result_samples
             , db.analyzer_result_samples
             , ".LenDist_Tailing_Ratio"
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.quantile_transfer(
               db.quantile_result_samples
             , db.analyzer_result_samples
@@ -67,6 +85,9 @@ class MetaAnalyzer : public engine::NamedComponent
             , ".MirDist"
             , "GMPM"
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.quantile_transfer(
               db.quantile_result_samples
             , db.analyzer_result_samples
@@ -75,6 +96,9 @@ class MetaAnalyzer : public engine::NamedComponent
             , ".MirDist"
             , "GM"
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.quantile_transfer(
               db.quantile_result_samples
             , db.analyzer_result_samples
@@ -83,11 +107,17 @@ class MetaAnalyzer : public engine::NamedComponent
             , ".MirDist"
             , "PM"
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.tailing_ratio(
               db.quantile_result_samples
             , db.analyzer_result_samples
             , ".MirDist_Tailing_Ratio"
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.tailing_ratio_for_pm(
               db.quantile_result_samples
             , db.analyzer_result_samples
@@ -97,12 +127,21 @@ class MetaAnalyzer : public engine::NamedComponent
             , db.quantile_result_samples[ 4 ].second   // lendist_pm_readcount
             , db.quantile_result_samples[ 5 ].second   // lendist_pm_ppm
         );
+
+        monitor.log( "MetaAnalyzing", " ... " );
+
         meta.tailing_ratio_for_mir(
               db.quantile_result_samples
             , db.analyzer_result_samples
             , ".miRNA_Tailing_Ratio"
             , db.quantile_result_samples[ 8 ].second   // mirdist_gmpm_ppm
         );
+
+        monitor.log( "MetaAnalyzing", " ... Complete" );
+
+        db.analyzer_result_samples.clear();
+
+        monitor.log( "Component MetaAnalyzer", "Complete!!" );
     }
 
     std::vector< std::string > get_index(

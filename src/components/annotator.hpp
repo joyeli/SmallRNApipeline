@@ -66,18 +66,29 @@ class Annotator : public engine::NamedComponent
     virtual void start() override
     {
         auto& db( this->mut_data_pool() );
+        auto& monitor = db.monitor();
+
+        monitor.set_monitor( "Component Annotator", 1 );
 
         Annotations annotator( annotation_files_ );
 
+        monitor.set_monitor( "Annotating", db.rawbed_samples.size()+1 );
+
         for( auto& sample : db.rawbed_samples )
         {
+            monitor.log( "Annotating", " ... " + sample.first );
+
             for( auto& anno_rawbed : sample.second )
             {
                 annotator.AnnotateAll( anno_rawbed );
             }
         }
 
+        monitor.log( "Annotating", " ... Complete" );
+
         Annotations::clear_database();
+
+        monitor.log( "Component Annotator", "Complete!!" );
     }
 };
 

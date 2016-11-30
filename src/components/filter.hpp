@@ -45,17 +45,26 @@ class Filter : public engine::NamedComponent
     virtual void start() override
     {
         auto& db( this->mut_data_pool() );
+        auto& monitor = db.monitor();
+
+        monitor.set_monitor( "Component Filter", 1 );
 
 		Filters run_filter;
 
+        monitor.set_monitor( "Filtering", db.rawbed_samples.size()+1 );
+
         for( auto& sample : db.rawbed_samples )
         {
+            monitor.log( "Filtering", " ... " + sample.first );
+
             for( auto& anno_rawbed : sample.second )
             {
                 anno_rawbed = run_filter.Filter( anno_rawbed );
             }
         }
 
+        monitor.log( "Filtering", " ... Complete" );
+        monitor.log( "Component Filter", "Complete!!" );
     }
 };
 

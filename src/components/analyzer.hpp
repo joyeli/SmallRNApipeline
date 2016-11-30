@@ -21,13 +21,21 @@ class Analyzer : public engine::NamedComponent
     virtual void start() override
     {
         auto& db( this->mut_data_pool() );
+        auto& monitor = db.monitor();
+
+        monitor.set_monitor( "Component Analyzer", 1 );
+
         std::string output_path( db.output_dir().string() );
 
         ago::algorithm::AnalyzerLenDist len;
         ago::algorithm::AnalyzerMirDist mir;
 
+        monitor.set_monitor( "Analyzing", db.rawbed_samples.size()+1 );
+
         for( auto& sample : db.rawbed_samples )
         {
+            monitor.log( "Analyzing", " ... " + sample.first );
+
             len.analyzer.run( &sample.second, 0, true, output_path, sample.first, db.genome_table, db.analyzer_result, 0 );
             len.tailing_ratio( db.analyzer_result );
 
@@ -35,13 +43,18 @@ class Analyzer : public engine::NamedComponent
             mir.tailing_ratio( db.analyzer_result );
             mir.tailing_ratio_for_PM( db.analyzer_result, sample.second, db.genome_table );
             mir.tailing_ratio_for_miRNA( db.analyzer_result, sample.second, db.genome_table );
+            mir.tailing_detail_for_miRNA( sample, db.genome_table, output_path );
 
             db.analyzer_result_samples.emplace_back( sample.first, db.analyzer_result );
             db.analyzer_result.clear();
             sample.second.clear();
         }
 
+        monitor.log( "Analyzing", " ... Complete" );
+
         db.rawbed_samples.clear();
+
+        monitor.log( "Component Analyzer", "Complete!!" );
     }
 };
 

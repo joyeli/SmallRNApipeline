@@ -20,18 +20,47 @@ class Visualization : public engine::NamedComponent
     virtual void start() override
     {
         auto& db( this->mut_data_pool() );
-        std::string output_path = db.output_dir().string();
+        auto& monitor = db.monitor();
 
+        monitor.set_monitor( "Component Visualization", 1 );
+
+        std::string output_path = db.output_dir().string();
         ago::algorithm::Visualization visualization;
 
+        monitor.set_monitor( "Visualizing", 8 );
+
 		visualization.make_html( output_path );
+
+        monitor.log( "Visualizing", " ... " );
+
 		visualization.make_biotype( db.quantile_result_samples, output_path );
+
+        monitor.log( "Visualizing", " ... " );
+
 		visualization.make_lendist( db.quantile_result_samples, output_path );
+
+        monitor.log( "Visualizing", " ... " );
+
 	  	visualization.make_mirdist( db.quantile_result_samples, output_path );
+
+        monitor.log( "Visualizing", " ... " );
+
 		visualization.make_dotplot( db.quantile_result_samples, output_path );
+
+        monitor.log( "Visualizing", " ... " );
+
 		visualization.make_valplot( db.quantile_result_samples, output_path );
+
+        monitor.log( "Visualizing", " ... " );
+
 		visualization.make_lenplus( db.quantile_result_samples, output_path );
+
+        monitor.log( "Visualizing", " ... " );
+
 		visualization.make_mirtail( db.quantile_result_samples, output_path );
+
+        monitor.log( "Visualizing", " ... Complete" );
+        monitor.log( "Component Visualization", "Complete!!" );
     }
 };
 

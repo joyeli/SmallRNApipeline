@@ -3,12 +3,13 @@ project (AGO)
 
 set( CMAKE_VERBOSE_MAKEFILE ON )
 set( LOGGER_SETTING -DLOGGER_OPEN_CHANNEL="0,1,2,4")
-set( OPTIMIZE -O3 )
+set( OPTIMIZE -O0 )
 set( DEBUG "-g")
+set( GUI_MODEL -DCPT_MONITOR_TGUI )
 set( WARN "-Wno-multichar -Wno-return-type -Wno-write-strings -Wno-format" )
 set( SINGLE_CPP "-DSINGLE_CPP" )
 
-set( CMAKE_CXX_FLAGS "-std=c++17 -ftemplate-backtrace-limit=0 ${LOGGER_SETTING} ${OPTIMIZE} ${DEBUG} ${SINGLE_CPP} ${WARN} " )
+set( CMAKE_CXX_FLAGS "-std=c++17 -ftemplate-backtrace-limit=0 ${LOGGER_SETTING} ${OPTIMIZE} ${DEBUG} ${SINGLE_CPP} ${WARN} ${GUI_MODEL} " )
 
 set( CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/local/lib/" )
 

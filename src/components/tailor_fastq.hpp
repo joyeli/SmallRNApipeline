@@ -75,12 +75,10 @@ class TailorFastq : public engine::NamedComponent
 
         if( db.is_tailor_index_build )
         {
-            cpt::verbose0 << "load index : " << tailor_index + ".t_table.bwt" << std::endl;
             tailor_.load_table( tailor_index );
         }
         else
         {
-            cpt::verbose0 << "build index : " << tailor_index << std::endl;
             tailor_.build( genome_fastas, tailor_index );
             db.is_tailor_index_build = true;
         }
@@ -89,13 +87,19 @@ class TailorFastq : public engine::NamedComponent
     virtual void start() override
     {
         auto& db( this->mut_data_pool() );
+        auto& monitor = db.monitor();
+
+        monitor.set_monitor( "Component Tailor Fastq", 1 );
 
         std::vector< std::string > fastq_paths( get_path_list_string( db.get_path_list( "sample_files" )));
         Fastq_ihandler_impl< IoHandlerIfstream > fastq_reader( fastq_paths );
 
+        monitor.set_monitor( "Aligning", fastq_paths.size()+1 );
+
         for( size_t id = 0; id < fastq_paths.size(); ++id )
         {
-            cpt::verbose0 << "load : " << fastq_paths[ id ] << std::endl;
+            monitor.log( "Aligning", " ... " + fastq_paths[id] );
+
             std::string sample_name( get_sample_name( fastq_paths[ id ] ));
 
             std::vector< Sam<> >* sams;
@@ -149,6 +153,9 @@ class TailorFastq : public engine::NamedComponent
 
             db.rawbed_samples.emplace_back( sample_name, annotation_rawbeds );
         }
+
+        monitor.log( "Aligning", " ... Complete" );
+        monitor.log( "Component Tailor Fastq", "Complete!!!" );
     }
 
     std::vector< std::string > get_path_list_string( const std::vector< boost::filesystem::path >& paths )
