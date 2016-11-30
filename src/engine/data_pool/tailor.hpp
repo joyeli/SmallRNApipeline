@@ -3,8 +3,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <CCD/utility/language.hpp>
 #include <CPT/engine/data_pool/data_paths_pool.hpp>
-#include <CPT/logger.hpp>
-#include <pokemon/aligner/aligner.hpp> 
+#include <pokemon/format/annotation_raw_bed.hpp>
 
 namespace ago {
 namespace engine {
@@ -12,18 +11,16 @@ namespace data_pool {
 
 class Tailor
 {
-  protected:
-
   public:
 
     std::vector<
         std::pair<
-            std::string, // sample name
-            std::vector< // fastq vector
-                Sam<>
+            std::string,
+            std::vector<
+                AnnotationRawBed<>
             >
         >
-    > sam_samples; 
+    > rawbed_samples;
 
     bool is_tailor_index_build;
 
@@ -34,7 +31,7 @@ class Tailor
     }
 
     template< class DB >
-    std::string require_tailor_index( DB& db )
+    std::string require_tailor_index( const std::vector< std::string >& genome_fastas, DB& db )
     {
         std::string tailor_index;
 

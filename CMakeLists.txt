@@ -2,11 +2,13 @@ cmake_minimum_required (VERSION 2.8)
 project (AGO)
 
 set( CMAKE_VERBOSE_MAKEFILE ON )
+set( LOGGER_SETTING -DLOGGER_OPEN_CHANNEL="0,1,2,4")
 set( OPTIMIZE -O3 )
 set( DEBUG "-g")
-set( WARN "-Wno-ignored-attributes -Wno-multichar -Wreturn-type -Wno-terminate" )
+set( WARN "-Wno-multichar -Wno-return-type -Wno-write-strings -Wno-format" )
+set( SINGLE_CPP "-DSINGLE_CPP" )
 
-set( CMAKE_CXX_FLAGS "-std=c++17 -ftemplate-backtrace-limit=0 ${OPTIMIZE} ${DEBUG} ${WARN} " )
+set( CMAKE_CXX_FLAGS "-std=c++17 -ftemplate-backtrace-limit=0 ${LOGGER_SETTING} ${OPTIMIZE} ${DEBUG} ${SINGLE_CPP} ${WARN} " )
 
 set( CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/local/lib/" )
 
@@ -18,6 +20,9 @@ if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" )
 else()
     message( FATAL_ERROR "Your C++ compiler does not support C++14." )
 endif()
+
+include( ${CMAKE_ROOT}/Modules/FindBoost.cmake )
+include( ${CMAKE_ROOT}/Modules/FindGTest.cmake )
 
 set( Boost_USE_STATIC_LIBS    OFF )
 set( Boost_USE_MULTITHREADED  ON  )
@@ -37,17 +42,18 @@ find_package( GTest REQUIRED )
 
 if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
 
+    include_directories( ${CMAKE_SOURCE_DIR}/lib )
     include_directories( ${CMAKE_SOURCE_DIR}/include )
     include_directories( ${GTEST_INCLUDE_DIRS} )
 
     link_directories( ${CMAKE_SOURCE_DIR}/lib ${CMAKE_SOURCE_DIR}/lib/* )
+
     set( EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin )
     set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/ )
-    execute_process( COMMAND ln -sf ../bin )
-    execute_process( COMMAND ln -sf ../src )
-    execute_process( COMMAND ln -sf ../include )
 
     add_executable( pipeline_builder src/application/pipeline_builder/main.cpp )
-    target_link_libraries( pipeline_builder ${Boost_LIBRARIES} ${CURL_LIBRARIES} ) 
+        target_link_libraries( pipeline_builder
+        ${Boost_LIBRARIES} ${CURL_LIBRARIES}
+        pthread thread_pool ) 
 
 endif()

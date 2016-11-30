@@ -36,40 +36,30 @@ class GenomeImpl
     }
 
     template< class DB >
-    void load_genome( std::vector< std::string >& genome_fasta, DB& db )
+    void load_genome( std::vector< std::string >& genome_fastas, DB& db )
     {
-        Fasta_ihandler_impl< IoHandlerIfstream > fasta_reader( genome_fasta );
+        Fasta_ihandler_impl< IoHandlerIfstream > fasta_reader( genome_fastas );
 
-        for( int i = 0 ; i < genome_fasta.size(); ++i )
+        for( size_t i = 0; i < genome_fastas.size(); ++i )
         {
-            cpt::verbose0 << "load genome : " << genome_fasta[i] << std::endl;
+            cpt::verbose0 << "load genome : " << genome_fastas[i] << std::endl;
 
-            while( true )
-            {
-                Fasta<> chr = fasta_reader.get_next_entry( i );
+            Fasta<> chr = fasta_reader.get_next_entry( i );
 
-                if( chr.eof_flag )
-                {
-                    break;
-                }
-
-                db.genome_table.emplace( chr.getName(), chr.getSeq() );
-            }
+            db.genome_table.emplace( chr.getName(), chr.getSeq() );
         }
     }
 
     template< class DB >
     std::vector< std::string > require_genome( DB& db )
     {
-        std::vector< std::string > genome_fasta;
+        std::vector< std::string > genome_fastas;
 
         if( db.exist_path_tag( "genome_fasta" ))
         {
-            std::vector< boost::filesystem::path > fastas( db.get_path_list( "genome_fasta" ));
-
-            for( auto& fasta : fastas )
+            for( auto& fasta : db.get_path_list( "genome_fasta" ))
             {
-                genome_fasta.emplace_back( fasta.string() );
+                genome_fastas.emplace_back( fasta.string() );
             }
         }
         else
@@ -79,11 +69,11 @@ class GenomeImpl
 
         if( !db.is_genome_load_ )
         {
-            db.load_genome( genome_fasta, db );
+            db.load_genome( genome_fastas, db );
             db.is_genome_load_ = true;
         }
         
-        return genome_fasta;
+        return genome_fastas;
     }
 };
 

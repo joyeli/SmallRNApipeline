@@ -3,9 +3,12 @@
 #include <memory>
 #include <string>
 #include <AGO/engine/data_pool.hpp>
-#include <AGO/components/test.hpp>
-#include <AGO/components/fastq_in.hpp>
-#include <AGO/components/aligner_tailor.hpp>
+#include <AGO/components/tailor_fastq.hpp>
+#include <AGO/components/annotator.hpp>
+#include <AGO/components/filter.hpp>
+#include <AGO/components/analyzer.hpp>
+#include <AGO/components/meta_analyzer.hpp>
+#include <AGO/components/visualization.hpp>
 
 namespace ago {
 namespace engine {
@@ -37,9 +40,12 @@ class ComponentFactory
     {
 
         if( identifier == "" ){ /* TODO a error handle */ }
-        ID_MAP_TYPE( "Test" , component::Test )
-        ID_MAP_TYPE( "FastqIn" , component::FastqIn )
-        ID_MAP_TYPE( "AlignerTailor" , component::AlignerTailor )
+        ID_MAP_TYPE( "TailorFastq" , component::TailorFastq )
+        ID_MAP_TYPE( "Annotator" , component::Annotator )
+        ID_MAP_TYPE( "Filter" , component::Filter )
+        ID_MAP_TYPE( "Analyzer", component::Analyzer )
+        ID_MAP_TYPE( "MetaAnalyzer", component::MetaAnalyzer )
+        ID_MAP_TYPE( "Visualization", component::Visualization )
         /* TODO ADD COMPONENT HERE */
         else { /* TODO another error handle */ }
 
