@@ -2,6 +2,8 @@
 #include <AGO/engine/components/named_component.hpp>
 #include <pokemon/aligner/aligner.hpp>
 #include <pokemon/converter/sam2rawbed.hpp>
+#include <CCD/para_thread_pool/para_thread_pool.hpp>
+#include <mutex>
 
 namespace ago {
 namespace component {
@@ -94,66 +96,90 @@ class TailorFastq : public engine::NamedComponent
         std::vector< std::string > fastq_paths( get_path_list_string( db.get_path_list( "sample_files" )));
         Fastq_ihandler_impl< IoHandlerIfstream > fastq_reader( fastq_paths );
 
-        monitor.set_monitor( "Aligning", fastq_paths.size()+1 );
+        std::mutex smp_mutex;
+        ParaThreadPool smp_parallel_pool( fastq_paths.size() );
+
+        monitor.set_monitor( "Aligning", fastq_paths.size()+2 );
+        monitor.log( "Aligning", " ... " );
 
         for( size_t id = 0; id < fastq_paths.size(); ++id )
         {
-            monitor.log( "Aligning", " ... " + fastq_paths[id] );
-
-            std::string sample_name( get_sample_name( fastq_paths[ id ] ));
-
-            std::vector< Sam<> >* sams;
-
-            bool break_flag = false;
-
-            while( true )
+            smp_parallel_pool.job_post( [ id, &db, &fastq_paths, &fastq_reader, &smp_mutex, &monitor, this ] ()
             {
-                std::vector< Fastq<> > fastqs;
+                std::string sample_name( get_sample_name( fastq_paths[ id ] ));
 
-                for( size_t job = 0; job < align_job_number_; ++job )
+                std::mutex ali_mutex;
+                ParaThreadPool ali_parallel_pool( align_thread_num_ );
+
+                std::vector< Sam<> > sams{};
+
+                bool break_flag = false;
+
+                while( true )
                 {
-                    Fastq<> fastq = fastq_reader.get_next_entry( id );
+                    std::vector< Fastq<> > fastqs;
 
-                    if( fastq.eof_flag )
+                    for( size_t job = 0; job < align_job_number_; ++job )
                     {
-                        break_flag = true;
-                        break;
+                        Fastq<> fastq = fastq_reader.get_next_entry( id );
+
+                        if( fastq.eof_flag )
+                        {
+                            break_flag = true;
+                            break;
+                        }
+
+                        if( fastq.getSeq().size() < fastq_min_length_ ||
+                            fastq.getSeq().size() > fastq_max_length_ ||
+                            n_check( fastq )
+                          )
+                            continue;
+
+                        fastqs.push_back( fastq );
                     }
 
-                    if( fastq.getSeq().size() < fastq_min_length_ ||
-                        fastq.getSeq().size() > fastq_max_length_ ||
-                        n_check( fastq )
-                      )
-                        continue;
+                    for( auto& fastq: fastqs )
+                    {
+                        ali_parallel_pool.job_post( [ fastq, &ali_mutex, &sams, this ] () 
+                        {
+                            std::map< int, std::vector< Fastq<> >> input{ std::make_pair( 0, std::vector< Fastq<> >{ fastq })};
+                            std::vector< Sam<> >* sams_tmp( tailor_.search( &input, 1, align_min_length_, align_limit_algn_, align_max_length_ ));
 
-                    fastqs.push_back( fastq );
+                            if( !sams_tmp->empty() )
+                            {
+                                std::lock_guard< std::mutex > ali_lock( ali_mutex );
+                                std::move( sams_tmp->begin(), sams_tmp->end(), std::back_inserter( sams ));
+                            }
+                        });
+                    }
+
+                    ali_parallel_pool.flush_pool();
+                    fastqs.clear();
+
+                    if( break_flag )
+                    {
+                        break;
+                    }
                 }
 
-                std::map< int, std::vector< Fastq<> >> input{ std::make_pair( 0, fastqs )};
+                auto raw_beds( Sam2RawBed< std::vector< Sam<> >* >().Convert( &sams ));
 
-                std::vector< Sam<> >* sams_tmp( tailor_.search( &input, align_thread_num_, align_min_length_, align_limit_algn_, align_max_length_ ));
-                sams->insert(  sams->end(), sams_tmp->begin(), sams_tmp->end() );
+                std::vector< AnnotationRawBed<> > annotation_rawbeds;
 
-                fastqs.clear();
-
-                if( break_flag )
+                for( auto itr = raw_beds->begin(); itr != raw_beds->end(); ++itr )
                 {
-                    break;
+                    annotation_rawbeds.emplace_back( AnnotationRawBed<>( itr->first ));
                 }
-            }
 
-            auto raw_beds( Sam2RawBed< std::vector< Sam<> >* >().Convert( sams ));
-
-            std::vector< AnnotationRawBed<> > annotation_rawbeds;
-
-            for( auto itr = raw_beds->begin(); itr != raw_beds->end(); ++itr )
-            {
-                annotation_rawbeds.emplace_back( AnnotationRawBed<>( itr->first ));
-            }
-
-            db.rawbed_samples.emplace_back( sample_name, annotation_rawbeds );
+                {
+                    std::lock_guard< std::mutex > smp_lock( smp_mutex );
+                    db.rawbed_samples.emplace_back( sample_name, annotation_rawbeds );
+                    monitor.log( "Aligning", " ... " );
+                }
+            });
         }
 
+        smp_parallel_pool.flush_pool();
         monitor.log( "Aligning", " ... Complete" );
         monitor.log( "Component Tailor Fastq", "Complete!!!" );
     }

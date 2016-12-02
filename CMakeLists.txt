@@ -3,7 +3,7 @@ project (AGO)
 
 set( CMAKE_VERBOSE_MAKEFILE ON )
 set( LOGGER_SETTING -DLOGGER_OPEN_CHANNEL="0,1,2,4")
-set( OPTIMIZE -O0 )
+set( OPTIMIZE -O3 )
 set( DEBUG "-g")
 set( GUI_MODEL -DCPT_MONITOR_TGUI )
 set( WARN "-Wno-multichar -Wno-return-type -Wno-write-strings -Wno-format" )
