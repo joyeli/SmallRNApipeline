@@ -53,7 +53,7 @@ class Visualization
                             {
                                 output.precision(0);
 
-                                if( value != sample->second.end() )
+                                if( value != sample->second.end() && !value->second.empty() )
                                     output << std::fixed << "\t" << value->second[ value->second.size() -1 ];
                                 else
                                     output << "\t0";
@@ -91,7 +91,7 @@ class Visualization
                             {
                                 output.precision(0);
 
-                                if( value != sample->second.end() )
+                                if( value != sample->second.end() && !value->second.empty() )
                                     output << std::fixed << "\t" << value->second[ value->second.size() -1 ];
                                 else
                                     output << "\t0";
@@ -405,7 +405,7 @@ class Visualization
                         {
                             std::map< std::string, std::vector< double >>::iterator value = sample->second.find( anno.first );
 
-                            if( value != sample->second.end() )
+                            if( value != sample->second.end() && !value->second.empty() )
                             {
                                 mir_sum = value->second[ value->second.size() -1 ] + mir_sum;
                             }
@@ -473,7 +473,7 @@ class Visualization
                                     output << "\t" << sample->first;
                                 else
                                 {
-                                    if( value != sample->second.end() )
+                                    if( value != sample->second.end() && !value->second.empty() )
                                     {
                                         if( length_it != -1 )
                                         {
@@ -513,7 +513,7 @@ class Visualization
                                             length_it = -1;
                                     }
 
-                                    if( value != sample->second.end() )
+                                    if( value != sample->second.end() && !value->second.empty() )
                                     {
                                         if( length_it != -1 )
                                         {
@@ -659,7 +659,7 @@ class Visualization
                                     length_it = -1;
                             }
 
-                            if( value != sample->second.end() )
+                            if( value != sample->second.end() && !value->second.empty() )
                             {
                                 if( length_it != -1 )
                                     len_vector.push_back( value->second[ length_it ] );
@@ -843,7 +843,7 @@ class Visualization
                     {
                         std::map< std::string, std::vector< double >>::iterator value = sample->second.find( anno.first );
 
-                        if( value != sample->second.end() )
+                        if( value != sample->second.end() && !value->second.empty() )
                             sum += value->second[ value->second.size()-1 ];
                     }
                 }
@@ -916,7 +916,7 @@ class Visualization
                         {
                             std::map< std::string, std::vector< double >>::iterator value = sample->second.find( anno.first );
 
-                            if( value != sample->second.end() )
+                            if( value != sample->second.end() && !value->second.empty() )
                             {
                                 output.precision(0);
                                 output << std::fixed << "\t" << value->second[ value->second.size()-1 ];
@@ -1071,10 +1071,7 @@ class Visualization
 
         for( auto& result_type : all_results )
         {
-            std::vector< std::string > gmpm;
-            boost::iter_split( gmpm, result_type.first, boost::algorithm::first_finder( "_" ));
-
-            if( gmpm[0] == ".MirTail" && gmpm[1] == "ppm" )
+            if( result_type.first == ".MirTail_ppm" )
             {
                 for( auto& result_sample : result_type.second)
                 {

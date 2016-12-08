@@ -1,6 +1,8 @@
 #pragma once
 #include <AGO/engine/components/named_component.hpp>
 #include <pokemon/annotator/filter.hpp>
+#include <CCD/para_thread_pool/para_thread_pool.hpp>
+#include <mutex>
 
 namespace ago {
 namespace component {
@@ -10,13 +12,13 @@ class Filter : public engine::NamedComponent
     using Base = engine::NamedComponent;
 
     using FilterTypeList = boost::mpl::vector<
-          boost::mpl::vector< boost::mpl::string< 'prot', 'ein_' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'misc', '_RNA' >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'nc'  , 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '$' >>
-        , boost::mpl::vector< boost::mpl::string< 's'   , 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'sn'  , 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'sno' , 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'sca' , 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+          boost::mpl::vector< boost::mpl::string< 'prot', 'ein_' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+        , boost::mpl::vector< boost::mpl::string< 'misc', '_RNA' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'nc'  , 'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '$' >>
+        , boost::mpl::vector< boost::mpl::string< 's'   , 'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'sn'  , 'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'sno' , 'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'sca' , 'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
         , boost::mpl::vector< boost::mpl::string< 'ribo', 'zyme' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
         , boost::mpl::vector< boost::mpl::string< 'TR'  , '_'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
         , boost::mpl::vector< boost::mpl::string< 'IG'  , '_'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
@@ -53,14 +55,33 @@ class Filter : public engine::NamedComponent
 
         monitor.set_monitor( "Filtering", db.rawbed_samples.size()+1 );
 
+        std::mutex smp_mutex;
+        ParaThreadPool smp_parallel_pool( db.rawbed_samples.size() );
+        std::map< std::string, std::vector< AnnotationRawBed<> >> rawbed_samples_map;
+
         for( auto& sample : db.rawbed_samples )
         {
-            monitor.log( "Filtering", " ... " + sample.first );
-
-            for( auto& anno_rawbed : sample.second )
+            smp_parallel_pool.job_post( [ sample, &run_filter, &monitor, &smp_mutex, &rawbed_samples_map ] () mutable
             {
-                anno_rawbed = run_filter.Filter( anno_rawbed );
-            }
+                for( auto& anno_rawbed : sample.second )
+                {
+                    anno_rawbed = run_filter.Filter( anno_rawbed );
+                }
+
+                {
+                    std::lock_guard< std::mutex > smp_lock( smp_mutex );
+                    rawbed_samples_map.emplace( sample ); 
+
+                    monitor.log( "Filtering", " ... " + sample.first );
+                }
+            });
+        }
+
+        smp_parallel_pool.flush_pool();
+
+        for( auto& sample : db.rawbed_samples )
+        {
+            sample.second = rawbed_samples_map[ sample.first ];
         }
 
         monitor.log( "Filtering", " ... Complete" );

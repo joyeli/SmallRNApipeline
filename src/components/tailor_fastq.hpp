@@ -33,10 +33,7 @@ class TailorFastq : public engine::NamedComponent
 
         for( auto& child : pipeline_schema.get_child( "input" ).get_child( "sample_files" ))
         {
-            if( !db.exist_path_tag( "sample_files" ))
-            {
-                db.push_path( "sample_files", child.second );
-            }
+            db.push_path( "sample_files", child.second );
         }
 
         std::string tailor_index = p.get_optional< std::string >( "tailor_index" ).value_or( "" );
@@ -52,7 +49,7 @@ class TailorFastq : public engine::NamedComponent
         align_min_length_ = p.get_optional< size_t >( "align_min_length" ).value_or( 18 );
         align_max_length_ = p.get_optional< size_t >( "align_max_length" ).value_or( 30 );
 
-        align_job_number_ = p.get_optional< size_t >( "align_job_number" ).value_or( 20000 );
+        align_job_number_ = p.get_optional< size_t >( "align_job_number" ).value_or( 200 );
         align_thread_num_ = p.get_optional< size_t >( "align_thread_num" ).value_or( 200 );
         align_limit_algn_ = p.get_optional< size_t >( "align_limit_algn" ).value_or( 100 );
     }
@@ -68,7 +65,7 @@ class TailorFastq : public engine::NamedComponent
         if( !db.exist_path_tag( "tailor_index" ))
         {
             auto path = db.output_dir();
-            path += "/tailor";
+            path += "tailor";
             db.push_path( "tailor_index", path );
         }
 
@@ -82,6 +79,7 @@ class TailorFastq : public engine::NamedComponent
         else
         {
             tailor_.build( genome_fastas, tailor_index );
+            tailor_.load_table( tailor_index );
             db.is_tailor_index_build = true;
         }
     }
@@ -110,9 +108,13 @@ class TailorFastq : public engine::NamedComponent
 
                 std::mutex ali_mutex;
                 ParaThreadPool ali_parallel_pool( align_thread_num_ );
+                
+                std::string output_path( db.output_dir().string() + "/" + sample_name + ".sam" );
+                std::ofstream output( output_path );
 
                 std::vector< Sam<> > sams{};
 
+                size_t thread_count = 0;
                 bool break_flag = false;
 
                 while( true )
@@ -138,26 +140,46 @@ class TailorFastq : public engine::NamedComponent
                         fastqs.push_back( fastq );
                     }
 
-                    for( auto& fastq: fastqs )
+                    ali_parallel_pool.job_post( [ fastqs, &ali_mutex, &sams, &output, this ] () 
                     {
-                        ali_parallel_pool.job_post( [ fastq, &ali_mutex, &sams, this ] () 
+                        std::vector< Sam<> > sams_para{};
+
+                        for( auto& fastq: fastqs )
                         {
                             std::map< int, std::vector< Fastq<> >> input{ std::make_pair( 0, std::vector< Fastq<> >{ fastq })};
                             std::vector< Sam<> >* sams_tmp( tailor_.search( &input, 1, align_min_length_, align_limit_algn_, align_max_length_ ));
 
                             if( !sams_tmp->empty() )
                             {
-                                std::lock_guard< std::mutex > ali_lock( ali_mutex );
-                                std::move( sams_tmp->begin(), sams_tmp->end(), std::back_inserter( sams ));
+                                std::move( sams_tmp->begin(), sams_tmp->end(), std::back_inserter( sams_para ));
                             }
-                        });
-                    }
+                        }
 
-                    ali_parallel_pool.flush_pool();
+                        {
+                            std::lock_guard< std::mutex > ali_lock( ali_mutex );
+
+                            for( auto& sam : sams_para )
+                            {
+                                output << sam;
+                            }
+
+                            std::move( sams_para.begin(), sams_para.end(), std::back_inserter( sams ));
+                        }
+                    });
+
+                    thread_count++;
                     fastqs.clear();
+
+                    if( thread_count >= align_thread_num_ )
+                    {
+                        thread_count = 0;
+                        ali_parallel_pool.flush_pool();
+                    }
 
                     if( break_flag )
                     {
+                        ali_parallel_pool.flush_pool();
+                        output.close();
                         break;
                     }
                 }
@@ -180,6 +202,7 @@ class TailorFastq : public engine::NamedComponent
         }
 
         smp_parallel_pool.flush_pool();
+
         monitor.log( "Aligning", " ... Complete" );
         monitor.log( "Component Tailor Fastq", "Complete!!!" );
     }

@@ -3,6 +3,8 @@
 #include <pokemon/format/annotation_raw_bed.hpp>
 #include <pokemon/annotator/annotation.hpp>
 #include <pokemon/annotator/annotation_set.hpp>
+#include <CCD/para_thread_pool/para_thread_pool.hpp>
+#include <mutex>
 
 namespace ago {
 namespace component {
@@ -39,10 +41,7 @@ class Annotator : public engine::NamedComponent
 
         for( auto& child : pipeline_schema.get_child( "input" ).get_child( "annotation_files" ))
         {
-            if( !db.exist_path_tag( "annotation_files" ))
-            {
-                db.push_path( "annotation_files", child.second );
-            }
+            db.push_path( "annotation_files", child.second );
         }
     }
 
@@ -74,20 +73,37 @@ class Annotator : public engine::NamedComponent
 
         monitor.set_monitor( "Annotating", db.rawbed_samples.size()+1 );
 
+        std::mutex smp_mutex;
+        ParaThreadPool smp_parallel_pool( db.rawbed_samples.size() );
+        std::map< std::string, std::vector< AnnotationRawBed<> >> rawbed_samples_map;
+
         for( auto& sample : db.rawbed_samples )
         {
-            monitor.log( "Annotating", " ... " + sample.first );
-
-            for( auto& anno_rawbed : sample.second )
+            smp_parallel_pool.job_post( [ sample, &annotator, &monitor, &smp_mutex, &rawbed_samples_map ] () mutable
             {
-                annotator.AnnotateAll( anno_rawbed );
-            }
+                for( auto& anno_rawbed : sample.second )
+                {
+                    annotator.AnnotateAll( anno_rawbed );
+                }
+
+                {
+                    std::lock_guard< std::mutex > smp_lock( smp_mutex );
+                    rawbed_samples_map.emplace( sample ); 
+
+                    monitor.log( "Annotating", " ... " + sample.first );
+                }
+            });
+        }
+
+        smp_parallel_pool.flush_pool();
+        Annotations::clear_database();
+
+        for( auto& sample : db.rawbed_samples )
+        {
+            sample.second = rawbed_samples_map[ sample.first ];
         }
 
         monitor.log( "Annotating", " ... Complete" );
-
-        Annotations::clear_database();
-
         monitor.log( "Component Annotator", "Complete!!" );
     }
 };

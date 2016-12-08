@@ -19,8 +19,8 @@ class MetaAnalyzer
         , const char* gmpm
     )
     {
-        std::string read_count = std::to_string( type ) + "_" + std::to_string( gmpm ) + "_read_count";
-        std::string ppm        = std::to_string( type ) + "_" + std::to_string( gmpm ) + "_ppm";
+        std::string read_count = std::string( type ) + "_" + std::string( gmpm ) + "_read_count";
+        std::string ppm        = std::string( type ) + "_" + std::string( gmpm ) + "_ppm";
 
         ago::engine::DataPool::anno_len_samples rd_res;
         ago::engine::DataPool::anno_len_samples pp_res;
@@ -65,7 +65,7 @@ class MetaAnalyzer
                             {
                                 for( auto& ann : sample.second )
                                 {
-                                    if( ann.find( std::to_string( type ) + "_GMPM_read_count" ) != ann.end() )
+                                    if( ann.find( std::string( type ) + "_GMPM_read_count" ) != ann.end() )
                                     {
                                         ppm_sum = ann.find( idx )->second.find( "SUM_LEN" )->second;
                                     }
@@ -135,8 +135,10 @@ class MetaAnalyzer
 
             for( auto& anno : annos )
             {
-                if( flag != 0 )
+                if( flag != 0 && !anno.second.empty() )
+                {
                     sum += anno.second[i];
+                }
 
                 flag++;
             }
@@ -187,6 +189,9 @@ class MetaAnalyzer
         size_t flag = 0;
         for( auto& len : annos )
         {
+            if( len.second.empty() )
+                continue;
+
             size_t shift = 0;
             size_t size = len.second.size() - 1;
             size_t size_shift = 0;
@@ -511,6 +516,9 @@ class MetaAnalyzer
 
                                         for( auto& val : anno.second )
                                         {
+                                            if( mir_sample.second.find( anno_len[0] )->second.empty() )
+                                                continue;
+
                                             val.second = val.second * mir_sample.second.find( anno_len[0] )-> second[l];
                                             value.push_back( val.second );
                                         }
@@ -525,7 +533,7 @@ class MetaAnalyzer
                 }
             }
         }
-        all_results.emplace_back( type, res );
+        all_results.emplace_back( ".MirTail_ppm", res );
     }
 
 };

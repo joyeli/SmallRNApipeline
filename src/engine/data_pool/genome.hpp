@@ -28,10 +28,7 @@ class GenomeImpl
         for ( auto& child 
                 : pipeline_schema.get_child( "input" ).get_child( "genome_fasta" ))
         {
-            if( !db.exist_path_tag( "genome_fasta" ))
-            {
-                db.push_path( "genome_fasta", child.second );
-            }
+            db.push_path( "genome_fasta", child.second );
         }
     }
 

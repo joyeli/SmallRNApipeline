@@ -438,7 +438,7 @@ class AnalyzerMirDist
             }
         }
 
-        std::ofstream output( output_path + "/Tail_Detail_" + sample_rawbed.first + "_readcount.tsv" );
+        std::ofstream output( output_path + "/" + sample_rawbed.first + "_tailing.tsv" );
         output << "AnnoSeed\tLen\tTailSeq\tCount\n";
 
         for( auto& anno_len : anno_tail_map )
