@@ -254,7 +254,9 @@ class Visualization
                                 std::map< std::string, std::vector< double >>::iterator anno = result_sample.second.find( biotype.first );
 
                                 for( auto& length : anno->second )
+                                {
                                     length_index_check_new.push_back( length );
+                                }
 
                                 length_index_check.push_back( length_index_check_new );
                                 continue;
@@ -265,6 +267,31 @@ class Visualization
 
                             output << result_sample.first;
                             std::map< std::string, std::vector< double >>::iterator anno = result_sample.second.find( biotype.first );
+
+                                if( gmpm[1] == "GMPM" )
+                                {
+                                    int length = 0;
+                                    std::cerr << result_sample.first << "\t";
+
+                                    for( auto& index : length_index )
+                                    {
+                                        std::cerr << std::fixed << "\t" << anno->second[ length ];
+                                        length++;
+                                    }
+
+                                    std::cerr << "\n";
+
+                                    length = 0;
+                                    std::cerr << "length_index_check";
+
+                                    for( auto& index : length_index )
+                                    {
+                                        std::cerr << "\t" << length_index_check[it][length];
+                                        length++;
+                                    }
+
+                                    std::cerr << "\n";
+                                }
 
                             int length = 0;
                             for( auto& index : length_index )
@@ -1206,8 +1233,8 @@ class Visualization
             output << "	<? " << "\n" << std::flush;
             output << "#<!--================== Chart Type ====================-->" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
-            output << "		echo '<script src=http://140.113.15.84/joye/ForAgoSorting/lib/d3.min.js></script>';" << "\n" << std::flush;
-            output << "		echo '<link href=http://140.113.15.84/joye/ForAgoSorting/lib/svg0331.css rel=stylesheet type=text/css>';" << "\n" << std::flush;
+            output << "		echo '<script src=http://140.113.239.177/joye/ForAgoSorting/lib/d3.min.js></script>';" << "\n" << std::flush;
+            output << "		echo '<link href=http://140.113.239.177/joye/ForAgoSorting/lib/svg0331.css rel=stylesheet type=text/css>';" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
             output << "		echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
@@ -1268,8 +1295,8 @@ class Visualization
             output << "" << "\n" << std::flush;
             output << "			if( $Chart_Type != 'MirDist/' && $Chart_Type != 'DotPlot/' )" << "\n" << std::flush;
             output << "			{" << "\n" << std::flush;
-            output << "				echo '<script src=http://140.113.15.84/joye/ForAgoSorting/lib/nv.d3.min.js></script>';" << "\n" << std::flush;
-            output << "				echo '<link href=http://140.113.15.84/joye/ForAgoSorting/lib/nv.d3.min.css rel=stylesheet type=text/css>';" << "\n" << std::flush;
+            output << "				echo '<script src=http://140.113.239.177/joye/ForAgoSorting/lib/nv.d3.min.js></script>';" << "\n" << std::flush;
+            output << "				echo '<link href=http://140.113.239.177/joye/ForAgoSorting/lib/nv.d3.min.css rel=stylesheet type=text/css>';" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
             output << "#<!--================== Single TSV File ====================-->" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
@@ -2560,19 +2587,19 @@ class Visualization
             output << "		{" << "\n" << std::flush;
             output << "			if( $Chart_Type == 'ValPlot/' )" << "\n" << std::flush;
             output << "			{" << "\n" << std::flush;
-            output << "				echo '	<script src=http://140.113.15.84/joye/ForAgoSorting/lib/d3.min.js ></script>" << "\n" << std::flush;
-            output << "						<script src=http://140.113.15.84/joye/ForAgoSorting/lib/slickgrid/jquery-1.7.min.js ></script>" << "\n" << std::flush;
-            output << "						<script src=http://140.113.15.84/joye/ForAgoSorting/lib/slickgrid/jquery.event.drag-2.0.min.js ></script>" << "\n" << std::flush;
-            output << "						<script src=http://140.113.15.84/joye/ForAgoSorting/lib/slickgrid/slick.core.js ></script>" << "\n" << std::flush;
-            output << "						<script src=http://140.113.15.84/joye/ForAgoSorting/lib/slickgrid/slick.grid.js ></script>" << "\n" << std::flush;
-            output << "						<script src=http://140.113.15.84/joye/ForAgoSorting/lib/slickgrid/slick.dataview.js ></script>" << "\n" << std::flush;
-            output << "						<script src=http://140.113.15.84/joye/ForAgoSorting/lib/d3.parcoords.js ></script>" << "\n" << std::flush;
-            output << "						<script src=http://140.113.15.84/joye/ForAgoSorting/lib/divgrid.js ></script>" << "\n" << std::flush;
-            output << "						<link rel=stylesheet type=text/css href=http://140.113.15.84/joye/ForAgoSorting/lib/slickgrid/slick.grid.css />" << "\n" << std::flush;
-            output << "						<link rel=stylesheet type=text/css href=http://140.113.15.84/joye/ForAgoSorting/lib/slickgrid/jquery-ui-1.8.16.custom.css />" << "\n" << std::flush;
-            output << "						<link rel=stylesheet type=text/css href=http://140.113.15.84/joye/ForAgoSorting/lib/slickgrid/examples.css />" << "\n" << std::flush;
-            output << "						<link rel=stylesheet type=text/css href=http://140.113.15.84/joye/ForAgoSorting/lib/d3.parcoords.css />" << "\n" << std::flush;
-            output << "						<link rel=stylesheet type=text/css href=http://140.113.15.84/joye/ForAgoSorting/lib/style.css />';" << "\n" << std::flush;
+            output << "				echo '	<script src=http://140.113.239.177/joye/ForAgoSorting/lib/d3.min.js ></script>" << "\n" << std::flush;
+            output << "						<script src=http://140.113.239.177/joye/ForAgoSorting/lib/slickgrid/jquery-1.7.min.js ></script>" << "\n" << std::flush;
+            output << "						<script src=http://140.113.239.177/joye/ForAgoSorting/lib/slickgrid/jquery.event.drag-2.0.min.js ></script>" << "\n" << std::flush;
+            output << "						<script src=http://140.113.239.177/joye/ForAgoSorting/lib/slickgrid/slick.core.js ></script>" << "\n" << std::flush;
+            output << "						<script src=http://140.113.239.177/joye/ForAgoSorting/lib/slickgrid/slick.grid.js ></script>" << "\n" << std::flush;
+            output << "						<script src=http://140.113.239.177/joye/ForAgoSorting/lib/slickgrid/slick.dataview.js ></script>" << "\n" << std::flush;
+            output << "						<script src=http://140.113.239.177/joye/ForAgoSorting/lib/d3.parcoords.js ></script>" << "\n" << std::flush;
+            output << "						<script src=http://140.113.239.177/joye/ForAgoSorting/lib/divgrid.js ></script>" << "\n" << std::flush;
+            output << "						<link rel=stylesheet type=text/css href=http://140.113.239.177/joye/ForAgoSorting/lib/slickgrid/slick.grid.css />" << "\n" << std::flush;
+            output << "						<link rel=stylesheet type=text/css href=http://140.113.239.177/joye/ForAgoSorting/lib/slickgrid/jquery-ui-1.8.16.custom.css />" << "\n" << std::flush;
+            output << "						<link rel=stylesheet type=text/css href=http://140.113.239.177/joye/ForAgoSorting/lib/slickgrid/examples.css />" << "\n" << std::flush;
+            output << "						<link rel=stylesheet type=text/css href=http://140.113.239.177/joye/ForAgoSorting/lib/d3.parcoords.css />" << "\n" << std::flush;
+            output << "						<link rel=stylesheet type=text/css href=http://140.113.239.177/joye/ForAgoSorting/lib/style.css />';" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
             output << "#<!--================== TSV File ====================-->" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
@@ -2963,11 +2990,11 @@ class Visualization
             output << "" << "\n" << std::flush;
             output << "			if( $Chart_Type == 'LenPlus/' )" << "\n" << std::flush;
             output << "			{" << "\n" << std::flush;
-            output << "				echo '<script src=http://140.113.15.84/joye/ForAgoSorting/lib/nv.d3.min.js></script>';" << "\n" << std::flush;
-            output << "				echo '<link href=http://140.113.15.84/joye/ForAgoSorting/lib/nv.d3.min.css rel=stylesheet type=text/css>';" << "\n" << std::flush;
-            output << "				echo '<script src=http://140.113.15.84/joye/ForAgoSorting/lib/head.min.js ></script>';" << "\n" << std::flush;
-            output << "				echo '<script src=http://140.113.15.84/joye/ForAgoSorting/lib/reveal.min.js></script>';" << "\n" << std::flush;
-            output << "				echo '<link rel=stylesheet href=http://140.113.15.84/joye/ForAgoSorting/lib/reveal.min.css>';" << "\n" << std::flush;
+            output << "				echo '<script src=http://140.113.239.177/joye/ForAgoSorting/lib/nv.d3.min.js></script>';" << "\n" << std::flush;
+            output << "				echo '<link href=http://140.113.239.177/joye/ForAgoSorting/lib/nv.d3.min.css rel=stylesheet type=text/css>';" << "\n" << std::flush;
+            output << "				echo '<script src=http://140.113.239.177/joye/ForAgoSorting/lib/head.min.js ></script>';" << "\n" << std::flush;
+            output << "				echo '<script src=http://140.113.239.177/joye/ForAgoSorting/lib/reveal.min.js></script>';" << "\n" << std::flush;
+            output << "				echo '<link rel=stylesheet href=http://140.113.239.177/joye/ForAgoSorting/lib/reveal.min.css>';" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
             output << "#<!--================== ReadCount & PPM ====================-->" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
@@ -3096,8 +3123,8 @@ class Visualization
             output << "" << "\n" << std::flush;
             output << "			if( $Chart_Type == 'MirTail/' )" << "\n" << std::flush;
             output << "			{" << "\n" << std::flush;
-            output << "				echo '<script src=http://140.113.15.84/joye/ForAgoSorting/lib/nv.d3.min.js></script>';" << "\n" << std::flush;
-            output << "				echo '<link href=http://140.113.15.84/joye/ForAgoSorting/lib/nv.d3.min.css rel=stylesheet type=text/css>';" << "\n" << std::flush;
+            output << "				echo '<script src=http://140.113.239.177/joye/ForAgoSorting/lib/nv.d3.min.js></script>';" << "\n" << std::flush;
+            output << "				echo '<link href=http://140.113.239.177/joye/ForAgoSorting/lib/nv.d3.min.css rel=stylesheet type=text/css>';" << "\n" << std::flush;
             output << "" << "\n" << std::flush;
             output << "#<!--================== TSV File ====================-->" << "\n" << std::flush;
             output << "" << "\n" << std::flush;

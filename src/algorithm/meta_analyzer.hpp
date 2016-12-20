@@ -113,7 +113,7 @@ class MetaAnalyzer
 
             emplace_lens( rd_anno_map );
             emplace_lens( pp_anno_map );
-            
+
             rd_res.emplace( sample.first, rd_anno_map );
             pp_res.emplace( sample.first, pp_anno_map );
 
@@ -158,7 +158,7 @@ class MetaAnalyzer
 
         std::map< size_t, size_t > len_emplace;
 
-        int j = 0;
+        int j = -1;
         size_t k = 0;
 
         for( size_t i = 0; i < len_index.size(); ++i )

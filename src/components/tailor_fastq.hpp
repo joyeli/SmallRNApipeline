@@ -49,8 +49,8 @@ class TailorFastq : public engine::NamedComponent
         align_min_length_ = p.get_optional< size_t >( "align_min_length" ).value_or( 18 );
         align_max_length_ = p.get_optional< size_t >( "align_max_length" ).value_or( 30 );
 
-        align_job_number_ = p.get_optional< size_t >( "align_job_number" ).value_or( 200 );
-        align_thread_num_ = p.get_optional< size_t >( "align_thread_num" ).value_or( 200 );
+        align_job_number_ = p.get_optional< size_t >( "align_job_number" ).value_or( 10000 );
+        align_thread_num_ = p.get_optional< size_t >( "align_thread_num" ).value_or( 100 );
         align_limit_algn_ = p.get_optional< size_t >( "align_limit_algn" ).value_or( 100 );
     }
 
@@ -117,13 +117,13 @@ class TailorFastq : public engine::NamedComponent
                 size_t thread_count = 0;
                 bool break_flag = false;
 
+                std::vector< Fastq<> > fastqs;
+
                 while( true )
                 {
-                    std::vector< Fastq<> > fastqs;
-
                     for( size_t job = 0; job < align_job_number_; ++job )
                     {
-                        Fastq<> fastq = fastq_reader.get_next_entry( id );
+                        Fastq<> fastq( fastq_reader.get_next_entry( id ));
 
                         if( fastq.eof_flag )
                         {
@@ -143,16 +143,21 @@ class TailorFastq : public engine::NamedComponent
                     ali_parallel_pool.job_post( [ fastqs, &ali_mutex, &sams, &output, this ] () 
                     {
                         std::vector< Sam<> > sams_para{};
+                        std::map< int, std::vector< Fastq<> >> input;
+                        std::vector< Sam<> >* sams_tmp;
 
                         for( auto& fastq: fastqs )
                         {
-                            std::map< int, std::vector< Fastq<> >> input{ std::make_pair( 0, std::vector< Fastq<> >{ fastq })};
-                            std::vector< Sam<> >* sams_tmp( tailor_.search( &input, 1, align_min_length_, align_limit_algn_, align_max_length_ ));
+                            input.emplace( 0, std::vector< Fastq<> >{ fastq });
+                            sams_tmp = tailor_.search( &input, 1, align_min_length_, align_limit_algn_, align_max_length_ );
 
                             if( !sams_tmp->empty() )
                             {
                                 std::move( sams_tmp->begin(), sams_tmp->end(), std::back_inserter( sams_para ));
                             }
+
+                            input.clear();
+                            sams_tmp->clear();
                         }
 
                         {
@@ -184,17 +189,27 @@ class TailorFastq : public engine::NamedComponent
                     }
                 }
 
-                auto raw_beds( Sam2RawBed< std::vector< Sam<> >* >().Convert( &sams ));
-
-                std::vector< AnnotationRawBed<> > annotation_rawbeds;
-
-                for( auto itr = raw_beds->begin(); itr != raw_beds->end(); ++itr )
+                for( auto sam = sams.begin(); sam != sams.end(); ++sam )
                 {
-                    annotation_rawbeds.emplace_back( AnnotationRawBed<>( itr->first ));
+                    std::get<3>( sam->data ) = std::get<3>( sam->data ) - 1;
                 }
 
                 {
                     std::lock_guard< std::mutex > smp_lock( smp_mutex );
+
+                    Sam2RawBed< std::vector< Sam<> >* > sam2bed;
+                    auto raw_beds( sam2bed.Convert( &sams ));
+
+                    std::vector< AnnotationRawBed<> > annotation_rawbeds;
+
+                    for( auto itr = raw_beds->begin(); itr != raw_beds->end(); ++itr )
+                    {
+                        annotation_rawbeds.emplace_back( AnnotationRawBed<>( itr->first ));
+                    }
+
+                    sam2bed.rawbed_map_->clear();
+                    sam2bed.rawbed_map2_->clear();
+
                     db.rawbed_samples.emplace_back( sample_name, annotation_rawbeds );
                     monitor.log( "Aligning", " ... " );
                 }

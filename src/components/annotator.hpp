@@ -5,6 +5,7 @@
 #include <pokemon/annotator/annotation_set.hpp>
 #include <CCD/para_thread_pool/para_thread_pool.hpp>
 #include <mutex>
+#include <boost/archive/text_oarchive.hpp>
 
 namespace ago {
 namespace component {
@@ -74,34 +75,35 @@ class Annotator : public engine::NamedComponent
         monitor.set_monitor( "Annotating", db.rawbed_samples.size()+1 );
 
         std::mutex smp_mutex;
-        ParaThreadPool smp_parallel_pool( db.rawbed_samples.size() );
+        // ParaThreadPool smp_parallel_pool( db.rawbed_samples.size() );
         std::map< std::string, std::vector< AnnotationRawBed<> >> rawbed_samples_map;
 
         for( auto& sample : db.rawbed_samples )
         {
-            smp_parallel_pool.job_post( [ sample, &annotator, &monitor, &smp_mutex, &rawbed_samples_map ] () mutable
-            {
+            // smp_parallel_pool.job_post( [ sample, &annotator, &monitor, &smp_mutex, &rawbed_samples_map ] () mutable
+            // {
                 for( auto& anno_rawbed : sample.second )
                 {
                     annotator.AnnotateAll( anno_rawbed );
                 }
 
                 {
-                    std::lock_guard< std::mutex > smp_lock( smp_mutex );
+                    // std::lock_guard< std::mutex > smp_lock( smp_mutex );
+
                     rawbed_samples_map.emplace( sample ); 
-
                     monitor.log( "Annotating", " ... " + sample.first );
+
+                    std::ofstream archive_output( db.output_dir().string() + "/" + sample.first + ".arc" );
+                    boost::archive::binary_oarchive archive_out( archive_output );
+
+                    archive_out & sample.second;
+                    archive_output.close();
                 }
-            });
+            // });
         }
 
-        smp_parallel_pool.flush_pool();
+        // smp_parallel_pool.flush_pool();
         Annotations::clear_database();
-
-        for( auto& sample : db.rawbed_samples )
-        {
-            sample.second = rawbed_samples_map[ sample.first ];
-        }
 
         monitor.log( "Annotating", " ... Complete" );
         monitor.log( "Component Annotator", "Complete!!" );

@@ -31,7 +31,7 @@
 
 #include <pokemon/constant_def.hpp>
 #include <pokemon/tuple_utility.hpp>
-#include <pokemon/pipeline/pipeline_preparator.hpp>
+//#include <pokemon/pipeline/pipeline_preparator.hpp>
 
 #include <pokemon/analyzer/analyzer_utility.hpp>
 #include <AGO/algorithm/analyzer_policy_ForAgoSorting.hpp>
