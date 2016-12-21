@@ -3,7 +3,12 @@
 #include <memory>
 #include <string>
 #include <AGO/engine/data_pool.hpp>
-#include <AGO/components/tailor_fastq.hpp>
+#include <AGO/components/tailor_fastq_to_bed.hpp>
+#include <AGO/components/fastq_input.hpp>
+// #include <AGO/components/sam_input.hpp>
+#include <AGO/components/archive_input.hpp>
+#include <AGO/components/tailor_align.hpp>
+#include <AGO/components/sam_to_bed.hpp>
 #include <AGO/components/annotator.hpp>
 #include <AGO/components/filter.hpp>
 #include <AGO/components/analyzer.hpp>
@@ -40,7 +45,12 @@ class ComponentFactory
     {
 
         if( identifier == "" ){ /* TODO a error handle */ }
-        ID_MAP_TYPE( "TailorFastq" , component::TailorFastq )
+        ID_MAP_TYPE( "TailorFastqToBed" , component::TailorFastqToBed )
+        ID_MAP_TYPE( "FastqInput" , component::FastqInput )
+        // ID_MAP_TYPE( "SamInput" , component::SamInput )
+        ID_MAP_TYPE( "ArchiveInput" , component::ArchiveInput )
+        ID_MAP_TYPE( "TailorAlign" , component::TailorAlign )
+        ID_MAP_TYPE( "SamToBed" , component::SamToBed )
         ID_MAP_TYPE( "Annotator" , component::Annotator )
         ID_MAP_TYPE( "Filter" , component::Filter )
         ID_MAP_TYPE( "Analyzer", component::Analyzer )

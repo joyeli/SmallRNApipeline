@@ -57,4 +57,9 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
         ${Boost_LIBRARIES} ${CURL_LIBRARIES}
         pthread thread_pool ) 
 
+    # add_executable( stefan_test unit_test/stefan.cpp )
+    #     target_link_libraries( stefan_test
+    #     ${Boost_LIBRARIES} ${CURL_LIBRARIES}
+    #     pthread thread_pool ) 
+
 endif()

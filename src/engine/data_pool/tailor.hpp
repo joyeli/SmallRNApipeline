@@ -13,15 +13,6 @@ class Tailor
 {
   public:
 
-    std::vector<
-        std::pair<
-            std::string,
-            std::vector<
-                AnnotationRawBed<>
-            >
-        >
-    > rawbed_samples;
-
     bool is_tailor_index_build;
 
     template< class DB >

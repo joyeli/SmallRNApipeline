@@ -22,7 +22,8 @@ class MetaAnalyzer : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component MetaAnalyzer", 1 );
+        monitor.set_monitor( "Component MetaAnalyzer", 12 );
+        monitor.log( "Component MetaAnalyzer", "Start" );
 
         std::string output_path( db.output_dir().string() );
 
@@ -34,8 +35,6 @@ class MetaAnalyzer : public engine::NamedComponent
 
         ago::algorithm::MetaAnalyzer meta;
 
-        monitor.set_monitor( "MetaAnalyzing", 10 );
-
         meta.quantile_transfer(
               db.quantile_result_samples
             , db.analyzer_result_samples
@@ -45,7 +44,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , "GMPM"
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.quantile_transfer(
               db.quantile_result_samples
@@ -56,7 +55,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , "GM"
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.quantile_transfer(
               db.quantile_result_samples
@@ -67,7 +66,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , "PM"
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.tailing_ratio(
               db.quantile_result_samples
@@ -75,7 +74,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , ".LenDist_Tailing_Ratio"
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.quantile_transfer(
               db.quantile_result_samples
@@ -86,7 +85,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , "GMPM"
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.quantile_transfer(
               db.quantile_result_samples
@@ -97,7 +96,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , "GM"
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.quantile_transfer(
               db.quantile_result_samples
@@ -108,7 +107,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , "PM"
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.tailing_ratio(
               db.quantile_result_samples
@@ -116,7 +115,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , ".MirDist_Tailing_Ratio"
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.tailing_ratio_for_pm(
               db.quantile_result_samples
@@ -128,7 +127,7 @@ class MetaAnalyzer : public engine::NamedComponent
             , db.quantile_result_samples[ 5 ].second   // lendist_pm_ppm
         );
 
-        monitor.log( "MetaAnalyzing", " ... " );
+        monitor.log( "Component MetaAnalyzer", " ... " );
 
         meta.tailing_ratio_for_mir(
               db.quantile_result_samples
@@ -137,11 +136,9 @@ class MetaAnalyzer : public engine::NamedComponent
             , db.quantile_result_samples[ 8 ].second   // mirdist_gmpm_ppm
         );
 
-        monitor.log( "MetaAnalyzing", " ... Complete" );
-
         db.analyzer_result_samples.clear();
 
-        monitor.log( "Component MetaAnalyzer", "Complete!!" );
+        monitor.log( "Component MetaAnalyzer", "Complete" );
     }
 
     std::vector< std::string > get_index(

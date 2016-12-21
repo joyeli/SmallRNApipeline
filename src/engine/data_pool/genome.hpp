@@ -5,6 +5,7 @@
 #include <CPT/engine/data_pool/data_paths_pool.hpp>
 #include <CPT/logger.hpp>
 #include <pokemon/iohandler/ihandler/ihandler.hpp>
+#include <CCD/para_thread_pool/para_thread_pool.hpp>
 
 namespace ago {
 namespace engine {
@@ -35,16 +36,31 @@ class GenomeImpl
     template< class DB >
     void load_genome( std::vector< std::string >& genome_fastas, DB& db )
     {
-        Fasta_ihandler_impl< IoHandlerIfstream > fasta_reader( genome_fastas );
+        auto& monitor = db.monitor();
+
+        monitor.set_monitor( "Loading Genome", genome_fastas.size()+2 );
+        monitor.log( "Loading Genome", "Start" );
+
+        std::mutex fa_mutex;
+        ParaThreadPool fa_parallel_pool( genome_fastas.size() );
 
         for( size_t i = 0; i < genome_fastas.size(); ++i )
         {
-            cpt::verbose0 << "load genome : " << genome_fastas[i] << std::endl;
+            fa_parallel_pool.job_post( [ i, &genome_fastas, &db, &fa_mutex, &monitor ] () mutable 
+            {
+                Fasta_ihandler_impl< IoHandlerIfstream > fasta_reader( genome_fastas );
+                Fasta<> chr = fasta_reader.get_next_entry( i );
 
-            Fasta<> chr = fasta_reader.get_next_entry( i );
-
-            db.genome_table.emplace( chr.getName(), chr.getSeq() );
+                {
+                    std::lock_guard< std::mutex > fa_lock( fa_mutex );
+                    db.genome_table.emplace( chr.getName(), chr.getSeq() );
+                    monitor.log( "Loading Genome", ( chr.getName() ).c_str() );
+                }
+            });
         }
+
+        fa_parallel_pool.flush_pool();
+        monitor.log( "Loading Genome", "Complete" );
     }
 
     template< class DB >

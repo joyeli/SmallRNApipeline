@@ -8,7 +8,7 @@
 namespace ago {
 namespace component {
 
-class TailorFastq : public engine::NamedComponent
+class TailorFastqToBed : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
 
@@ -23,6 +23,8 @@ class TailorFastq : public engine::NamedComponent
     size_t align_limit_algn_;
 
     Aligner< Aligner_trait< Aligner_types::BWT_Aligner, ParallelTypes::M_T, void >> tailor_;
+
+    bool output_sam_;
 
   protected:
 
@@ -49,9 +51,11 @@ class TailorFastq : public engine::NamedComponent
         align_min_length_ = p.get_optional< size_t >( "align_min_length" ).value_or( 18 );
         align_max_length_ = p.get_optional< size_t >( "align_max_length" ).value_or( 30 );
 
-        align_job_number_ = p.get_optional< size_t >( "align_job_number" ).value_or( 10000 );
-        align_thread_num_ = p.get_optional< size_t >( "align_thread_num" ).value_or( 100 );
+        align_job_number_ = p.get_optional< size_t >( "align_job_number" ).value_or( 1000000 );
+        align_thread_num_ = p.get_optional< size_t >( "align_thread_num" ).value_or( 20 );
         align_limit_algn_ = p.get_optional< size_t >( "align_limit_algn" ).value_or( 100 );
+
+        output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( false );
     }
 
   public:
@@ -61,6 +65,7 @@ class TailorFastq : public engine::NamedComponent
     virtual void initialize() override
     {
         auto& db( this->mut_data_pool() );
+        auto& monitor = db.monitor();
 
         if( !db.exist_path_tag( "tailor_index" ))
         {
@@ -74,13 +79,24 @@ class TailorFastq : public engine::NamedComponent
 
         if( db.is_tailor_index_build )
         {
+            monitor.set_monitor( "Loading Index", 2 );
+            monitor.log( "Loading Index", "Start" );
+
             tailor_.load_table( tailor_index );
+            monitor.log( "Loading Index", "Complete" );
         }
         else
         {
+            monitor.set_monitor( "Building Index", 3 );
+            monitor.log( "Building Index", "Building ... " );
+
             tailor_.build( genome_fastas, tailor_index );
+            monitor.log( "Building Index", "Loading ... " );
+
             tailor_.load_table( tailor_index );
             db.is_tailor_index_build = true;
+
+            monitor.log( "Building Index", "Complete" );
         }
     }
 
@@ -89,16 +105,15 @@ class TailorFastq : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component Tailor Fastq", 1 );
-
         std::vector< std::string > fastq_paths( get_path_list_string( db.get_path_list( "sample_files" )));
         Fastq_ihandler_impl< IoHandlerIfstream > fastq_reader( fastq_paths );
+
+        monitor.set_monitor( "Component TailorFastqToBed", fastq_paths.size() +2 );
+        monitor.log( "Component TailorFastqToBed", "Start" );
 
         std::mutex smp_mutex;
         ParaThreadPool smp_parallel_pool( fastq_paths.size() );
 
-        monitor.set_monitor( "Aligning", fastq_paths.size()+2 );
-        monitor.log( "Aligning", " ... " );
 
         for( size_t id = 0; id < fastq_paths.size(); ++id )
         {
@@ -109,8 +124,12 @@ class TailorFastq : public engine::NamedComponent
                 std::mutex ali_mutex;
                 ParaThreadPool ali_parallel_pool( align_thread_num_ );
                 
-                std::string output_path( db.output_dir().string() + "/" + sample_name + ".sam" );
-                std::ofstream output( output_path );
+                std::ofstream output_sam;
+
+                if( output_sam_ )
+                {
+                    output_sam.open( db.output_dir().string() + "/" + sample_name + ".sam" );
+                }
 
                 std::vector< Sam<> > sams{};
 
@@ -140,7 +159,7 @@ class TailorFastq : public engine::NamedComponent
                         fastqs.push_back( fastq );
                     }
 
-                    ali_parallel_pool.job_post( [ fastqs, &ali_mutex, &sams, &output, this ] () 
+                    ali_parallel_pool.job_post( [ fastqs, &ali_mutex, &sams, &output_sam, this ] () 
                     {
                         std::vector< Sam<> > sams_para{};
                         std::map< int, std::vector< Fastq<> >> input;
@@ -163,9 +182,12 @@ class TailorFastq : public engine::NamedComponent
                         {
                             std::lock_guard< std::mutex > ali_lock( ali_mutex );
 
-                            for( auto& sam : sams_para )
+                            if( output_sam_ )
                             {
-                                output << sam;
+                                for( auto& sam : sams_para )
+                                {
+                                    output_sam << sam;
+                                }
                             }
 
                             std::move( sams_para.begin(), sams_para.end(), std::back_inserter( sams ));
@@ -184,7 +206,12 @@ class TailorFastq : public engine::NamedComponent
                     if( break_flag )
                     {
                         ali_parallel_pool.flush_pool();
-                        output.close();
+
+                        if( output_sam_ )
+                        {
+                            output_sam.close();
+                        }
+
                         break;
                     }
                 }
@@ -210,16 +237,14 @@ class TailorFastq : public engine::NamedComponent
                     sam2bed.rawbed_map_->clear();
                     sam2bed.rawbed_map2_->clear();
 
-                    db.rawbed_samples.emplace_back( sample_name, annotation_rawbeds );
-                    monitor.log( "Aligning", " ... " );
+                    db.bed_samples.emplace_back( sample_name, annotation_rawbeds );
+                    monitor.log( "Component TailorFastqToBed", ( sample_name ).c_str() );
                 }
             });
         }
 
         smp_parallel_pool.flush_pool();
-
-        monitor.log( "Aligning", " ... Complete" );
-        monitor.log( "Component Tailor Fastq", "Complete!!!" );
+        monitor.log( "Component TailorFastqToBed", "Complete" );
     }
 
     std::vector< std::string > get_path_list_string( const std::vector< boost::filesystem::path >& paths )

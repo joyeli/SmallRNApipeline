@@ -271,26 +271,19 @@ class Visualization
                                 if( gmpm[1] == "GMPM" )
                                 {
                                     int length = 0;
-                                    std::cerr << result_sample.first << "\t";
 
                                     for( auto& index : length_index )
                                     {
-                                        std::cerr << std::fixed << "\t" << anno->second[ length ];
                                         length++;
                                     }
 
-                                    std::cerr << "\n";
 
                                     length = 0;
-                                    std::cerr << "length_index_check";
 
                                     for( auto& index : length_index )
                                     {
-                                        std::cerr << "\t" << length_index_check[it][length];
                                         length++;
                                     }
-
-                                    std::cerr << "\n";
                                 }
 
                             int length = 0;

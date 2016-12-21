@@ -8,6 +8,7 @@
 #include <CPT/logger.hpp>
 #include <CCD/utility/language.hpp>
 #include <AGO/engine/data_pool/genome.hpp>
+#include <AGO/engine/data_pool/formats.hpp>
 #include <AGO/engine/data_pool/tailor.hpp>
 #include <AGO/engine/data_pool/analyzer.hpp>
 #include <AGO/engine/data_pool/meta_analyzer.hpp>
@@ -25,6 +26,7 @@ class DataPoolImpl
 , public cpt::engine::data_pool::ParallelThreadPool
 , public cpt::engine::data_pool::SharedObjectManager
 , public ago::engine::data_pool::GenomeImpl
+, public ago::engine::data_pool::Formats
 , public ago::engine::data_pool::Tailor
 , public ago::engine::data_pool::Analyzer
 , public ago::engine::data_pool::MetaAnalyzer
@@ -39,6 +41,7 @@ class DataPoolImpl
     : cpt::engine::data_pool::PipelineSchema( op.pipeline_schema_stream_ )
     , cpt::engine::data_pool::ParallelThreadPool( 20 )
     , GenomeImpl( *this )
+    , Formats( *this )
     , Tailor( *this )
     , Analyzer( *this )
     , MetaAnalyzer( *this )
