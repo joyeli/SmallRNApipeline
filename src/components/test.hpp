@@ -25,6 +25,10 @@ class Test : public engine::NamedComponent
     virtual void start() override
     {
     }
+
+    virtual void finish() override
+    {
+    }
 };
 
 } // end of namespace component

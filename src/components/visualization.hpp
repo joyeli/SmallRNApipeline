@@ -22,7 +22,7 @@ class Visualization : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component Visualization", 10 );
+        monitor.set_monitor( "Component Visualization", 9 );
         monitor.log( "Component Visualization", "Start" );
 
         std::string output_path = db.output_dir().string();

@@ -22,7 +22,7 @@ class MetaAnalyzer : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component MetaAnalyzer", 12 );
+        monitor.set_monitor( "Component MetaAnalyzer", 11 );
         monitor.log( "Component MetaAnalyzer", "Start" );
 
         std::string output_path( db.output_dir().string() );

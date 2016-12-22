@@ -75,7 +75,11 @@ class Annotator : public engine::NamedComponent
         monitor.set_monitor( "Component Annotator", db.bed_samples.size() +3 );
         monitor.log( "Component Annotator", "Loading Annotation" );
 
+        monitor.set_monitor( "	Loading Annotation", 2 );
+        monitor.log( "	Loading Annotation", " ... " );
+
         Annotations annotator( annotation_files_ );
+        monitor.log( "	Loading Annotation", " ... Done" );
 
         monitor.log( "Component Annotator", "Annotating Bed" );
 

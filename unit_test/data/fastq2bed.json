@@ -79,8 +79,8 @@
             "name": "FastqInput",
             "parameter": {
             }
-      , }
-        {
+        }
+      , {
             "name": "TailorAlign",
             "parameter": {
             }
