@@ -72,50 +72,53 @@ class Annotator : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component Annotator", 4 );
-        monitor.log( "Component Annotator", "Start" );
-
-        std::string output_dir = db.output_dir().string();
-
-        monitor.set_monitor( "	Loading Annotation", 2 );
-        monitor.log( "	Loading Annotation", " ... " );
+        monitor.set_monitor( "Component Annotator", db.bed_samples.size() +3 );
         monitor.log( "Component Annotator", "Loading Annotation" );
 
         Annotations annotator( annotation_files_ );
 
-        monitor.log( "	Loading Annotation", " ... Done" );
-        monitor.set_monitor( "	Annotating Bed", db.bed_samples.size() +2 );
-        monitor.log( "	Annotating Bed", "Start" );
         monitor.log( "Component Annotator", "Annotating Bed" );
+
+        std::vector< std::ofstream > archive_outputs;
+
+        if( output_archive_ )
+        {
+            for( size_t smp = 0; smp < db.bed_samples.size(); ++smp )
+            {
+                archive_outputs.push_back( std::move( std::ofstream(
+                    db.output_dir().string() + "/" + db.bed_samples[ smp ].first + ".arc"
+                )));
+            }
+        }
 
         std::mutex smp_mutex;
         ParaThreadPool smp_parallel_pool( db.bed_samples.size() );
 
-        std::map< std::string, std::vector< AnnotationRawBed<> >> bed_samples_map;
+        std::pair< size_t, std::vector< AnnotationRawBed<> >> sample_bed_pair;
 
-        for( auto& sample : db.bed_samples )
+        for( size_t smp = 0; smp < db.bed_samples.size(); ++smp )
         {
-            smp_parallel_pool.job_post( [ sample, output_dir, &annotator, &monitor, &smp_mutex, &bed_samples_map, this ] () mutable
+            smp_parallel_pool.job_post( [
+                sample_bed_pair{ std::make_pair( smp, std::move( db.bed_samples[ smp ].second ))},
+                &db, &archive_outputs, &annotator, &monitor, &smp_mutex, this ] () mutable
             {
-                for( auto& anno_rawbed : sample.second )
+                for( auto& anno_rawbed : sample_bed_pair.second )
                 {
                     annotator.AnnotateAll( anno_rawbed );
                 }
 
                 {
                     std::lock_guard< std::mutex > smp_lock( smp_mutex );
-
-                    bed_samples_map.emplace( sample ); 
-                    monitor.log( "	Annotating Bed", ( sample.first ).c_str() );
+                    monitor.log( "Component Annotator", ( db.bed_samples[ sample_bed_pair.first ].first ).c_str() );
 
                     if( output_archive_ )
                     {
-                        std::ofstream archive_output( output_dir + "/" + sample.first + ".arc" );
-                        boost::archive::binary_oarchive archive_out( archive_output );
-
-                        archive_out & sample.second;
-                        archive_output.close();
+                        boost::archive::binary_oarchive archive_out( archive_outputs[ sample_bed_pair.first ] );
+                        archive_out & sample_bed_pair.second;
+                        archive_outputs[ sample_bed_pair.first ].close();
                     }
+
+                    db.bed_samples[ sample_bed_pair.first ].second = std::move( sample_bed_pair.second );
                 }
             });
         }
@@ -123,13 +126,6 @@ class Annotator : public engine::NamedComponent
         smp_parallel_pool.flush_pool();
         Annotations::clear_database();
 
-        for( auto& sample : db.bed_samples )
-        {
-            auto it = bed_samples_map.find( sample.first );
-            sample.second.swap( it->second );
-        }
-
-        monitor.log( "	Annotating Bed", " ... Done" );
         monitor.log( "Component Annotator", "Complete" );
     }
 };

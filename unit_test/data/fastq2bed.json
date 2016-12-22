@@ -1,0 +1,99 @@
+{
+    "output_dir":
+        "/home/joyel/GitDoc/AGO/bin/test1222/"
+    ,
+    "input": {
+        "sample_files": [
+              "/mnt/godzilla/joye/AgoSorting/GSE45506/AGO1.fastq"
+            , "/mnt/godzilla/joye/AgoSorting/GSE45506/AGO2.fastq"
+            , "/mnt/godzilla/joye/AgoSorting/GSE45506/AGO3.fastq"
+            , "/mnt/godzilla/joye/AgoSorting/GSE45506/AGO4.fastq"
+            , "/mnt/godzilla/joye/AgoSorting/GSE45506/Control.fastq"
+            , "/mnt/godzilla/joye/AgoSorting/GSE45506/Input.fastq"
+        ],
+        "annotation_files": [
+            "/mnt/godzilla/joye/Annoation/AnnoDB.bed"
+        ],
+        "genome_fasta": [
+              "/mnt/godzilla/GENOME/db/hg19/chr1.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr2.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr3.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr4.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr5.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr6.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr7.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr8.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr9.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr10.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr11.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr12.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr13.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr14.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr15.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr16.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr17.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr18.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr19.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr20.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr21.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chr22.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chrX.fa"
+            , "/mnt/godzilla/GENOME/db/hg19/chrY.fa"
+        ]
+    },
+    "pipeline": [
+        {
+            "name": "TailorFastqToBed",
+            "parameter": {
+                  "tailor_index" : "/home/joyel/GitDoc/AGO/bin/tailor/tailor" 
+            }
+        }
+      , {
+            "name": "Annotator",
+            "parameter": {
+            }
+        }
+      , {
+            "name": "Filter",
+            "parameter": {
+            }
+        }
+      , {
+            "name": "Analyzer",
+            "parameter": {
+            }
+        }
+      , {
+            "name": "MetaAnalyzer",
+            "parameter": {
+            }
+        }
+      , {
+            "name": "Visualization",
+            "parameter": {
+            }
+        }
+    ],
+    "optional" : [
+        {
+            "name": "FastqInput",
+            "parameter": {
+            }
+      , }
+        {
+            "name": "TailorAlign",
+            "parameter": {
+            }
+        }
+      , {
+            "name": "SamToBed",
+            "parameter": {
+            }
+        }
+      , {
+            "name": "ArchiveInput",
+            "parameter": {
+            }
+        }
+    ]
+}

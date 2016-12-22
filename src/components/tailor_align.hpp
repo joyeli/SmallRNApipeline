@@ -94,7 +94,7 @@ class TailorAlign : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component TailorAlign", 5 );
+        monitor.set_monitor( "Component TailorAlign", 4 );
         monitor.log( "Component TailorAlign", "Start" );
 
         std::vector< Fastq<> > fastqs;
@@ -128,18 +128,34 @@ class TailorAlign : public engine::NamedComponent
         monitor.set_monitor( "	Aligning Fastq", sample_fastqs_pool.size() +2 );
         monitor.log( "	Aligning Fastq", "Start" );
 
+        for( size_t smp = 0; smp < db.fastq_samples.size(); ++smp )
+        {
+            db.sam_samples.emplace_back( db.fastq_samples[ smp ].first, std::vector< Sam<> >{} );
+        }
+
+        std::vector< std::ofstream > sam_outputs;
+
+        if( output_sam_ )
+        {
+            for( size_t smp = 0; smp < db.fastq_samples.size(); ++smp )
+            {
+                sam_outputs.push_back( std::move( std::ofstream(
+                    db.output_dir().string() + "/" + db.fastq_samples[ smp ].first + ".sam"
+                )));
+            }
+        }
+
         std::mutex ali_mutex;
         ParaThreadPool ali_parallel_pool( align_thread_num_ );
         size_t thread_count = 0;
 
         std::pair< size_t, std::vector< Fastq<> >> sample_fastqs_pair;
-        std::vector< std::pair< size_t, std::vector< Sam<> >>> sample_sams_pool;
 
         for( size_t job = 0; job < sample_fastqs_pool.size(); ++job )
         {
             ali_parallel_pool.job_post( [
                 sample_fastqs_pair{ std::move( sample_fastqs_pool[ job ] )},
-                    &sample_sams_pool, &ali_mutex, &monitor, this ] () mutable
+                    &db, &sam_outputs, &ali_mutex, &monitor, this ] () mutable
             {
                 std::vector< Sam<> > sams_para{};
                 std::vector< Sam<> >* sams_tmp;
@@ -167,7 +183,19 @@ class TailorAlign : public engine::NamedComponent
 
                     if( !sams_para.empty() )
                     {
-                        sample_sams_pool.emplace_back( sample_fastqs_pair.first, sams_para );
+                        if( output_sam_ )
+                        {
+                            for( auto& sam : sams_para )
+                            {
+                                sam_outputs[ sample_fastqs_pair.first ] << sam;
+                            }
+                        }
+
+                        std::move(
+                            sams_para.begin(),
+                            sams_para.end(),
+                            std::back_inserter( db.sam_samples[ sample_fastqs_pair.first ].second )
+                        );
                     }
                 }
             });
@@ -184,44 +212,6 @@ class TailorAlign : public engine::NamedComponent
         ali_parallel_pool.flush_pool();
 
         monitor.log( "	Aligning Fastq", " ... Done" );
-        monitor.log( "Component TailorAlign", "Packing Sam" );
-        monitor.set_monitor( "	Packing Sam", sample_sams_pool.size() +2 );
-        monitor.log( "	Packing Sam", "Start" );
-
-        for( size_t smp = 0; smp < db.fastq_samples.size(); ++smp )
-        {
-            db.sam_samples.emplace_back( db.fastq_samples[ smp ].first, std::vector< Sam<> >{} );
-        }
-
-        std::vector< std::ofstream > sam_outputs;
-
-        if( output_sam_ )
-        {
-            for( size_t smp = 0; smp < db.fastq_samples.size(); ++smp )
-            {
-                sam_outputs.push_back( std::move( std::ofstream(
-                    db.output_dir().string() + "/" + db.fastq_samples[ smp ].first + ".sam"
-                )));
-            }
-        }
-
-        for( auto& sample_sams_pair : sample_sams_pool )
-        {
-            if( output_sam_ )
-            {
-                for( auto& sam : sample_sams_pair.second )
-                {
-                    sam_outputs[ sample_sams_pair.first ] << sam;
-                }
-            }
-
-            monitor.log( "	Packing Sam", " ... " );
-            std::move(
-                sample_sams_pair.second.begin(),
-                sample_sams_pair.second.end(),
-                std::back_inserter( db.sam_samples[ sample_sams_pair.first ].second )
-            );
-        }
 
         if( output_sam_ )
         {
@@ -233,7 +223,6 @@ class TailorAlign : public engine::NamedComponent
 
         db.fastq_samples.clear();
 
-        monitor.log( "	Packing Sam", " ... Done" );
         monitor.log( "Component TailorAlign", "Complete" );
     }
 };
