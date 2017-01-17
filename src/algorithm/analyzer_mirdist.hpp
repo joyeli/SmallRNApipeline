@@ -19,7 +19,7 @@ class AnalyzerMirDist
             , boost::mpl::pair< AnaParamiRDist::DbDepthNameType    , boost::mpl::string< 'mi', 'RNA' >>
             , boost::mpl::pair< AnaParamiRDist::GetReadLengthClass , GetReadPrefixLength >
             , boost::mpl::pair< AnaParamiRDist::CalReadCountClass  , CalReadCountGMPM >
-            , boost::mpl::pair< AnaParamiRDist::GetReadSeqClass    , GetReadSeed< 1, 7 >>
+            , boost::mpl::pair< AnaParamiRDist::GetReadSeqClass    , GetReadSeed< 1, 6 >>
             , boost::mpl::pair< AnaParamiRDist::DbDepth2NameType   , boost::mpl::string< '-1' >>
        > 
         , boost::mpl::map<
@@ -29,7 +29,7 @@ class AnalyzerMirDist
             , boost::mpl::pair< AnaParamiRDist::DbDepthType        , boost::mpl::int_< 0 >>
             , boost::mpl::pair< AnaParamiRDist::DbDepthNameType    , boost::mpl::string< 'mi', 'RNA' >>
             , boost::mpl::pair< AnaParamiRDist::GetReadLengthClass , GetReadPrefixLength >
-            , boost::mpl::pair< AnaParamiRDist::GetReadSeqClass    , GetReadSeed < 1, 7 >>
+            , boost::mpl::pair< AnaParamiRDist::GetReadSeqClass    , GetReadSeed < 1, 6 >>
             , boost::mpl::pair< AnaParamiRDist::CalReadCountClass  , CalReadCountGMOnly >
             , boost::mpl::pair< AnaParamiRDist::DbDepth2NameType   , boost::mpl::string< '-1' >>
        > 
@@ -40,7 +40,7 @@ class AnalyzerMirDist
             , boost::mpl::pair< AnaParamiRDist::DbDepthType        , boost::mpl::int_< 0 >>
             , boost::mpl::pair< AnaParamiRDist::DbDepthNameType    , boost::mpl::string< 'mi', 'RNA' >>
             , boost::mpl::pair< AnaParamiRDist::GetReadLengthClass , GetReadPrefixLength >
-            , boost::mpl::pair< AnaParamiRDist::GetReadSeqClass    , GetReadSeed< 1, 7 >>
+            , boost::mpl::pair< AnaParamiRDist::GetReadSeqClass    , GetReadSeed< 1, 6 >>
             , boost::mpl::pair< AnaParamiRDist::CalReadCountClass  , CalReadCountPMOnly >
             , boost::mpl::pair< AnaParamiRDist::DbDepth2NameType   , boost::mpl::string< '-1' >>
        > 
@@ -251,7 +251,7 @@ class AnalyzerMirDist
                         {
                             std::string anno( AnnoRawBed_Info[i+1] );
                             std::string sequ( AnnoRawBed.getReadSeq( Genome_Table ));
-                            std::string anno_seed( anno + "_" + sequ.substr( 1, 7 ));
+                            std::string anno_seed( anno + "_" + sequ.substr( 1, 6 ));
 
                             std::string tail = AnnoRawBed.getTail();
                             int length = AnnoRawBed.length_ - AnnoRawBed.tail_length_;
@@ -388,7 +388,7 @@ class AnalyzerMirDist
                         {
                             std::string anno( raw_bed_info[i+1] );
                             std::string sequ( raw_bed.getReadSeq( genome_table ));
-                            std::string anno_seed( anno + "_" + sequ.substr( 1, 7 ));
+                            std::string anno_seed( anno + "_" + sequ.substr( 1, 6 ));
 
                             std::string tail = raw_bed.getTail();
                             size_t length = raw_bed.length_ - raw_bed.tail_length_;
