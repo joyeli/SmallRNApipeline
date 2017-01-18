@@ -170,6 +170,9 @@ class TailorAlign : public engine::NamedComponent
 
                     if( !sams_tmp->empty() )
                     {
+                        for( auto sam_it = sams_tmp->begin(); sam_it != sams_tmp->end(); ++sam_it )
+                            std::get<3>( sam_it->data ) = std::get<3>( sam_it->data ) - 1;
+
                         std::move( sams_tmp->begin(), sams_tmp->end(), std::back_inserter( sams_para ));
                     }
 
