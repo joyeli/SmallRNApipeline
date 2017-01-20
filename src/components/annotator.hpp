@@ -12,6 +12,51 @@ namespace component {
 
 class Annotator : public engine::NamedComponent
 {
+    struct HitHandler
+    {
+        template< class DB_BED, class ANN_BED >
+        static void run( DB_BED&& db_bed, ANN_BED&& ann_bed, int& db_idx )
+        {
+	        tuple2vector<
+                std::vector<std::string>
+                , 4
+                , std::tuple_size< decltype(db_bed.data) >::value
+            > ( db_bed.data , ann_bed.annotation_info_[db_idx] );
+
+            if( std::get<4>( db_bed.data ) == "miRNA" )
+            {
+                for( auto& info : ann_bed.annotation_info_ )
+                {
+                    for( int i = 0; i < info.size(); i+=2 )
+                    {
+                        if( info[i] == "miRNA" )
+                        {
+                            size_t db_mid  = std::get<1>( db_bed.data ) + (( std::get<2>( db_bed.data ) - std::get<1>( db_bed.data )) /2 );
+                            size_t ann_mid = ann_bed.start_ + (( ann_bed.end_ - ann_bed.start_ ) /2 );
+
+                            if( ann_mid > db_mid )
+                            {
+                                switch( ann_bed.strand_ )
+                                {
+                                    case '+' : info[i+1] = info[i+1] + "-3p"; break;
+                                    case '-' : info[i+1] = info[i+1] + "-5p"; break;
+                                }
+                            }
+                            else
+                            {
+                                switch( ann_bed.strand_ )
+                                {
+                                    case '+' : info[i+1] = info[i+1] + "-5p"; break;
+                                    case '-' : info[i+1] = info[i+1] + "-3p"; break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+
     using Base = engine::NamedComponent;
 
     using BedFileReaderImpl =  FileReader_impl<
@@ -24,6 +69,7 @@ class Annotator : public engine::NamedComponent
           BedFileReaderImpl
         , AnnoIgnoreStrand::NO_IGNORE
         , AnnoType::INTERSET
+        , HitHandler
     >;
 
     using Annotations = AnnotationSet <

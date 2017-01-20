@@ -43,7 +43,7 @@
     },
     "pipeline": [
         {
-            "name": "TailorFastqToBed",
+            "name": "TailorFastaToBed",
             "parameter": {
                 "tailor_index" : "/home/joyel/GitDoc/AGO/bin/tailor/tailor" 
             }
@@ -76,7 +76,7 @@
     ],
         "optional" : [
         {
-            "name": "TailorFastaToBed",
+            "name": "TailorFastqToBed",
             "parameter": {
                 "tailor_index" : "/home/joyel/GitDoc/AGO/bin/tailor/tailor" 
             }

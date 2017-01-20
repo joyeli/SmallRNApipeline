@@ -13,10 +13,9 @@ class TailorAlign : public engine::NamedComponent
 
     size_t align_min_length_;
     size_t align_max_length_;
-
-    size_t align_job_number_;
-    size_t align_thread_num_;
     size_t align_limit_algn_;
+
+    size_t thread_num_;
 
     Aligner< Aligner_trait< Aligner_types::BWT_Aligner, ParallelTypes::M_T, void >> tailor_;
 
@@ -36,14 +35,12 @@ class TailorAlign : public engine::NamedComponent
             db.push_path( "tailor_index", tailor_index );
         }
 
+
         align_min_length_ = p.get_optional< size_t >( "align_min_length" ).value_or( 18 );
         align_max_length_ = p.get_optional< size_t >( "align_max_length" ).value_or( 30 );
-
-        align_job_number_ = p.get_optional< size_t >( "align_job_number" ).value_or( 1000000 );
-        align_thread_num_ = p.get_optional< size_t >( "align_thread_num" ).value_or( 20 );
-
         align_limit_algn_ = p.get_optional< size_t >( "align_limit_algn" ).value_or( 100 );
 
+        thread_num_ = p.get_optional< size_t >( "thread_num" ).value_or( 32 );
         output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( false );
     }
 
@@ -104,6 +101,7 @@ class TailorAlign : public engine::NamedComponent
         monitor.set_monitor( "	Loading Fastq", db.fastq_samples.size() +2 );
         monitor.log( "	Loading Fastq", "Start" );
 
+        size_t task_number = ( db.fastq_samples.size() / thread_num_ );
 
         for( size_t smp = 0; smp < db.fastq_samples.size(); ++smp )
         {
@@ -111,7 +109,7 @@ class TailorAlign : public engine::NamedComponent
             {
                 fastqs.push_back( std::move( fastq ));
 
-                if( fastqs.size() == align_job_number_ )
+                if( fastqs.size() == task_number )
                 {
                     sample_fastqs_pool.emplace_back( smp, std::move( fastqs ));
                     fastqs.clear();
@@ -146,7 +144,7 @@ class TailorAlign : public engine::NamedComponent
         }
 
         std::mutex ali_mutex;
-        ParaThreadPool ali_parallel_pool( align_thread_num_ );
+        ParaThreadPool ali_parallel_pool( thread_num_ );
         size_t thread_count = 0;
 
         std::pair< size_t, std::vector< Fastq<> >> sample_fastqs_pair;
@@ -205,7 +203,7 @@ class TailorAlign : public engine::NamedComponent
 
             thread_count++;
 
-            if( thread_count >= align_thread_num_ )
+            if( thread_count >= thread_num_ )
             {
                 thread_count = 0;
                 ali_parallel_pool.flush_pool();

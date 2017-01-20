@@ -4,7 +4,9 @@
 #include <string>
 #include <AGO/engine/data_pool.hpp>
 #include <AGO/components/tailor_fastq_to_bed.hpp>
+#include <AGO/components/tailor_fasta_to_bed.hpp>
 #include <AGO/components/fastq_input.hpp>
+#include <AGO/components/fasta_input.hpp>
 // #include <AGO/components/sam_input.hpp>
 #include <AGO/components/archive_input.hpp>
 #include <AGO/components/tailor_align.hpp>
@@ -46,7 +48,9 @@ class ComponentFactory
 
         if( identifier == "" ){ /* TODO a error handle */ }
         ID_MAP_TYPE( "TailorFastqToBed" , component::TailorFastqToBed )
+        ID_MAP_TYPE( "TailorFastaToBed" , component::TailorFastaToBed )
         ID_MAP_TYPE( "FastqInput" , component::FastqInput )
+        ID_MAP_TYPE( "FastaInput" , component::FastaInput )
         // ID_MAP_TYPE( "SamInput" , component::SamInput )
         ID_MAP_TYPE( "ArchiveInput" , component::ArchiveInput )
         ID_MAP_TYPE( "TailorAlign" , component::TailorAlign )

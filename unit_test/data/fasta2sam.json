@@ -43,14 +43,25 @@
     },
     "pipeline": [
         {
-            "name": "TailorFastqToBed",
+            "name": "FastaInput",
             "parameter": {
-                "tailor_index" : "/home/joyel/GitDoc/AGO/bin/tailor/tailor" 
+            }
+        }
+      , {
+            "name": "TailorAlign",
+            "parameter": {
+                  "tailor_index" : "/home/joyel/GitDoc/AGO/bin/tailor/tailor" 
+            }
+        }
+      , {
+            "name": "SamToBed",
+            "parameter": {
             }
         }
       , {
             "name": "Annotator",
             "parameter": {
+                "output_archive": true
             }
         }
       , {
@@ -74,25 +85,14 @@
             }
         }
     ],
-        "optional" : [
+    "optional" : [
         {
-            "name": "TailorFastaToBed",
-            "parameter": {
-                "tailor_index" : "/home/joyel/GitDoc/AGO/bin/tailor/tailor" 
-            }
-        }
-      , {
             "name": "FastqInput",
             "parameter": {
             }
         }
       , {
-            "name": "TailorAlign",
-            "parameter": {
-            }
-        }
-      , {
-            "name": "SamToBed",
+            "name": "TailorFastqToBed",
             "parameter": {
             }
         }

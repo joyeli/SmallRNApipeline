@@ -8,7 +8,7 @@
 namespace ago {
 namespace component {
 
-class TailorFastqToBed : public engine::NamedComponent
+class TailorFastaToBed : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
 
@@ -105,21 +105,21 @@ class TailorFastqToBed : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        std::vector< std::string > fastq_paths( get_path_list_string( db.get_path_list( "sample_files" )));
-        Fastq_ihandler_impl< IoHandlerIfstream > fastq_reader( fastq_paths );
+        std::vector< std::string > fasta_paths( get_path_list_string( db.get_path_list( "sample_files" )));
+        Fasta_ihandler_impl< IoHandlerIfstream > fasta_reader( fasta_paths );
 
-        monitor.set_monitor( "Component TailorFastqToBed", fastq_paths.size() +2 );
-        monitor.log( "Component TailorFastqToBed", "Start" );
+        monitor.set_monitor( "Component TailorFastaToBed", fasta_paths.size() +2 );
+        monitor.log( "Component TailorFastaToBed", "Start" );
 
         std::mutex smp_mutex;
-        ParaThreadPool smp_parallel_pool( fastq_paths.size() );
+        ParaThreadPool smp_parallel_pool( fasta_paths.size() );
 
 
-        for( size_t id = 0; id < fastq_paths.size(); ++id )
+        for( size_t id = 0; id < fasta_paths.size(); ++id )
         {
-            smp_parallel_pool.job_post( [ id, &db, &fastq_paths, &fastq_reader, &smp_mutex, &monitor, this ] ()
+            smp_parallel_pool.job_post( [ id, &db, &fasta_paths, &fasta_reader, &smp_mutex, &monitor, this ] ()
             {
-                std::string sample_name( get_sample_name( fastq_paths[ id ] ));
+                std::string sample_name( get_sample_name( fasta_paths[ id ] ));
 
                 std::mutex ali_mutex;
                 ParaThreadPool ali_parallel_pool( thread_num_ );
@@ -137,24 +137,40 @@ class TailorFastqToBed : public engine::NamedComponent
                 bool break_flag = false;
 
                 std::vector< Fastq<> > fastqs;
+                std::string qc = "";
+                Fastq<> fastq;
+                Fasta<> fasta;
 
                 while( true )
                 {
                     for( size_t job = 0; job < task_number_; ++job )
                     {
-                        Fastq<> fastq( fastq_reader.get_next_entry( id ));
+                        fasta = fasta_reader.get_next_entry( id );
 
-                        if( fastq.eof_flag )
+                        if( fasta.eof_flag )
                         {
                             break_flag = true;
                             break;
                         }
 
-                        if( fastq.getSeq().size() < reads_min_length_ ||
-                            fastq.getSeq().size() > reads_max_length_ ||
-                            n_check( fastq )
+                        if( fasta.getSeq().size() < reads_min_length_ ||
+                            fasta.getSeq().size() > reads_max_length_ ||
+                            n_check( fasta )
                           )
+                        {
                             continue;
+                        }
+
+                        for( auto& c : std::get<1>( fasta.data ))
+                        {
+                            qc += "I";
+                        }
+
+                        std::get<0>( fastq.data ) = std::get<0>( fasta.data );
+                        std::get<1>( fastq.data ) = std::get<1>( fasta.data );
+                        std::get<2>( fastq.data ) = "+" + std::get<0>( fasta.data );
+                        std::get<3>( fastq.data ) = qc;
+                        qc = "";
 
                         fastqs.push_back( fastq );
                     }
@@ -238,13 +254,13 @@ class TailorFastqToBed : public engine::NamedComponent
                     sam2bed.rawbed_map2_->clear();
 
                     db.bed_samples.emplace_back( sample_name, annotation_rawbeds );
-                    monitor.log( "Component TailorFastqToBed", ( sample_name ).c_str() );
+                    monitor.log( "Component TailorFastaToBed", ( sample_name ).c_str() );
                 }
             });
         }
 
         smp_parallel_pool.flush_pool();
-        monitor.log( "Component TailorFastqToBed", "Complete" );
+        monitor.log( "Component TailorFastaToBed", "Complete" );
     }
 
     std::vector< std::string > get_path_list_string( const std::vector< boost::filesystem::path >& paths )
@@ -270,9 +286,9 @@ class TailorFastqToBed : public engine::NamedComponent
         return sample[0];
     }
 
-    bool n_check( const Fastq<>& fastq )
+    bool n_check( Fasta<>& fasta )
     {
-        for( auto& base : fastq.getSeq() )
+        for( auto& base : fasta.getSeq() )
         {
             switch( base )
             {

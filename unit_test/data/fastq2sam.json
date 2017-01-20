@@ -87,6 +87,11 @@
     ],
     "optional" : [
         {
+            "name": "FastqInput",
+            "parameter": {
+            }
+        }
+      , {
             "name": "TailorFastqToBed",
             "parameter": {
             }
