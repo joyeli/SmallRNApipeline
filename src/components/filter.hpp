@@ -24,7 +24,6 @@ class Filter : public engine::NamedComponent
         , boost::mpl::vector< boost::mpl::string< 'bidi', 'rect' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
         , boost::mpl::vector< boost::mpl::string< 'macr', 'o_ln' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
         , boost::mpl::vector< boost::mpl::string< 'proc', 'esse' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'vaul', 'tRNA' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
         , boost::mpl::vector< boost::mpl::string< 'sens', 'e_'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
         , boost::mpl::vector< boost::mpl::string< 'Mt',   '_'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
         , boost::mpl::vector< boost::mpl::string< 'ge',   'ne'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '$' >>
@@ -32,6 +31,7 @@ class Filter : public engine::NamedComponent
         , boost::mpl::vector< boost::mpl::string< 'ribo', 'zyme' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
         , boost::mpl::vector< boost::mpl::string< 'r',    'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
         , boost::mpl::vector< boost::mpl::string< 'TE',   'C'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'rm',   'sk'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
         , boost::mpl::vector< boost::mpl::string< 'mi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
     >;
 
