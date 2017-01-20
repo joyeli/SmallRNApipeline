@@ -103,10 +103,35 @@ class TailorAlign : public engine::NamedComponent
 
         size_t task_number = ( db.fastq_samples.size() / thread_num_ );
 
+        std::vector< std::map< std::string, size_t >> align_counts;
+        std::vector< std::map< std::string, size_t >> fastq_counts;
+        std::map< std::string, size_t >::iterator fq_it;
+
         for( size_t smp = 0; smp < db.fastq_samples.size(); ++smp )
         {
+            db.statistic_samples.emplace_back(
+                db.fastq_samples[ smp ].first,
+                std::vector< double >{
+                    double( db.fastq_samples[ smp ].second.size() ), 0.0, 0.0
+                }
+            );
+
+            align_counts[ smp ] = std::map< std::string, size_t >();
+            fastq_counts[ smp ] = std::map< std::string, size_t >();
+
             for( auto& fastq : db.fastq_samples[ smp ].second )
             {
+                fq_it = fastq_counts[ smp ].find( std::get<0>( fastq.data ));
+
+                if( fq_it != fastq_counts[ smp ].end() )
+                {
+                    fq_it->second++;
+                }
+                else
+                {
+                    fastq_counts[ smp ].emplace( std::get<0>( fastq.data ), 1 );
+                }
+
                 fastqs.push_back( std::move( fastq ));
 
                 if( fastqs.size() == task_number )
@@ -138,7 +163,7 @@ class TailorAlign : public engine::NamedComponent
             for( size_t smp = 0; smp < db.fastq_samples.size(); ++smp )
             {
                 sam_outputs.push_back( std::move( std::ofstream(
-                    db.output_dir().string() + "/" + db.fastq_samples[ smp ].first + ".sam"
+                    db.output_dir().string() + db.fastq_samples[ smp ].first + ".sam"
                 )));
             }
         }
@@ -153,7 +178,7 @@ class TailorAlign : public engine::NamedComponent
         {
             ali_parallel_pool.job_post( [
                 sample_fastqs_pair{ std::move( sample_fastqs_pool[ job ] )},
-                    &db, &sam_outputs, &ali_mutex, &monitor, this ] () mutable
+                    &db, &sam_outputs, &ali_mutex, &monitor, &align_counts, this ] () mutable
             {
                 std::vector< Sam<> > sams_para{};
                 std::vector< Sam<> >* sams_tmp;
@@ -169,7 +194,9 @@ class TailorAlign : public engine::NamedComponent
                     if( !sams_tmp->empty() )
                     {
                         for( auto sam_it = sams_tmp->begin(); sam_it != sams_tmp->end(); ++sam_it )
+                        {
                             std::get<3>( sam_it->data ) = std::get<3>( sam_it->data ) - 1;
+                        }
 
                         std::move( sams_tmp->begin(), sams_tmp->end(), std::back_inserter( sams_para ));
                     }
@@ -189,6 +216,7 @@ class TailorAlign : public engine::NamedComponent
                             for( auto& sam : sams_para )
                             {
                                 sam_outputs[ sample_fastqs_pair.first ] << sam;
+                                align_counts[ sample_fastqs_pair.first ].emplace( "@" + std::get<0>( sam.data ), 0 );
                             }
                         }
 
@@ -211,7 +239,6 @@ class TailorAlign : public engine::NamedComponent
         }
 
         ali_parallel_pool.flush_pool();
-
         monitor.log( "	Aligning Fastq", " ... Done" );
 
         if( output_sam_ )
@@ -222,9 +249,60 @@ class TailorAlign : public engine::NamedComponent
             }
         }
 
+        for( size_t id = 0; id < fastq_counts.size(); ++id )
+        {
+            for( auto& fqc : fastq_counts[ id ] )
+            {
+                db.statistic_samples[ id ].second[0] += fqc.second;
+
+                if( align_counts[ id ].find( fqc.first ) != align_counts[ id ].end() )
+                {
+                    db.statistic_samples[ id ].second[1] += fqc.second;
+                }
+            }
+
+            db.statistic_samples[ id ].second[2] =
+                db.statistic_samples[ id ].second[1] * 100 / db.statistic_samples[ id ].second[0];
+        }
+
         db.fastq_samples.clear();
+        make_statistic( db );
 
         monitor.log( "Component TailorAlign", "Complete" );
+    }
+
+    void make_statistic( auto& db )
+    {
+        std::ofstream output( db.output_dir().string() + "mappability.tsv" );
+
+        output << "Sample";
+
+        for( auto& sts : db.statistic_samples )
+        {
+            output << "\t" << sts.first;
+        }
+
+        output << "\n";
+
+        for( size_t i = 0; i < 3; ++i )
+        {
+            switch( i )
+            {
+                case 0 : output << "RawRead:"; break;
+                case 1 : output << "Mappable:"; break;
+                case 2 : output << "Mappable%:"; break;
+                default: std::runtime_error( "out of row in mappability.tsv" );
+            }
+
+            for( auto& sts : db.statistic_samples )
+            {
+                output << "\t" << sts.second[i];
+            }
+            
+            output << "\n";
+        }
+
+        output.close();
     }
 };
 

@@ -71,7 +71,7 @@ class Filter : public engine::NamedComponent
 
                 {
                     std::lock_guard< std::mutex > smp_lock( smp_mutex );
-                    rawbed_samples_map.emplace( sample ); 
+                    rawbed_samples_map.emplace( sample );
                     monitor.log( "Component Filter", ( sample.first ).c_str() );
                 }
             });
@@ -79,9 +79,9 @@ class Filter : public engine::NamedComponent
 
         smp_parallel_pool.flush_pool();
 
-        for( auto& sample : db.bed_samples )
+        for( size_t id = 0; id < db.bed_samples.size(); ++id )
         {
-            sample.second = rawbed_samples_map[ sample.first ];
+            db.bed_samples[ id ].second = rawbed_samples_map[ db.bed_samples[ id ].first ];
         }
 
         monitor.log( "Component Filter", "Complete" );

@@ -136,7 +136,7 @@ class Annotator : public engine::NamedComponent
             for( size_t smp = 0; smp < db.bed_samples.size(); ++smp )
             {
                 archive_outputs.push_back( std::move( std::ofstream(
-                    db.output_dir().string() + "/" + db.bed_samples[ smp ].first + ".arc"
+                    db.output_dir().string() + db.bed_samples[ smp ].first + ".arc"
                 )));
             }
         }

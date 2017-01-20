@@ -117,6 +117,8 @@ class TailorFastaToBed : public engine::NamedComponent
 
         for( size_t id = 0; id < fasta_paths.size(); ++id )
         {
+            db.statistic_samples.emplace_back( "", std::vector< double >{ 0.0, 0.0, 0.0 });
+
             smp_parallel_pool.job_post( [ id, &db, &fasta_paths, &fasta_reader, &smp_mutex, &monitor, this ] ()
             {
                 std::string sample_name( get_sample_name( fasta_paths[ id ] ));
@@ -128,7 +130,7 @@ class TailorFastaToBed : public engine::NamedComponent
 
                 if( output_sam_ )
                 {
-                    output_sam.open( db.output_dir().string() + "/" + sample_name + ".sam" );
+                    output_sam.open( db.output_dir().string() + sample_name + ".sam" );
                 }
 
                 std::vector< Sam<> > sams{};
@@ -140,6 +142,10 @@ class TailorFastaToBed : public engine::NamedComponent
                 std::string qc = "";
                 Fastq<> fastq;
                 Fasta<> fasta;
+
+                std::map< std::string, size_t > align_count;
+                std::map< std::string, size_t > fastq_count;
+                std::map< std::string, size_t >::iterator fq_it;
 
                 while( true )
                 {
@@ -171,6 +177,17 @@ class TailorFastaToBed : public engine::NamedComponent
                         std::get<2>( fastq.data ) = "+" + std::get<0>( fasta.data );
                         std::get<3>( fastq.data ) = qc;
                         qc = "";
+
+                        fq_it = fastq_count.find( std::get<0>( fastq.data ));
+
+                        if( fq_it != fastq_count.end() )
+                        {
+                            fq_it->second++;
+                        }
+                        else
+                        {
+                            fastq_count.emplace( std::get<0>( fastq.data ), 1 );
+                        }
 
                         fastqs.push_back( fastq );
                     }
@@ -235,6 +252,7 @@ class TailorFastaToBed : public engine::NamedComponent
                 for( auto sam = sams.begin(); sam != sams.end(); ++sam )
                 {
                     std::get<3>( sam->data ) = std::get<3>( sam->data ) - 1;
+                    align_count.emplace( "@" + std::get<0>( sam->data ), 0 );
                 }
 
                 {
@@ -254,12 +272,30 @@ class TailorFastaToBed : public engine::NamedComponent
                     sam2bed.rawbed_map2_->clear();
 
                     db.bed_samples.emplace_back( sample_name, annotation_rawbeds );
+
+                    db.statistic_samples[ id ].first = sample_name;
+
+                    for( auto& fqc : fastq_count )
+                    {
+                        db.statistic_samples[ id ].second[0] += fqc.second;
+
+                        if( align_count.find( fqc.first ) != align_count.end() )
+                        {
+                            db.statistic_samples[ id ].second[1] += fqc.second;
+                        }
+                    }
+
+                    db.statistic_samples[ id ].second[2] =
+                        db.statistic_samples[ id ].second[1] * 100 / db.statistic_samples[ id ].second[0];
+
                     monitor.log( "Component TailorFastaToBed", ( sample_name ).c_str() );
                 }
             });
         }
 
         smp_parallel_pool.flush_pool();
+        make_statistic( db );
+
         monitor.log( "Component TailorFastaToBed", "Complete" );
     }
 
@@ -301,6 +337,40 @@ class TailorFastaToBed : public engine::NamedComponent
         }
 
         return false;
+    }
+
+    void make_statistic( auto& db )
+    {
+        std::ofstream output( db.output_dir().string() + "mappability.tsv" );
+
+        output << "Sample";
+
+        for( auto& sts : db.statistic_samples )
+        {
+            output << "\t" << sts.first;
+        }
+
+        output << "\n";
+
+        for( size_t i = 0; i < 3; ++i )
+        {
+            switch( i )
+            {
+                case 0 : output << "RawRead:"; break;
+                case 1 : output << "Mappable:"; break;
+                case 2 : output << "Mappable%:"; break;
+                default: std::runtime_error( "out of row in mappability.tsv" );
+            }
+
+            for( auto& sts : db.statistic_samples )
+            {
+                output << "\t" << sts.second[i];
+            }
+            
+            output << "\n";
+        }
+
+        output.close();
     }
 };
 
