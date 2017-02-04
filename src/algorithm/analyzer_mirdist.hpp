@@ -393,7 +393,7 @@ class AnalyzerMirDist
                             std::string tail = raw_bed.getTail();
                             size_t length = raw_bed.length_ - raw_bed.tail_length_;
 
-                            double read_count = raw_bed.reads_count_ / raw_bed.multiple_alignment_site_count_;
+                            double read_count = (double)(raw_bed.reads_count_) / (double)(raw_bed.multiple_alignment_site_count_);
                             
                             anno_tail_it = anno_tail_map.find( anno_seed );
 

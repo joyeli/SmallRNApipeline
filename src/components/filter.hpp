@@ -12,26 +12,81 @@ class Filter : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
 
+    /*
+     *  Original filter by joye
+     */
+    // using FilterTypeList = boost::mpl::vector<
+    //       boost::mpl::vector< boost::mpl::string< '_cod', 'ing'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '$' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'linc', 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'pi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 's',    'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 's',    'c'    >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 's',    'n'    >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< '3pri', 'me_o' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'bidi', 'rect' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'macr', 'o_ln' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'anti', 'sens' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'proc', 'esse' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'sens', 'e_'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'Mt',   '_'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'ge',   'ne'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '$' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'misc', '_RNA' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'ribo', 'zyme' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'r',    'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'TE',   'C'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'rm',   'sk'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'mi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+    // >;
+
+    /*
+     *  Filter for kepping RNA
+     */
+    // using FilterTypeList = boost::mpl::vector<
+    //       boost::mpl::vector< boost::mpl::string< '_cod', 'ing'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '$' >>
+    //     , boost::mpl::vector< boost::mpl::string< '3pri', 'me_o' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'bidi', 'rect' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'macr', 'o_ln' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'linc', 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'pi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 's',    'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 's',    'c'    >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 's',    'n'    >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'anti', 'sens' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'proc', 'esse' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'sens', 'e_'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'Mt',   '_'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'ge',   'ne'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '$' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'misc', '_RNA' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'ribo', 'zyme' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'r',    'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'TE',   'C'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'rm',   'sk'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+    //     , boost::mpl::vector< boost::mpl::string< 'mi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+    // >;
+
+    /*
+     *  Filter for kepping everything
+     */
     using FilterTypeList = boost::mpl::vector<
-          boost::mpl::vector< boost::mpl::string< '_cod', 'ing'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '$' >>
-        , boost::mpl::vector< boost::mpl::string< 'linc', 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'pi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+          boost::mpl::vector< boost::mpl::string< 'TE',   'C'    >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'anti', 'sens' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+        , boost::mpl::vector< boost::mpl::string< 'sens', 'e_'   >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+        , boost::mpl::vector< boost::mpl::string< 'ribo', 'zyme' >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'r',    'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'Mt',   '_'    >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+        , boost::mpl::vector< boost::mpl::string< 'ge',   'ne'   >, boost::mpl::int_< 0 >, boost::mpl::char_< '$' >>
+        , boost::mpl::vector< boost::mpl::string< 'proc', 'esse' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+        , boost::mpl::vector< boost::mpl::string< 'misc', '_RNA' >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< '_cod', 'ing'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '$' >>
+        , boost::mpl::vector< boost::mpl::string< '3pri', 'me_o' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+        , boost::mpl::vector< boost::mpl::string< 'bidi', 'rect' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
+        , boost::mpl::vector< boost::mpl::string< 'macr', 'o_ln' >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
         , boost::mpl::vector< boost::mpl::string< 's',    'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
         , boost::mpl::vector< boost::mpl::string< 's',    'c'    >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
         , boost::mpl::vector< boost::mpl::string< 's',    'n'    >, boost::mpl::int_< 0 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< '3pri', 'me_o' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'anti', 'sens' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'bidi', 'rect' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'macr', 'o_ln' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'proc', 'esse' >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'sens', 'e_'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'Mt',   '_'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '^' >>
-        , boost::mpl::vector< boost::mpl::string< 'ge',   'ne'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '$' >>
-        , boost::mpl::vector< boost::mpl::string< 'misc', '_RNA' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'ribo', 'zyme' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'r',    'RNA'  >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'TE',   'C'    >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
-        , boost::mpl::vector< boost::mpl::string< 'rm',   'sk'   >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'linc', 'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'pi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
+        , boost::mpl::vector< boost::mpl::string< 'rm',   'sk'   >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
         , boost::mpl::vector< boost::mpl::string< 'mi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
     >;
 
