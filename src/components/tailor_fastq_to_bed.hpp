@@ -235,7 +235,7 @@ class TailorFastqToBed : public engine::NamedComponent
 
                 for( auto sam = sams.begin(); sam != sams.end(); ++sam )
                 {
-                    std::get<3>( sam->data ) = std::get<3>( sam->data ) - 1;
+                    // std::get<3>( sam->data ) = std::get<3>( sam->data ) - 1;
                     align_count.emplace( "@" + std::get<0>( sam->data ), 0 );
                 }
 

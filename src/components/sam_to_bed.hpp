@@ -28,10 +28,10 @@ class SamToBed : public engine::NamedComponent
 
         for( auto& sam_sample : db.sam_samples )
         {
-            for( auto sam = sam_sample.second.begin(); sam != sam_sample.second.end(); ++sam )
-            {
-                std::get<3>( sam->data ) = std::get<3>( sam->data ) - 1;
-            }
+            // for( auto sam = sam_sample.second.begin(); sam != sam_sample.second.end(); ++sam )
+            // {
+            //     std::get<3>( sam->data ) = std::get<3>( sam->data ) - 1;
+            // }
 
             Sam2RawBed< std::vector< Sam<> >* > sam2bed;
             auto raw_beds( sam2bed.Convert( &sam_sample.second ));
