@@ -30,7 +30,7 @@ class MetaAnalyzer : public engine::NamedComponent
         std::vector< std::string > idxlen( get_index( db.analyzer_result_samples, ".LenDist_GMPM_ppm" ));
         std::vector< std::string > idxmir( get_index( db.analyzer_result_samples, ".MirDist_GMPM_ppm" ));
 
-        std::vector< QuantileDataType<> > lenq = quantile( db.analyzer_result_samples, idxlen, ".LenDist_GMPM_ppm" );
+        std::vector< QuantileDataType<> > lenq = no_quantile( db.analyzer_result_samples, idxlen, ".LenDist_GMPM_ppm" );
         std::vector< QuantileDataType<> > mirq = quantile( db.analyzer_result_samples, idxmir, ".MirDist_GMPM_ppm" );
 
         ago::algorithm::MetaAnalyzer meta;
@@ -177,8 +177,8 @@ class MetaAnalyzer : public engine::NamedComponent
         return idx;
     }
 
-    std::vector< QuantileDataType<> > quantile(
-          std::vector< std::pair< std::string, ago::engine::DataPool::AnalyzerResultType >>& analyzer_result_samples
+    std::vector< QuantileDataType<> > quantile_preparing(
+        std::vector< std::pair< std::string, ago::engine::DataPool::AnalyzerResultType >>& analyzer_result_samples
         , const std::vector< std::string >& index
         , const char* ppm
     )
@@ -212,10 +212,29 @@ class MetaAnalyzer : public engine::NamedComponent
             }
         }
 
+        return ppms_qvec;
+    }
+
+    std::vector< QuantileDataType<> > quantile(
+          std::vector< std::pair< std::string, ago::engine::DataPool::AnalyzerResultType >>& analyzer_result_samples
+        , const std::vector< std::string >& index
+        , const char* ppm
+    )
+    {
+        std::vector< QuantileDataType<> > ppms_qvec( quantile_preparing( analyzer_result_samples, index, ppm ));
         QuantileNor quntile( ppms_qvec );
         return ppms_qvec;
     }
 
+    std::vector< QuantileDataType<> > no_quantile(
+          std::vector< std::pair< std::string, ago::engine::DataPool::AnalyzerResultType >>& analyzer_result_samples
+        , const std::vector< std::string >& index
+        , const char* ppm
+    )
+    {
+        std::vector< QuantileDataType<> > ppms_qvec( quantile_preparing( analyzer_result_samples, index, ppm ));
+        return ppms_qvec;
+    }
 };
 
 } // end of namespace component
