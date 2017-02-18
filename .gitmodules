@@ -1,0 +1,6 @@
+[submodule "lib/CCD"]
+	path = lib/CCD
+	url = git@cgitlab.jhhlab.tw:centrillion/CCD.git
+[submodule "lib/slam_quant_seq"]
+	path = lib/slam_quant_seq
+	url = git@cgitlab.jhhlab.tw:johnidfet/slam_quant_seq.git
