@@ -3,8 +3,8 @@ project (AGO)
 
 set( CMAKE_VERBOSE_MAKEFILE ON )
 set( LOGGER_SETTING -DLOGGER_OPEN_CHANNEL="0,1,2,4")
-set( OPTIMIZE -O0 )
-set( DEBUG "-g")
+set( OPTIMIZE -Ofast )
+set( DEBUG "-g" )
 set( GUI_MODEL -DCPT_MONITOR_TGUI )
 set( WARN "-Wno-multichar -Wno-return-type -Wno-write-strings -Wno-format" )
 set( SINGLE_CPP "-DSINGLE_CPP" )
@@ -43,8 +43,10 @@ find_package( GTest REQUIRED )
 
 if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
 
-    include_directories( ${CMAKE_SOURCE_DIR}/lib )
     include_directories( ${CMAKE_SOURCE_DIR}/include )
+    include_directories( ${CMAKE_SOURCE_DIR}/lib/CCD/include )
+    include_directories( ${CMAKE_SOURCE_DIR}/lib/CPT/include )
+    include_directories( ${CMAKE_SOURCE_DIR}/lib/slam_quant_seq/include )
     include_directories( ${GTEST_INCLUDE_DIRS} )
 
     link_directories( ${CMAKE_SOURCE_DIR}/lib ${CMAKE_SOURCE_DIR}/lib/* )
@@ -62,7 +64,7 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
     #     ${Boost_LIBRARIES} ${CURL_LIBRARIES}
     #     gtest gtest_main pthread thread_pool ) 
 
-    add_executable( gtf2bed src/application/gtf2bed/gtf2bed.cpp )
-        target_link_libraries( gtf2bed ${Boost_LIBRARIES} )
+    # add_executable( gtf2bed src/application/gtf2bed/main.cpp )
+    #    target_link_libraries( gtf2bed ${Boost_LIBRARIES} )
 
 endif()
