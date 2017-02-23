@@ -103,8 +103,8 @@ class TailorAlign : public engine::NamedComponent
 
         size_t task_number = ( db.fastq_samples.size() / thread_num_ );
 
-        std::vector< std::map< std::string, size_t >> align_counts;
-        std::vector< std::map< std::string, size_t >> fastq_counts;
+        std::vector< std::map< std::string, size_t >> align_counts( db.fastq_samples.size(), std::map< std::string, size_t >() );
+        std::vector< std::map< std::string, size_t >> fastq_counts( db.fastq_samples.size(), std::map< std::string, size_t >() );
         std::map< std::string, size_t >::iterator fq_it;
 
         for( size_t smp = 0; smp < db.fastq_samples.size(); ++smp )
@@ -115,9 +115,6 @@ class TailorAlign : public engine::NamedComponent
                     double( db.fastq_samples[ smp ].second.size() ), 0.0, 0.0
                 }
             );
-
-            align_counts[ smp ] = std::map< std::string, size_t >();
-            fastq_counts[ smp ] = std::map< std::string, size_t >();
 
             for( auto& fastq : db.fastq_samples[ smp ].second )
             {
