@@ -88,7 +88,17 @@ class FastaInput : public engine::NamedComponent
                         qc += "I";
                     }
 
-                    std::get<0>( fastq.data ) = std::get<0>( fasta.data );
+                    switch( std::get<0>( fasta.data ).at( 0 ))
+                    {
+                        case '@':
+                            std::get<0>( fastq.data ) = std::get<0>( fasta.data );
+                            break;
+
+                        default :
+                            std::get<0>( fastq.data ) = "@" + std::get<0>( fasta.data );
+                            break;
+                    }
+
                     std::get<1>( fastq.data ) = std::get<1>( fasta.data );
                     std::get<2>( fastq.data ) = "+" + std::get<0>( fasta.data );
                     std::get<3>( fastq.data ) = qc;

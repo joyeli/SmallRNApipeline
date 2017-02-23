@@ -418,16 +418,23 @@ class Visualization
                         if( anno.first == "SUM_ANNO_SUM_ANNO" || anno.first == ".MirDist_"+gmpm[1]+"_ppm" )
                             continue;
 
-                        double mir_sum(0);
+                        double mir_sum( 0.0 );
 
                         for( std::map< std::string, std::map< std::string, std::vector< double >>>::iterator sample = result_type.second.begin();
                                 sample != result_type.second.end(); ++sample )
                         {
                             std::map< std::string, std::vector< double >>::iterator value = sample->second.find( anno.first );
 
-                            if( value != sample->second.end() && !value->second.empty() )
+                            if( value != sample->second.end() )
                             {
-                                mir_sum = value->second[ value->second.size() -1 ] + mir_sum;
+                                switch( value->second.size() )
+                                {
+                                    case 0 : break;
+
+                                    default :
+                                        mir_sum += value->second[ value->second.size() -1 ];
+                                        break;
+                                }
                             }
                         }
 
@@ -436,7 +443,13 @@ class Visualization
 
                     std::sort( mir_index.begin(), mir_index.end(), 
                             []( const std::pair< std::string , double >& a, const std::pair< std::string, double >& b )
-                            { return a.second > b.second; });
+                            { 
+                                if ( a.second == b.second )
+                                    return a.first > b.first;
+                                else
+                                    return a.second > b.second; 
+                            }
+                    );
 
                     int flag = 0;
                     for( auto& biotype : result_type.second.begin()->second )

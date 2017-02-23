@@ -250,8 +250,6 @@ class TailorAlign : public engine::NamedComponent
         {
             for( auto& fqc : fastq_counts[ id ] )
             {
-                db.statistic_samples[ id ].second[0] += fqc.second;
-
                 if( align_counts[ id ].find( fqc.first ) != align_counts[ id ].end() )
                 {
                     db.statistic_samples[ id ].second[1] += fqc.second;
@@ -293,7 +291,7 @@ class TailorAlign : public engine::NamedComponent
 
             for( auto& sts : db.statistic_samples )
             {
-                output << "\t" << sts.second[i];
+                output << std::fixed << std::setprecision( 0 ) << "\t" << sts.second[i];
             }
             
             output << "\n";
