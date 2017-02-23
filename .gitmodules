@@ -4,3 +4,7 @@
 [submodule "lib/slam_quant_seq"]
 	path = lib/slam_quant_seq
 	url = git@cgitlab.jhhlab.tw:johnidfet/slam_quant_seq.git
+[submodule "lib/CPT"]
+	path = lib/CPT
+	url = git@cgitlab.jhhlab.tw:JHHLAB/CPT.git
+	branch = ver.0.0.2
