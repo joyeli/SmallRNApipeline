@@ -67,10 +67,9 @@ class MetaAnalyzer
                                 {
                                     if( ann.find( std::string( type ) + "_GMPM_read_count" ) != ann.end() )
                                     {
-                                        ppm_sum = ann.find( idx )->second.find( "SUM_LEN" )->second;
+                                         ppm_sum = ann.find( idx )->second.find( "SUM_LEN" )->second;
                                     }
                                 }
-                                
                                 average = qres[ sample_count ].value_[ anno_count ].first / ppm_sum;
                             }
 
@@ -99,7 +98,7 @@ class MetaAnalyzer
 
             std::string anno_sum;
 
-            if( type = ".LenDist" )
+            if( type == ".LenDist" )
             {
                 anno_sum = "SUM_ANNO";
             }
