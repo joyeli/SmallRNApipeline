@@ -1,10 +1,13 @@
 [submodule "lib/CPT"]
 	path = lib/CPT
-	url = git@cgitlab.jhhlab.tw:JHHLAB/CPT.git
+	url = ssh://git@gitlab.centrilliontech.com.tw:10022/JHHLAB/CPT.git
 	branch = ver.0.0.2
 [submodule "lib/CCD"]
 	path = lib/CCD
-	url = git@cgitlab.jhhlab.tw:JHHLAB/CCD.git
+	url = ssh://git@gitlab.centrilliontech.com.tw:10022/JHHLAB/CCD.git
 [submodule "lib/slam_quant_seq"]
 	path = lib/slam_quant_seq
-	url = git@cgitlab.jhhlab.tw:JHHLAB/slam_quant_seq.git
+	url = ssh://git@gitlab.centrilliontech.com.tw:10022/JHHLAB/slam_quant_seq.git
+[submodule "lib/Tailor"]
+	path = lib/Tailor
+	url = ssh://git@gitlab.centrilliontech.com.tw:10022/JHHLAB/Tailor.git
