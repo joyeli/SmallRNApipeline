@@ -122,10 +122,10 @@ class Annotator : public engine::NamedComponent
         monitor.log( "Component Annotator", "Loading Annotation" );
 
         monitor.set_monitor( "	Loading Annotation", 2 );
-        monitor.log( "	Loading Annotation", " ... " );
+        monitor.log( "	Loading Annotation", "..." );
 
         Annotations annotator( annotation_files_ );
-        monitor.log( "	Loading Annotation", " ... Done" );
+        monitor.log( "	Loading Annotation", "Done" );
 
         monitor.log( "Component Annotator", "Annotating Bed" );
 

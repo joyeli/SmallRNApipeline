@@ -22,11 +22,8 @@ public :
 	{
 		for( int idx = 0; idx < value.size(); ++idx )
 		{
-			value_.push_back( std::make_pair( std::move(value[idx]), idx ));
-			drew_.push_back( false );
-
-			if( idx != 0 && value[idx] == value[idx-1] )
-				drew_[idx] = true;
+			value_.emplace_back( std::make_pair( std::move(value[idx]), idx ));
+			drew_.emplace_back( idx != 0 && value[idx] == value[idx-1] ? true : false );
 		}
 	}
 };
@@ -59,25 +56,35 @@ public:
 					[]( const std::pair< double, int >& a, const std::pair< double, int >& b )
 					{
 						if( a.first == b.first )
+                        {
 							return a.second < b.second;
+                        }
 						else
+                        {
 							return a.first < b.first;
+                        }
 					});
 		}
 	}
 
 	void RankMeanCal( auto& qdata )
 	{
-		int sample_size = qdata.size();
+        double sum = 0.0;
+		double mean = 0.0;
+
 		for( int idx = 0; idx < qdata[0].value_.size(); ++idx )
 		{
-			double sum(0);
+            sum = 0.0;
 			for( auto& sample : qdata )
+            {
 				sum = sum + sample.value_[ idx ].first;
+            }
 
-			double mean( sum / sample_size );
+            mean = sum / (double)(qdata.size());
 			for( auto& sample : qdata )
+            {
 				sample.value_[ idx ].first = mean;
+            }
 		}
 	}
 
@@ -89,9 +96,13 @@ public:
 					[]( const std::pair< double, int >& a, const std::pair< double, int >& b )
 					{
 						if( a.second == b.second )
+                        {
 							return a.first < b.first;
+                        }
 						else
+                        {
 							return a.second < b.second;
+                        }
 					});
 		}
 	}
@@ -99,9 +110,15 @@ public:
 	void ReplaceDrew( auto& qdata )
 	{
 		for( int idx = 0; idx < qdata[0].value_.size(); ++idx )
+        {
 			for( auto& sample : qdata )
+            {
 				if( sample.drew_[ idx ] == true )
+                {
 					sample.value_[ idx ].first = sample.value_[idx-1].first; 
+                }
+            }
+        }
 	}
 
 	void PrintQuData( auto& qdata, auto stage )
@@ -110,7 +127,9 @@ public:
 		for( int i = 0; i < qdata[0].value_.size(); i++ )
 		{
 			for( auto& q : qdata )
+            {
 				std::cerr << "\t" << q.value_[i].first << "/" << q.value_[i].second << "/" << q.drew_[i];
+            }
 
 			std::cerr << "\n";
 		}

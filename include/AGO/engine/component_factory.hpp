@@ -14,8 +14,11 @@
 #include <AGO/components/annotator.hpp>
 #include <AGO/components/filter.hpp>
 #include <AGO/components/analyzer.hpp>
+#include <AGO/components/filter_analyzer.hpp>
 #include <AGO/components/meta_analyzer.hpp>
 #include <AGO/components/visualization.hpp>
+#include <AGO/components/github_tailor_fastq_to_bed.hpp>
+#include <AGO/components/github_tailor_fastq_to_sam_out.hpp>
 
 namespace ago {
 namespace engine {
@@ -58,8 +61,11 @@ class ComponentFactory
         ID_MAP_TYPE( "Annotator" , component::Annotator )
         ID_MAP_TYPE( "Filter" , component::Filter )
         ID_MAP_TYPE( "Analyzer", component::Analyzer )
+        ID_MAP_TYPE( "FilterAnalyzer", component::FilterAnalyzer )
         ID_MAP_TYPE( "MetaAnalyzer", component::MetaAnalyzer )
         ID_MAP_TYPE( "Visualization", component::Visualization )
+        ID_MAP_TYPE( "GithubTailorFastqToBed", component::GithubTailorFastqToBed )
+        ID_MAP_TYPE( "GithubTailorFastqToSamOut", component::GithubTailorFastqToSamOut )
         /* TODO ADD COMPONENT HERE */
         else { /* TODO another error handle */ }
 

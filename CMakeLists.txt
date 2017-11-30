@@ -4,7 +4,8 @@ project (AGO)
 set( CMAKE_VERBOSE_MAKEFILE ON )
 set( LOGGER_SETTING -DLOGGER_OPEN_CHANNEL="0,1,2,4")
 set( OPTIMIZE -Ofast )
-set( DEBUG "-g" )
+#set( OPTIMIZE -O0 )
+#set( DEBUG "-g" )
 set( GUI_MODEL -DCPT_MONITOR_TGUI )
 set( WARN "-Wno-multichar -Wno-return-type -Wno-write-strings -Wno-format" )
 set( SINGLE_CPP "-DSINGLE_CPP" )
@@ -37,9 +38,9 @@ find_package( Boost COMPONENTS
     thread 
     iostreams )
 find_package( Threads )
-find_package( ZLIB )
-find_package( CURL )
-find_package( GTest REQUIRED )
+find_package( ZLIB    )
+find_package( CURL    )
+find_package( GTest   )
 
 if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
 
@@ -47,6 +48,7 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
     include_directories( ${CMAKE_SOURCE_DIR}/lib/CCD/include )
     include_directories( ${CMAKE_SOURCE_DIR}/lib/CPT/include )
     include_directories( ${CMAKE_SOURCE_DIR}/lib/slam_quant_seq/include )
+    include_directories( ${CMAKE_SOURCE_DIR}/lib/Tailor/include )
     include_directories( ${GTEST_INCLUDE_DIRS} )
 
     link_directories( ${CMAKE_SOURCE_DIR}/lib ${CMAKE_SOURCE_DIR}/lib/* )
@@ -58,6 +60,11 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
         target_link_libraries( pipeline_builder
         ${Boost_LIBRARIES} ${CURL_LIBRARIES}
         pthread thread_pool ) 
+
+    # add_executable( tailor_test unit_test/aligner/tailor.cpp )
+    #     target_link_libraries( tailor_test
+    #     ${Boost_LIBRARIES} ${CURL_LIBRARIES}
+    #     gtest gtest_main pthread thread_pool boost_program_options ) 
 
     # add_executable( annotator_test unit_test/annotator/annotator.cpp )
     #     target_link_libraries( annotator_test
