@@ -71,7 +71,7 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
     #     ${Boost_LIBRARIES} ${CURL_LIBRARIES}
     #     gtest gtest_main pthread thread_pool ) 
 
-    # add_executable( gtf2bed src/application/gtf2bed/main.cpp )
-    #    target_link_libraries( gtf2bed ${Boost_LIBRARIES} )
+    add_executable( gtf2bed src/application/gtf2bed/main.cpp )
+       target_link_libraries( gtf2bed ${Boost_LIBRARIES} )
 
 endif()

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <boost/program_options.hpp>
 #include <boost/algorithm/string/iter_find.hpp>
 #include <boost/algorithm/string/finder.hpp>
 
@@ -13,112 +14,178 @@ std::vector< std::string > explode( const std::string& in, const std::string& sp
     return content;
 }
 
-void emplace_back( std::vector< std::vector< std::string >>& bed_vec, const std::vector< std::string >& split_vec, const std::string& type )
+std::vector< std::vector< std::string >> read_gtf( const std::string& anno, const bool& main_annotaion = false )
 {
-    uint64_t start = (uint64_t)(std::stol( split_vec[3] )) -1;
+    std::fstream file( anno, std::ios::in );
+    std::string line;
 
-    std::vector< std::string > split_type_vec = explode( split_vec[8], type + "_type \"" );
-    std::vector< std::string > split_type     = explode( split_type_vec[1], "\"; " );
-    std::vector< std::string > split_name_vec = explode( split_vec[8], type + "_name \"" );
-    std::vector< std::string > split_name     = explode( split_name_vec[1], "\"; " );
+    std::vector< std::vector< std::string >> bed_vec;
+    std::vector< std::string > split_vec;
 
-    bed_vec.emplace_back(
-        std::vector< std::string >{
-              split_vec[0]
-            , std::to_string( start )
-            , split_vec[4]
-            , split_vec[6]
-            , split_type[0]
-            , split_name[0]
-        }
-    );
-}
+    std::vector< std::string > split_type_vec;
+    std::vector< std::string > split_type;
 
-void emplace_bed( std::vector< std::vector< std::string >>& res_vec, const std::vector< std::vector< std::string >>& bed_vec )
-{
-    res_vec.emplace_back( bed_vec[0] );
+    std::vector< std::string > split_name_vec;
+    std::vector< std::string > split_name;
 
-    for( size_t i = 1; i < bed_vec.size(); ++i )
+    while( std::getline( file, line ))
     {
-        if( bed_vec[0][4] != bed_vec[i][4] )
-        {
-            res_vec.emplace_back( bed_vec[i] );
-        }
-    }
-}
+        if( line.substr( 0, 2 ) == "##" )
+            continue;
 
-bool is_filter_type( const std::string& type )
-{
-    if(
-           type == "vaultRNA"
-        || type == "nonsense_mediated_decay"
-        || type == "non_stop_decay"
-        || type == "retained_intron"
-    )
-    {
-        return true;
+        split_vec = explode( line, "\t" );
+        
+        if( main_annotaion == true && split_vec[2] != "gene" )
+            continue;
+
+        split_type_vec = explode( split_vec[8], "gene_type \"" );
+        split_type     = explode( split_type_vec[1], "\"; " );
+
+        split_name_vec = explode( split_vec[8], "gene_name \"" );
+        split_name     = explode( split_name_vec[1], "\"; " );
+
+        bed_vec.emplace_back( std::vector< std::string >{
+                  split_vec[0]
+                , std::to_string( std::stol( split_vec[3] ) -1 )
+                , split_vec[4]
+                , split_vec[6]
+                , split_type[0]
+                , split_name[0]
+                });
     }
 
-    return false;
+    file.close();
+    return bed_vec;
+}
+
+std::vector< std::vector< std::string >> read_bed6( const std::string& rmsk, const std::string& type )
+{
+    std::fstream file( rmsk, std::ios::in );
+    std::string line;
+
+    std::vector< std::vector< std::string >> bed_vec;
+    std::vector< std::string > split_vec;
+
+    while( std::getline( file, line ))
+    {
+        split_vec = explode( line, "\t" );
+        bed_vec.emplace_back( std::vector< std::string >{
+                  split_vec[0]
+                , split_vec[1]
+                , split_vec[2]
+                , split_vec[5]
+                , type
+                , split_vec[3] + "_" + split_vec[4]
+                });
+    }
+
+    file.close();
+    return bed_vec;
+}
+
+std::map< std::string, std::string > get_options( int& argc, char** argv )
+{
+    std::map< std::string, std::string > args;
+    boost::program_options::variables_map op;
+    boost::program_options::options_description options( "Options" );
+    options.add_options()( "help,h" , "Print help messages" )
+        ( "grch,g", boost::program_options::value< std::string >()->required(),"Set human genome version" )
+        ( "name,n", boost::program_options::value< std::string >()->required(),"Set output file name" )
+        ( "anno,a", boost::program_options::value< std::string >()->required(),"Set input main gtf annotation file from Gencode" )
+        ( "rmsk,r", boost::program_options::value< std::string >()->required(),"Set input rmsk bed6 annotation file from UCSC" )
+        ( "trna,t", boost::program_options::value< std::string >()->default_value(""),"Set input tRNA gtf annotation file from GenCode" )
+        ( "plya,p", boost::program_options::value< std::string >()->default_value(""),"Set input polyA gtf annotation file from GenCode" )
+        ( "sudo,s", boost::program_options::value< std::string >()->default_value(""),"Set input pseudogene gtf annotation file from GenCode" )
+        ;
+    try {
+        boost::program_options::store( boost::program_options::parse_command_line( argc, argv, options ), op );
+        if( op.count( "help" )) {
+            std::cout << "\n" << options << "\n";
+            exit(0);
+        }
+        boost::program_options::notify( op );
+    }
+    catch( boost::program_options::error& error ) {
+        std::cerr << "\nERROR: " << error.what() << "\n" << options << "\n";
+        exit(1);
+    }
+    for( auto& arg : op ) {
+        args[ arg.first ] = arg.second.as< std::string >();
+    }
+    return args;
 }
 
 int main( int argc, char** argv )
 {
-    switch( argc )
-    {
-        case 2  : break;
-        default : throw std::runtime_error( "This version of converter is base on gencode v25/vM12\n  Usage:  ./EXE gencode.gtf" );
-    }
+    std::map< std::string, std::string > args( get_options( argc, argv ));
+    std::map< std::string, std::size_t > counting_type;
+    
+    auto& grch = args[ "grch" ];
+    auto& name = args[ "name" ];
+    auto& anno = args[ "anno" ];
+    auto& rmsk = args[ "rmsk" ];
+    auto& trna = args[ "trna" ];
+    auto& plya = args[ "plya" ];
+    auto& sudo = args[ "sudo" ];
 
-    std::string line;
-    std::string name = argv[1];
-
-    std::vector< std::string > split_vec;
     std::vector< std::vector< std::string >> bed_vec;
-    std::vector< std::vector< std::string >> res_vec;
+    std::vector< std::vector< std::string >> anno_bed_vec;
 
-    std::fstream file( name, std::ios::in );
+    anno_bed_vec = read_gtf( anno, true );
+    bed_vec.insert( bed_vec.end(), anno_bed_vec.begin(), anno_bed_vec.end() );
+    anno_bed_vec.clear();
 
-    while( std::getline( file, line ))
+    anno_bed_vec = read_bed6( rmsk, "rmsk" );
+    bed_vec.insert( bed_vec.end(), anno_bed_vec.begin(), anno_bed_vec.end() );
+    anno_bed_vec.clear();
+
+    if( trna != "" )
     {
-        if( line.substr(0,1) == "#" )
-            continue;
-
-        split_vec = explode( line, "\t" );
-
-        if( split_vec[2] == "transcript" )
-        {
-            emplace_back( bed_vec, split_vec, "transcript" );
-            continue;
-        }
-
-        if( split_vec[2] == "gene" )
-        {
-            if( !bed_vec.empty() )
-            {
-                emplace_bed( res_vec, bed_vec );
-            }
-
-            bed_vec.clear();
-            emplace_back( bed_vec, split_vec, "gene" );
-        }
+        anno_bed_vec = read_gtf( trna );
+        bed_vec.insert( bed_vec.end(), anno_bed_vec.begin(), anno_bed_vec.end() );
+        anno_bed_vec.clear();
     }
 
-    file.close();
-    emplace_bed( res_vec, bed_vec );
-
-    std::ofstream output( name + ".bed" );
-
-    for( auto& bed : res_vec )
+    if( plya != "" )
     {
-        if( !is_filter_type( bed[4] ))
-        {
-            output << bed[0] << "\t" << bed[1] << "\t" << bed[2] << "\t" << bed[3] << "\t" << bed[4] << "\t" << bed[5] << "\n";
-        }
+        anno_bed_vec = read_gtf( plya );
+        bed_vec.insert( bed_vec.end(), anno_bed_vec.begin(), anno_bed_vec.end() );
+        anno_bed_vec.clear();
+    }
+
+    if( sudo != "" )
+    {
+        anno_bed_vec = read_gtf( sudo );
+        bed_vec.insert( bed_vec.end(), anno_bed_vec.begin(), anno_bed_vec.end() );
+        anno_bed_vec.clear();
+    }
+
+    std::ofstream output;
+    output.open( name + "." + grch + ".bed" );
+
+    for( auto& bed : bed_vec )
+    {
+        output
+            << bed[0] << "\t"   // chr
+            << bed[1] << "\t"   // start
+            << bed[2] << "\t"   // end
+            << bed[3] << "\t"   // strand
+            << bed[4] << "\t"   // annotation type
+            << bed[5] << "\n";  // annotation name
+
+        if( counting_type.find( bed[4] ) != counting_type.end() )
+             counting_type[ bed[4] ] += 1;
+        else counting_type[ bed[4] ]  = 1;
     }
 
     output.close();
+    output.open( name + "." + grch + ".type" );
 
+    for( auto& type : counting_type )
+    {
+        output << type.first << "\t" << type.second << "\n";
+    }
+
+    output.close();
     return 0;
 }
-
