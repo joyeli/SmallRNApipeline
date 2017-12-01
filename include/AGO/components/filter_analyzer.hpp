@@ -23,10 +23,13 @@ class FilterAnalyzer : public engine::NamedComponent
 
     std::vector< std::string > biotype_list;
     double sudo_count;
+    bool is_filter;
 
     virtual void config_parameters( const bpt::ptree& p ) override
     {
         sudo_count = p.get_optional< double >( "sudo_count" ).value_or( 0.000001 );
+        is_filter  = p.get_optional< bool   >( "is_filter"  ).value_or( true     );
+
         if(  p.get_child_optional( "biotype_list" ))
         {
             for( auto& biotype : p.get_child( "biotype_list" ))
@@ -49,17 +52,17 @@ class FilterAnalyzer : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component FilterAnalyzer", 6 + 8 * biotype_list.size() );
+        monitor.set_monitor( "Component FilterAnalyzer", 4 + 8 * biotype_list.size() );
         monitor.log( "Component FilterAnalyzer", "Start" );
 
-        monitor.log( "Component FilterAnalyzer", "UnFiltered Biotype Analysis ... " );
+        monitor.log( "Component FilterAnalyzer", "Biotype Analysis ... " );
         output_biotype( db.output_dir().string(), db.genome_table, db.bed_samples );
 
-        monitor.log( "Component FilterAnalyzer", "Filtering ... " );
-        drop_filtering( db.bed_samples );
-
-        monitor.log( "Component FilterAnalyzer", "Filtered Biotype Analysis ... " );
-        output_biotype( db.output_dir().string(), db.genome_table, db.bed_samples, true );
+        if( is_filter )
+        {
+            drop_filtering( db.bed_samples );
+            output_biotype( db.output_dir().string(), db.genome_table, db.bed_samples, true );
+        }
 
         AnnoLengthIndexType ano_len_idx;
 
@@ -254,37 +257,49 @@ class FilterAnalyzer : public engine::NamedComponent
             smp_parallel_pool.job_post( [ smp, &output_path, is_dropped, sample_name = bed_samples[ smp ].first, &ano_len_idx, &anno_table ] () mutable
             {
                 std::ofstream output( output_path + "/" + sample_name + "_biotype" + ( is_dropped ? "_filtered.tsv" : ".tsv" ));
-                output << "Annotation";
+
+                output << "Annotation\tSum";
+
+                std::string out_temp = "";
+                double sum = 0.0;
 
                 for( auto& len : ano_len_idx.second )
                 {
                     output << "\t" << len;
                 }
 
-                output << "\n";
                 for( auto& anno : ano_len_idx.first )
                 {
-                    output << anno;
+                    output << "\n" << anno;
+
+                    out_temp = "";
+                    sum = 0.0;
 
                     if( anno_table[ smp ].find( anno ) != anno_table[ smp ].end() )
                     {
                         for( auto& len : ano_len_idx.second )
                         {
                             if( anno_table[ smp ][ anno ].find( len ) != anno_table[ smp ][ anno ].end() )
-                                output << "\t" << anno_table[ smp ][ anno ][ len ];
+                            {
+                                out_temp += "\t" + std::to_string( anno_table[ smp ][ anno ][ len ] );
+                                sum += anno_table[ smp ][ anno ][ len ];
+                            }
                             else
-                                output << "\t" << 0;
+                            {
+                                out_temp += "\t0";
+                            }
                         }
                     }
                     else
                     {
                         for( auto& len : ano_len_idx.second )
-                            output << "\t" << 0;
+                            out_temp += "\t0";
                     }
 
-                    output << "\n";
+                    output << "\t" << sum << out_temp;
                 }
 
+                output << "\n";
                 output.close();
             });
         }
