@@ -26,13 +26,14 @@ class FilterAnalyzer : public engine::NamedComponent
 
     virtual void config_parameters( const bpt::ptree& p ) override
     {
-        for( auto& biotype : p.get_child( "biotype_list" ))
-            biotype_list.emplace_back( biotype.second.data() );
-
-        if( biotype_list.empty() )
-            throw std::runtime_error( "\"biotype_list\" is required" );
-
         sudo_count = p.get_optional< double >( "sudo_count" ).value_or( 0.000001 );
+        if(  p.get_child_optional( "biotype_list" ))
+        {
+            for( auto& biotype : p.get_child( "biotype_list" ))
+            {
+                biotype_list.emplace_back( biotype.second.data() );
+            }
+        }
     }
 
   public:
