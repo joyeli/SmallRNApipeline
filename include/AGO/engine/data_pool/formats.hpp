@@ -10,6 +10,9 @@ namespace data_pool {
 
 class Formats
 {
+    using VcfType = std::tuple< std::string, std::size_t, std::string, std::string, double, std::string >;
+    //                              chr         pos         ref             alt     qul         id
+  
   public:
 
     std::vector< std::pair<
