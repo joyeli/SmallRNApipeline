@@ -22,6 +22,7 @@ class FilterAnalyzer : public engine::NamedComponent
     using Base = engine::NamedComponent;
 
     std::vector< std::string > biotype_list;
+
     double sudo_count;
     bool is_filter;
 
@@ -52,7 +53,7 @@ class FilterAnalyzer : public engine::NamedComponent
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component FilterAnalyzer", 4 + 8 * biotype_list.size() );
+        monitor.set_monitor( "Component FilterAnalyzer", 4 + 9 * biotype_list.size() );
         monitor.log( "Component FilterAnalyzer", "Start" );
 
         monitor.log( "Component FilterAnalyzer", "Biotype Analysis ... " );
@@ -97,9 +98,14 @@ class FilterAnalyzer : public engine::NamedComponent
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Outputing Quantiled PPM ... " );
             output_biotype_detail( db.output_dir().string() + "/" + biotype, db.bed_samples, ano_len_idx, ppm_counting_tables, "quantile" );
 
+            monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Proportions Z-Test ... " );
+            output_proportions_ztest( db.output_dir().string() + "/" + biotype, db.bed_samples, ano_len_idx, ppm_counting_tables );
+
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Outputing Annotation Tailing ... " );
             output_annotated_tailing( db.output_dir().string() + "/" + biotype, db.genome_table, db.bed_samples, biotype );
         }
+
+        output_biotype( db.output_dir().string(), db.genome_table, db.bed_samples, true, true );
 
         monitor.log( "Component FilterAnalyzer", "Outputing Non Annotation Tailing ... " );
         output_non_annotated_tailing( db.output_dir().string(), db.bed_samples );
@@ -192,7 +198,8 @@ class FilterAnalyzer : public engine::NamedComponent
             const std::string& output_path, 
             std::map< std::string, std::string >& genome_table,
             std::vector< BedSampleType >& bed_samples,
-            const bool& is_dropped = false
+            const bool& is_dropped = false,
+            const bool& is_quantile = false
     )
     {
         ParaThreadPool smp_parallel_pool( bed_samples.size() );
@@ -254,9 +261,12 @@ class FilterAnalyzer : public engine::NamedComponent
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            smp_parallel_pool.job_post( [ smp, &output_path, is_dropped, sample_name = bed_samples[ smp ].first, &ano_len_idx, &anno_table ] () mutable
+            smp_parallel_pool.job_post( [ smp, &output_path, &is_dropped, &is_quantile, sample_name = bed_samples[ smp ].first, &ano_len_idx, &anno_table ] () mutable
             {
-                std::ofstream output( output_path + "/" + sample_name + "_biotype" + ( is_dropped ? "_filtered.tsv" : ".tsv" ));
+                std::ofstream output( output_path + "/" + sample_name + "_biotype"
+                    + ( is_dropped  ? "_filtered"  : "" )
+                    + ( is_quantile ? "_quantiled" : "" )
+                    + ".tsv" );
 
                 output << "Annotation\tSum";
 
@@ -565,10 +575,10 @@ class FilterAnalyzer : public engine::NamedComponent
                 std::ofstream out_pm  ( output_path + "/" + bed_samples[ smp ].first + "_" + tag + "_PM.tsv" );
                 std::ofstream out_tail( output_path + "/" + bed_samples[ smp ].first + "_" + tag + "_TailRatio.tsv" );
 
-                out_gmpm << "Annotation\tSum";
-                out_gm   << "Annotation\tSum";
-                out_pm   << "Annotation\tSum";
-                out_tail << "Annotation\tSum";
+                out_gmpm << "Annotation" ;// \tSum";
+                out_gm   << "Annotation" ;// \tSum";
+                out_pm   << "Annotation" ;// \tSum";
+                out_tail << "Annotation" ;// \tSum";
 
                 for( auto& len : ano_len_idx.second )
                 {
@@ -582,10 +592,10 @@ class FilterAnalyzer : public engine::NamedComponent
                 {
                     pm = counting_tables[ smp ].first[ anno ][ 0 ] * counting_tables[ smp ].second[ anno ][ 0 ];
 
-                    out_gmpm << "\n" << anno << "\t" << std::fixed << std::setprecision( 2 ) << counting_tables[ smp ].first[ anno ][ 0 ];
-                    out_gm   << "\n" << anno << "\t" << std::fixed << std::setprecision( 2 ) << counting_tables[ smp ].first[ anno ][ 0 ] - pm;
-                    out_pm   << "\n" << anno << "\t" << std::fixed << std::setprecision( 2 ) << pm;
-                    out_tail << "\n" << anno << "\t" << std::fixed << std::setprecision( 2 ) << counting_tables[ smp ].second[ anno ][ 0 ];
+                    out_gmpm << "\n" << anno ;// << "\t" << std::fixed << std::setprecision( 2 ) << counting_tables[ smp ].first[ anno ][ 0 ];
+                    out_gm   << "\n" << anno ;// << "\t" << std::fixed << std::setprecision( 2 ) << counting_tables[ smp ].first[ anno ][ 0 ] - pm;
+                    out_pm   << "\n" << anno ;// << "\t" << std::fixed << std::setprecision( 2 ) << pm;
+                    out_tail << "\n" << anno ;// << "\t" << std::fixed << std::setprecision( 2 ) << counting_tables[ smp ].second[ anno ][ 0 ];
 
                     for( auto& len : ano_len_idx.second )
                     {
@@ -610,6 +620,169 @@ class FilterAnalyzer : public engine::NamedComponent
             });
         }
         smp_parallel_pool.flush_pool();
+    }
+
+    std::vector< std::pair< double, std::string >> proportions_ztest( std::vector< double >& samples )
+    {
+        double p = 0.0;
+        double tmp = 0.0;
+        double zts = 0.0;
+        double sum = get_sum( samples ) / 1000;
+
+        std::vector< std::pair< double, std::string >> ztests( samples.size(), std::make_pair( 0, "" ));
+        if( sum < 0.001 ) return ztests;
+
+        p = 1 / double( samples.size() );
+        tmp = sqrt( p * ( 1 - p )/ sum );
+
+        for( std::size_t i = 0; i < samples.size(); ++i )
+        {
+            zts = (( samples[i] / 1000 / sum ) - p )/ tmp;
+
+            ztests[i] = ( std::make_pair( samples[i] / 1000 / sum * 100,
+                        zts <= -2.5 || zts >= 2.5 ? "****" :
+                        zts <= -2.3 || zts >= 2.3 ? "***" :
+                        zts <= -1.9 || zts >= 1.9 ? "**" :
+                        zts <= -1.6 || zts >= 1.6 ? "*" : ""
+                        ));
+        }
+
+        return ztests;
+    }
+
+    std::string is_significant( std::vector< std::pair< double, std::string >>& ztests )
+    {
+        std::string temp = "";
+        for( auto& ztest : ztests )
+        {
+            if( ztest.second.length() > temp.length())
+                temp = ztest.second;
+        }
+        return temp;
+    }
+
+    double get_signif_score( std::string& exp_test, std::vector< std::pair< double, std::string >>& ztests )
+    {
+        std::string temp = "";
+        for( auto& ztest : ztests )
+        {
+            if( ztest.second.length() > temp.length())
+                temp = ztest.second;
+        }
+        return temp.length() * exp_test.length();
+    }
+
+    double get_sum( std::vector< double >& samples )
+    {
+        double sum = 0.0;
+        for( auto& sample : samples ) sum += sample;
+        return sum;
+    }
+
+    void output_proportions_ztest(
+            const std::string& output_path,
+            const std::vector< BedSampleType >& bed_samples,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< std::pair< CountingTableType, CountingTableType >>& counting_tables
+            )
+    {
+        std::vector< double > temp_gmpm;
+        std::vector< double > temp_gm;
+        std::vector< double > temp_pm;
+
+        std::vector< double > exp_temp_gmpm;
+        std::vector< double > exp_temp_gm;
+        std::vector< double > exp_temp_pm;
+
+        std::vector< std::pair< double, std::string >> ztests_gmpm;
+        std::vector< std::pair< double, std::string >> ztests_gm;
+        std::vector< std::pair< double, std::string >> ztests_pm;
+
+        std::vector< std::pair< double, std::string >> exp_ztests_gmpm;
+        std::vector< std::pair< double, std::string >> exp_ztests_gm;
+        std::vector< std::pair< double, std::string >> exp_ztests_pm;
+
+        double pm = 0.0;
+
+        std::map< std::string, std::pair< double, std::vector< std::pair< double, std::string >>>> table_gmpm;
+        std::map< std::string, std::pair< double, std::vector< std::pair< double, std::string >>>> table_gm;
+        std::map< std::string, std::pair< double, std::vector< std::pair< double, std::string >>>> table_pm;
+        //          miRNAs                Total         AGOs                100%  Significant
+
+        for( auto& anno : ano_len_idx.first )
+        {
+            if( anno == "MIRLET7A1-3p_TATACAA" )
+                pm = 0.0;
+
+            temp_gmpm.clear();
+            temp_gm.clear();
+            temp_pm.clear();
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                pm = counting_tables[ smp ].first[ anno ][ 0 ] * counting_tables[ smp ].second[ anno ][ 0 ];
+
+                temp_gmpm.emplace_back( counting_tables[ smp ].first[ anno ][ 0 ] );
+                temp_gm.emplace_back( counting_tables[ smp ].first[ anno ][ 0 ] - pm );
+                temp_pm.emplace_back( pm );
+            }
+
+            ztests_gmpm = proportions_ztest( temp_gmpm );
+            ztests_gm   = proportions_ztest( temp_gm   );
+            ztests_pm   = proportions_ztest( temp_pm   );
+
+            exp_temp_gmpm.emplace_back( get_sum( temp_gmpm ));
+            exp_temp_gm  .emplace_back( get_sum( temp_gm   ));
+            exp_temp_pm  .emplace_back( get_sum( temp_pm   ));
+
+            table_gmpm[ anno ] = std::make_pair( get_sum( temp_gmpm ), ztests_gmpm );
+            table_gm  [ anno ] = std::make_pair( get_sum( temp_gm   ), ztests_gm   );
+            table_pm  [ anno ] = std::make_pair( get_sum( temp_pm   ), ztests_pm   );
+        }
+
+        exp_ztests_gmpm = proportions_ztest( exp_temp_gmpm );
+        exp_ztests_gm   = proportions_ztest( exp_temp_gm   );
+        exp_ztests_pm   = proportions_ztest( exp_temp_pm   );
+
+        std::ofstream out_gmpm( output_path + "/proportions_ztest_GMPM.tsv" );
+        std::ofstream out_gm  ( output_path + "/proportions_ztest_GM.tsv"   );
+        std::ofstream out_pm  ( output_path + "/proportions_ztest_PM.tsv"   );
+
+        out_gmpm << "Annotation\tSignifScore\tSampleSignif\tExpression";
+        out_gm   << "Annotation\tSignifScore\tSampleSignif\tExpression";
+        out_pm   << "Annotation\tSignifScore\tSampleSignif\tExpression";
+
+        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+        {
+            out_gmpm << "\t" << bed_samples[ smp ].first;
+            out_gm   << "\t" << bed_samples[ smp ].first;
+            out_pm   << "\t" << bed_samples[ smp ].first;
+        }
+
+        std::size_t i = 0;
+        for( auto& anno : ano_len_idx.first )
+        {
+            out_gmpm << "\n" << anno << "\t" << get_signif_score( exp_ztests_gmpm[i].second, table_gmpm[ anno ].second );
+            out_gm   << "\n" << anno << "\t" << get_signif_score( exp_ztests_gm  [i].second, table_gm  [ anno ].second );
+            out_pm   << "\n" << anno << "\t" << get_signif_score( exp_ztests_pm  [i].second, table_pm  [ anno ].second );
+
+            out_gmpm << "\t" << is_significant( table_gmpm[ anno ].second ) << "\t" << table_gmpm[ anno ].first << exp_ztests_gmpm[i].second;
+            out_gm   << "\t" << is_significant( table_gm  [ anno ].second ) << "\t" << table_gm  [ anno ].first << exp_ztests_gm  [i].second;
+            out_pm   << "\t" << is_significant( table_pm  [ anno ].second ) << "\t" << table_pm  [ anno ].first << exp_ztests_pm  [i].second;
+
+            for( auto& ztests : table_gmpm[ anno ].second ) out_gmpm << "\t" << ztests.first << ztests.second;
+            for( auto& ztests : table_gm  [ anno ].second ) out_gm   << "\t" << ztests.first << ztests.second;
+            for( auto& ztests : table_pm  [ anno ].second ) out_pm   << "\t" << ztests.first << ztests.second;
+            ++i;
+        }
+
+        out_gmpm << "\n";
+        out_gm   << "\n";
+        out_pm   << "\n";
+
+        out_gmpm.close();
+        out_gm.close();
+        out_pm.close();
     }
 
     void output_annotated_tailing(
