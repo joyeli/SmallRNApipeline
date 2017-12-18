@@ -55,14 +55,15 @@ class FilterAnalyzer : public engine::NamedComponent
 
         monitor.set_monitor( "Component FilterAnalyzer", 4 + 9 * biotype_list.size() );
         monitor.log( "Component FilterAnalyzer", "Start" );
+        auto bed_samples = db.bed_samples;
 
         monitor.log( "Component FilterAnalyzer", "Biotype Analysis ... " );
-        output_biotype( db.output_dir().string(), db.genome_table, db.bed_samples );
+        output_biotype( db.output_dir().string(), db.genome_table, bed_samples );
 
         if( is_filter )
         {
-            drop_filtering( db.bed_samples );
-            output_biotype( db.output_dir().string(), db.genome_table, db.bed_samples, true );
+            drop_filtering( bed_samples );
+            output_biotype( db.output_dir().string(), db.genome_table, bed_samples, true );
         }
 
         AnnoLengthIndexType ano_len_idx;
@@ -76,10 +77,10 @@ class FilterAnalyzer : public engine::NamedComponent
             auto& biotype = biotype_list[i];
 
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Get Index of Annotation and Length ... " );
-            ano_len_idx = get_ano_len_idx( db.genome_table, db.bed_samples, biotype );
+            ano_len_idx = get_ano_len_idx( db.genome_table, bed_samples, biotype );
 
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Get Counting Tables ... " );
-            counting_tables = get_counting_tables( db.genome_table, db.bed_samples, ano_len_idx, biotype );
+            counting_tables = get_counting_tables( db.genome_table, bed_samples, ano_len_idx, biotype );
 
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] PPM Normalization ... " );
             ppm_counting_tables = ppm_counting_tables_converter( counting_tables );
@@ -87,28 +88,28 @@ class FilterAnalyzer : public engine::NamedComponent
             boost::filesystem::create_directory( boost::filesystem::path( db.output_dir().string() + "/" + biotype ));
 
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Outputing Counting Tables ... " );
-            output_biotype_detail( db.output_dir().string() + "/" + biotype, db.bed_samples, ano_len_idx, counting_tables, "count" );
+            output_biotype_detail( db.output_dir().string() + "/" + biotype, bed_samples, ano_len_idx, counting_tables, "count" );
 
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Outputing PPM Tables ... " );
-            output_biotype_detail( db.output_dir().string() + "/" + biotype, db.bed_samples, ano_len_idx, ppm_counting_tables, "ppm" );
+            output_biotype_detail( db.output_dir().string() + "/" + biotype, bed_samples, ano_len_idx, ppm_counting_tables, "ppm" );
 
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Quantile Normalization ... " );
             quantile_normalize( ano_len_idx, ppm_counting_tables );
 
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Outputing Quantiled PPM ... " );
-            output_biotype_detail( db.output_dir().string() + "/" + biotype, db.bed_samples, ano_len_idx, ppm_counting_tables, "quantile" );
+            output_biotype_detail( db.output_dir().string() + "/" + biotype, bed_samples, ano_len_idx, ppm_counting_tables, "quantile" );
 
-            monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Proportions Z-Test ... " );
-            output_proportions_ztest( db.output_dir().string() + "/" + biotype, db.bed_samples, ano_len_idx, ppm_counting_tables );
+            monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Outputing Sample Difference ... " );
+            output_sample_difference( db.output_dir().string() + "/" + biotype, bed_samples, ano_len_idx, ppm_counting_tables );
 
             monitor.log( "Component FilterAnalyzer", "[ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ][ " + biotype + " ] Outputing Annotation Tailing ... " );
-            output_annotated_tailing( db.output_dir().string() + "/" + biotype, db.genome_table, db.bed_samples, biotype );
+            output_annotated_tailing( db.output_dir().string() + "/" + biotype, db.genome_table, bed_samples, biotype );
         }
 
-        output_biotype( db.output_dir().string(), db.genome_table, db.bed_samples, true, true );
+        output_biotype( db.output_dir().string(), db.genome_table, bed_samples, true, true );
 
         monitor.log( "Component FilterAnalyzer", "Outputing Non Annotation Tailing ... " );
-        output_non_annotated_tailing( db.output_dir().string(), db.bed_samples );
+        output_non_annotated_tailing( db.output_dir().string(), bed_samples );
 
         monitor.log( "Component FilterAnalyzer", "Complete" );
     }
@@ -622,159 +623,233 @@ class FilterAnalyzer : public engine::NamedComponent
         smp_parallel_pool.flush_pool();
     }
 
-    std::vector< std::pair< double, std::string >> proportions_ztest( std::vector< double >& samples )
+    double get_sum( const std::vector< double >& vec )
     {
-        double p = 0.0;
-        double tmp = 0.0;
-        double zts = 0.0;
-        double sum = get_sum( samples ) / 1000;
+        double res = 0;
+        for( auto& val : vec )
+            res += val;
+        return res;
+    }
 
-        std::vector< std::pair< double, std::string >> ztests( samples.size(), std::make_pair( 0, "" ));
-        if( sum < 0.001 ) return ztests;
+    std::tuple< double, std::size_t, std::size_t > get_difference( const std::vector< double >& vec )
+    {
+        double sum = get_sum( vec );
+        std::pair< double, std::size_t > max;
+        std::pair< double, std::size_t > min;
 
-        p = 1 / double( samples.size() );
-        tmp = sqrt( p * ( 1 - p )/ sum );
-
-        for( std::size_t i = 0; i < samples.size(); ++i )
+        for( std::size_t smp = 0; smp < vec.size(); ++smp )
         {
-            zts = (( samples[i] / 1000 / sum ) - p )/ tmp;
+            if( smp == 0 )
+            {
+                max = std::make_pair( vec[ smp ], smp );
+                min = std::make_pair( vec[ smp ], smp );
+                continue;
+            }
 
-            ztests[i] = ( std::make_pair( samples[i] / 1000 / sum * 100,
-                        zts <= -2.5 || zts >= 2.5 ? "****" :
-                        zts <= -2.3 || zts >= 2.3 ? "***" :
-                        zts <= -1.9 || zts >= 1.9 ? "**" :
-                        zts <= -1.6 || zts >= 1.6 ? "*" : ""
-                        ));
+            if( max.first < vec[ smp ] )
+            {
+                max = std::make_pair( vec[ smp ], smp );
+            }
+
+            if( min.first > vec[ smp ] )
+            {
+                min = std::make_pair( vec[ smp ], smp );
+            }
         }
 
-        return ztests;
+        return{(( max.first/sum )-( min.first/sum ))/( min.first/sum ), max.second, min.second };
     }
 
-    std::string is_significant( std::vector< std::pair< double, std::string >>& ztests )
+    std::vector< std::size_t > get_length_difference( const std::vector< std::map< std::size_t, double >>& len_vec )
     {
-        std::string temp = "";
-        for( auto& ztest : ztests )
+        double max;
+        std::size_t len;
+        std::vector< std::size_t > res( len_vec.size(), std::size_t() );
+
+        for( std::size_t smp = 0; smp < len_vec.size(); ++smp )
         {
-            if( ztest.second.length() > temp.length())
-                temp = ztest.second;
+            len = 0;
+            max = 0.0;
+
+            for( auto& lens : len_vec[ smp ] )
+            {
+                if( max < lens.second )
+                {
+                    len = lens.first;
+                    max = lens.second;
+                }
+            }
+
+            res[ smp ] = len;
         }
-        return temp;
+
+        return res;
     }
 
-    double get_signif_score( std::string& exp_test, std::vector< std::pair< double, std::string >>& ztests )
+    std::size_t get_length_distance( const std::vector< std::size_t >& len_vec )
     {
-        std::string temp = "";
-        for( auto& ztest : ztests )
+        std::size_t max;
+        std::size_t min;
+
+        for( std::size_t smp = 0; smp < len_vec.size(); ++smp )
         {
-            if( ztest.second.length() > temp.length())
-                temp = ztest.second;
+            if( smp == 0 )
+            {
+                max = len_vec[ smp ];
+                min = len_vec[ smp ];
+                continue;
+            }
+
+            if( max < len_vec[ smp ] )
+            {
+                max = len_vec[ smp ];
+            }
+
+            if( min > len_vec[ smp ] )
+            {
+                min = len_vec[ smp ];
+            }
         }
-        return temp.length() * exp_test.length();
+
+        return max - min;
     }
 
-    double get_sum( std::vector< double >& samples )
+    void sort_difference( std::vector< std::pair< double, std::string >>& vec )
     {
-        double sum = 0.0;
-        for( auto& sample : samples ) sum += sample;
-        return sum;
+        std::sort( vec.begin(), vec.end(),
+            []( const std::pair< double, std::string >& a, const std::pair< double, std::string >& b )
+            { return a.first > b.first; });
     }
 
-    void output_proportions_ztest(
+    void output_sample_difference(
             const std::string& output_path,
             const std::vector< BedSampleType >& bed_samples,
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< std::pair< CountingTableType, CountingTableType >>& counting_tables
             )
     {
-        std::vector< double > temp_gmpm;
-        std::vector< double > temp_gm;
-        std::vector< double > temp_pm;
+        std::ofstream out_gmpm( output_path + "/SampleDifference_GMPM.tsv" );
+        std::ofstream out_gm  ( output_path + "/SampleDifference_GM.tsv"   );
+        std::ofstream out_pm  ( output_path + "/SampleDifference_PM.tsv"   );
 
-        std::vector< double > exp_temp_gmpm;
-        std::vector< double > exp_temp_gm;
-        std::vector< double > exp_temp_pm;
+        out_gmpm << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2\tLengthDifference";
+        out_gm   << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2\tLengthDifference";
+        out_pm   << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2\tLengthDifference";
 
-        std::vector< std::pair< double, std::string >> ztests_gmpm;
-        std::vector< std::pair< double, std::string >> ztests_gm;
-        std::vector< std::pair< double, std::string >> ztests_pm;
+        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+        {
+            out_gmpm << "\t" << bed_samples[ smp ].first << "Length";
+            out_gm   << "\t" << bed_samples[ smp ].first << "Length";
+            out_pm   << "\t" << bed_samples[ smp ].first << "Length";
+        }
 
-        std::vector< std::pair< double, std::string >> exp_ztests_gmpm;
-        std::vector< std::pair< double, std::string >> exp_ztests_gm;
-        std::vector< std::pair< double, std::string >> exp_ztests_pm;
+        std::vector< double > vec_gmpm;
+        std::vector< double > vec_gm;
+        std::vector< double > vec_pm;
+
+        std::vector< std::size_t > len_gmpm;
+        std::vector< std::size_t > len_gm;
+        std::vector< std::size_t > len_pm;
+
+        std::vector< std::map< std::size_t, double >> vec_len_gmpm( bed_samples.size(), std::map< std::size_t, double >() );
+        std::vector< std::map< std::size_t, double >> vec_len_gm  ( bed_samples.size(), std::map< std::size_t, double >() );
+        std::vector< std::map< std::size_t, double >> vec_len_pm  ( bed_samples.size(), std::map< std::size_t, double >() );
+
+        std::vector< std::pair< double, std::string >> temp_gmpm;
+        std::vector< std::pair< double, std::string >> temp_gm;
+        std::vector< std::pair< double, std::string >> temp_pm;
+
+        std::tuple< double, std::size_t, std::size_t > df_tuple_gmpm;
+        std::tuple< double, std::size_t, std::size_t > df_tuple_gm;
+        std::tuple< double, std::size_t, std::size_t > df_tuple_pm;
 
         double pm = 0.0;
+        double sum_gmpm = 0.0;
+        double sum_gm   = 0.0;
+        double sum_pm   = 0.0;
 
-        std::map< std::string, std::pair< double, std::vector< std::pair< double, std::string >>>> table_gmpm;
-        std::map< std::string, std::pair< double, std::vector< std::pair< double, std::string >>>> table_gm;
-        std::map< std::string, std::pair< double, std::vector< std::pair< double, std::string >>>> table_pm;
-        //          miRNAs                Total         AGOs                100%  Significant
+        std::string res_gmpm;
+        std::string res_gm;
+        std::string res_pm;
 
         for( auto& anno : ano_len_idx.first )
         {
-            if( anno == "MIRLET7A1-3p_TATACAA" )
-                pm = 0.0;
-
-            temp_gmpm.clear();
-            temp_gm.clear();
-            temp_pm.clear();
+            vec_gmpm.clear();
+            vec_gm  .clear();
+            vec_pm  .clear();
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
                 pm = counting_tables[ smp ].first[ anno ][ 0 ] * counting_tables[ smp ].second[ anno ][ 0 ];
 
-                temp_gmpm.emplace_back( counting_tables[ smp ].first[ anno ][ 0 ] );
-                temp_gm.emplace_back( counting_tables[ smp ].first[ anno ][ 0 ] - pm );
-                temp_pm.emplace_back( pm );
+                vec_gmpm.emplace_back( counting_tables[ smp ].first[ anno ][ 0 ] );
+                vec_gm  .emplace_back( counting_tables[ smp ].first[ anno ][ 0 ] - pm );
+                vec_pm  .emplace_back( pm );
+
+                for( auto& len : ano_len_idx.second )
+                {
+                    pm = counting_tables[ smp ].first[ anno ][ len ] * counting_tables[ smp ].second[ anno ][ len ];
+
+                    vec_len_gmpm[ smp ][ len ] = counting_tables[ smp ].first[ anno ][ len ];
+                    vec_len_gm  [ smp ][ len ] = counting_tables[ smp ].first[ anno ][ len ] - pm;
+                    vec_len_pm  [ smp ][ len ] = pm;
+                }
             }
 
-            ztests_gmpm = proportions_ztest( temp_gmpm );
-            ztests_gm   = proportions_ztest( temp_gm   );
-            ztests_pm   = proportions_ztest( temp_pm   );
+            sum_gmpm = get_sum( vec_gmpm );
+            sum_gm   = get_sum( vec_gm   );
+            sum_pm   = get_sum( vec_pm   );
 
-            exp_temp_gmpm.emplace_back( get_sum( temp_gmpm ));
-            exp_temp_gm  .emplace_back( get_sum( temp_gm   ));
-            exp_temp_pm  .emplace_back( get_sum( temp_pm   ));
+            df_tuple_gmpm = get_difference( vec_gmpm );
+            df_tuple_gm   = get_difference( vec_gm   );
+            df_tuple_pm   = get_difference( vec_pm   );
 
-            table_gmpm[ anno ] = std::make_pair( get_sum( temp_gmpm ), ztests_gmpm );
-            table_gm  [ anno ] = std::make_pair( get_sum( temp_gm   ), ztests_gm   );
-            table_pm  [ anno ] = std::make_pair( get_sum( temp_pm   ), ztests_pm   );
+            len_gmpm = get_length_difference( vec_len_gmpm );
+            len_gm   = get_length_difference( vec_len_gm   );
+            len_pm   = get_length_difference( vec_len_pm   );
+
+            res_gmpm = "\n" + anno + "\t" + std::to_string( sum_gmpm ) + "\t";
+            res_gm   = "\n" + anno + "\t" + std::to_string( sum_gm   ) + "\t";
+            res_pm   = "\n" + anno + "\t" + std::to_string( sum_pm   ) + "\t";
+
+            if( std::get<0>( df_tuple_gmpm ) > 1 )
+                res_gmpm += std::to_string( std::get<0>( df_tuple_gmpm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gmpm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gmpm )].first;
+            else
+                res_gmpm += "0\t-:-";
+
+            if( std::get<0>( df_tuple_gm ) > 1 )
+                res_gm = std::to_string( std::get<0>( df_tuple_gm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gm )].first;
+            else
+                res_gm = "0\t-:-";
+
+            if( std::get<0>( df_tuple_pm ) > 1 )
+                res_pm = std::to_string( std::get<0>( df_tuple_pm )) + "\t" + bed_samples[ std::get<1>( df_tuple_pm )].first + ":" + bed_samples[ std::get<2>( df_tuple_pm )].first;
+            else
+                res_pm = "0\t-:-";
+
+            res_gmpm += "\t" + std::to_string( get_length_distance( len_gmpm ));
+            res_gm   += "\t" + std::to_string( get_length_distance( len_gm   ));
+            res_pm   += "\t" + std::to_string( get_length_distance( len_pm   ));
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                res_gmpm += "\t" + std::to_string( len_gmpm[ smp ]);
+                res_gm   += "\t" + std::to_string( len_gm  [ smp ]);
+                res_pm   += "\t" + std::to_string( len_pm  [ smp ]);
+            }
+
+            temp_gmpm.emplace_back( std::make_pair( sum_gmpm, res_gmpm ));
+            temp_gm  .emplace_back( std::make_pair( sum_gm  , res_gm   ));
+            temp_pm  .emplace_back( std::make_pair( sum_pm  , res_pm   ));
         }
 
-        exp_ztests_gmpm = proportions_ztest( exp_temp_gmpm );
-        exp_ztests_gm   = proportions_ztest( exp_temp_gm   );
-        exp_ztests_pm   = proportions_ztest( exp_temp_pm   );
+        sort_difference( temp_gmpm );
+        sort_difference( temp_gm   );
+        sort_difference( temp_pm   );
 
-        std::ofstream out_gmpm( output_path + "/proportions_ztest_GMPM.tsv" );
-        std::ofstream out_gm  ( output_path + "/proportions_ztest_GM.tsv"   );
-        std::ofstream out_pm  ( output_path + "/proportions_ztest_PM.tsv"   );
-
-        out_gmpm << "Annotation\tSignifScore\tSampleSignif\tExpression";
-        out_gm   << "Annotation\tSignifScore\tSampleSignif\tExpression";
-        out_pm   << "Annotation\tSignifScore\tSampleSignif\tExpression";
-
-        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
-        {
-            out_gmpm << "\t" << bed_samples[ smp ].first;
-            out_gm   << "\t" << bed_samples[ smp ].first;
-            out_pm   << "\t" << bed_samples[ smp ].first;
-        }
-
-        std::size_t i = 0;
-        for( auto& anno : ano_len_idx.first )
-        {
-            out_gmpm << "\n" << anno << "\t" << get_signif_score( exp_ztests_gmpm[i].second, table_gmpm[ anno ].second );
-            out_gm   << "\n" << anno << "\t" << get_signif_score( exp_ztests_gm  [i].second, table_gm  [ anno ].second );
-            out_pm   << "\n" << anno << "\t" << get_signif_score( exp_ztests_pm  [i].second, table_pm  [ anno ].second );
-
-            out_gmpm << "\t" << is_significant( table_gmpm[ anno ].second ) << "\t" << table_gmpm[ anno ].first << exp_ztests_gmpm[i].second;
-            out_gm   << "\t" << is_significant( table_gm  [ anno ].second ) << "\t" << table_gm  [ anno ].first << exp_ztests_gm  [i].second;
-            out_pm   << "\t" << is_significant( table_pm  [ anno ].second ) << "\t" << table_pm  [ anno ].first << exp_ztests_pm  [i].second;
-
-            for( auto& ztests : table_gmpm[ anno ].second ) out_gmpm << "\t" << ztests.first << ztests.second;
-            for( auto& ztests : table_gm  [ anno ].second ) out_gm   << "\t" << ztests.first << ztests.second;
-            for( auto& ztests : table_pm  [ anno ].second ) out_pm   << "\t" << ztests.first << ztests.second;
-            ++i;
-        }
+        for( auto& output : temp_gmpm ) out_gmpm << output.second;
+        for( auto& output : temp_gm   ) out_gm   << output.second;
+        for( auto& output : temp_pm   ) out_pm   << output.second;
 
         out_gmpm << "\n";
         out_gm   << "\n";
