@@ -90,7 +90,7 @@ int main( int argc, char** argv )
     {
         for( auto& info : anno.annotation_info_ )
         {
-            for( int i = 0; i < info.size(); i+=2 )
+            if( info.size() == 0 )
             {
                 output
                     << anno.chromosome_ << "\t"
@@ -103,10 +103,31 @@ int main( int argc, char** argv )
                     << (int)anno.tail_length_ << "\t"
                     << anno.getReadSeq( genome_map ) << "\t"
                     << anno.getTail() << "\t"
-                    << info[i] << "\t"
-                    << info[ i+1 ] << "\t"
-                    << anno.getReadSeq( genome_map ).substr(1,7) << "\n"
+                    << ".\t"
+                    << ".\t"
+                    << ".\n"
                     ;
+            }
+            else
+            {
+                for( int i = 0; i < info.size(); i+=2 )
+                {
+                    output
+                        << anno.chromosome_ << "\t"
+                        << anno.start_ << "\t"
+                        << anno.end_ << "\t"
+                        << anno.strand_ << "\t"
+                        << anno.multiple_alignment_site_count_ << "\t"
+                        << anno.reads_count_ << "\t"
+                        << (int)anno.length_ - (int)anno.tail_length_ << "\t"
+                        << (int)anno.tail_length_ << "\t"
+                        << anno.getReadSeq( genome_map ) << "\t"
+                        << anno.getTail() << "\t"
+                        << info[i] << "\t"
+                        << info[ i+1 ] << "\t"
+                        << anno.getReadSeq( genome_map ).substr(1,7) << "\n"
+                        ;
+                }
             }
         }
     }
