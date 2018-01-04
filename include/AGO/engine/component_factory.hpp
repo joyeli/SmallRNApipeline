@@ -15,6 +15,7 @@
 #include <AGO/components/filter.hpp>
 #include <AGO/components/analyzer.hpp>
 #include <AGO/components/vcf_annotation_analysis.hpp>
+#include <AGO/components/vcf_min_annotation_cohorts_analysis.hpp>
 #include <AGO/components/filter_analyzer.hpp>
 #include <AGO/components/meta_analyzer.hpp>
 #include <AGO/components/visualization.hpp>
@@ -63,6 +64,7 @@ class ComponentFactory
         ID_MAP_TYPE( "Filter" , component::Filter )
         ID_MAP_TYPE( "Analyzer", component::Analyzer )
         ID_MAP_TYPE( "VcfAnnotationAnalysis", component::VcfAnnotationAnalysis )
+        ID_MAP_TYPE( "VcfMinAnnotationCohortsAnalysis", component::VcfMinAnnotationCohortsAnalysis )
         ID_MAP_TYPE( "FilterAnalyzer", component::FilterAnalyzer )
         ID_MAP_TYPE( "MetaAnalyzer", component::MetaAnalyzer )
         ID_MAP_TYPE( "Visualization", component::Visualization )

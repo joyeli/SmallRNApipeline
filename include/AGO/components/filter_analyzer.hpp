@@ -812,20 +812,20 @@ class FilterAnalyzer : public engine::NamedComponent
             res_gm   = "\n" + anno + "\t" + std::to_string( sum_gm   ) + "\t";
             res_pm   = "\n" + anno + "\t" + std::to_string( sum_pm   ) + "\t";
 
-            if( std::get<0>( df_tuple_gmpm ) > 1 )
+            // if( std::get<0>( df_tuple_gmpm ) > 1 )
                 res_gmpm += std::to_string( std::get<0>( df_tuple_gmpm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gmpm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gmpm )].first;
-            else
-                res_gmpm += "0\t-:-";
+            // else
+            //     res_gmpm += "-\t-:-";
 
-            if( std::get<0>( df_tuple_gm ) > 1 )
-                res_gm = std::to_string( std::get<0>( df_tuple_gm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gm )].first;
-            else
-                res_gm = "0\t-:-";
+            // if( std::get<0>( df_tuple_gm ) > 1 )
+                res_gm += std::to_string( std::get<0>( df_tuple_gm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gm )].first;
+            // else
+            //     res_gm += "-\t-:-";
 
-            if( std::get<0>( df_tuple_pm ) > 1 )
-                res_pm = std::to_string( std::get<0>( df_tuple_pm )) + "\t" + bed_samples[ std::get<1>( df_tuple_pm )].first + ":" + bed_samples[ std::get<2>( df_tuple_pm )].first;
-            else
-                res_pm = "0\t-:-";
+            // if( std::get<0>( df_tuple_pm ) > 1 )
+                res_pm += std::to_string( std::get<0>( df_tuple_pm )) + "\t" + bed_samples[ std::get<1>( df_tuple_pm )].first + ":" + bed_samples[ std::get<2>( df_tuple_pm )].first;
+            // else
+            //     res_pm += "-\t-:-";
 
             res_gmpm += "\t" + std::to_string( get_length_distance( len_gmpm ));
             res_gm   += "\t" + std::to_string( get_length_distance( len_gm   ));

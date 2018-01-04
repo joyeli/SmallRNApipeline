@@ -41,7 +41,7 @@ class TailorAlign : public engine::NamedComponent
         align_limit_algn_ = p.get_optional< size_t >( "align_limit_algn" ).value_or( 100 );
 
         thread_num_ = p.get_optional< size_t >( "thread_num" ).value_or( 32 );
-        output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( false );
+        output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( true );
     }
 
   public:

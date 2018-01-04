@@ -55,7 +55,7 @@ class TailorFastaToBed : public engine::NamedComponent
         task_number_ = p.get_optional< size_t >( "task_number" ).value_or( 1000000 );
         thread_num_ = p.get_optional< size_t >( "thread_num" ).value_or( 32 );
 
-        output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( false );
+        output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( true );
     }
 
   public:

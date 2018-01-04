@@ -62,7 +62,7 @@ class GithubTailorFastqToBed : public engine::NamedComponent
         task_number_ = p.get_optional< int >( "task_number" ).value_or( 50000 );
         thread_num_  = p.get_optional< int >( "thread_num" ).value_or( 16 );
 
-        output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( false );
+        output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( true );
 
         align_allow_mismatch_ = p.get_optional< bool >( "align_allow_mismatch" ).value_or( false );
         tailor_genome_fasta_  = p.get_optional< std::string >( "tailor_genome_fasta" ).value_or( "" );

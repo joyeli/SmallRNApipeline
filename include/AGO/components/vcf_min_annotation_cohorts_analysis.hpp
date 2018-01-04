@@ -1,0 +1,334 @@
+#pragma once
+#include <AGO/engine/components/named_component.hpp>
+#include <CCD/para_thread_pool/para_thread_pool.hpp>
+#include <pokemon/annotator/annotation.hpp>
+#include <pokemon/annotator/annotation_set.hpp>
+#include <mutex>
+
+namespace ago {
+namespace component {
+
+class VcfMinAnnotationCohortsAnalysis : public engine::NamedComponent
+{
+    using Base = engine::NamedComponent;
+    using VcfType = std::tuple< std::string, std::size_t, std::string, std::string, double, std::string, std::vector< std::string >>;
+    //                              chr         pos         ref             alt     qul         id          cohort      genotype
+
+    struct AnnotationVcf : public RawBedBase
+    {
+        char strand_;
+        uint64_t end_;
+        size_t is_filtered_;
+
+        std::string chromosome_;
+        std::vector< std::vector< std::string >> annotation_info_;
+
+        std::string gene;
+        std::string rmsk;
+        std::string dbsnp;
+        std::string comonsnp;
+        std::string pub;
+        std::string clinvar;
+        std::string genedis;
+
+        VcfType vcf;
+
+    	AnnotationVcf( void )
+            : RawBedBase()
+        {}
+        
+    	AnnotationVcf( const VcfType& in )
+            : RawBedBase( std::get<0>( in ), std::get<1>( in ) -1, std::get<1>( in ) -1 + std::get<2>( in ).length(), "+" )
+    		, strand_ ( '+' )
+    		, end_( std::get<1>( in ) -1 + std::get<2>( in ).length() )
+    		, chromosome_( std::get<0>( in ))
+    		, annotation_info_(0)
+    		, is_filtered_(0)
+            , gene    (".")
+            , rmsk    ("N")
+            , dbsnp   (".")
+            , comonsnp("N")
+            , pub     ("N")
+            , clinvar (".\t.")
+            , genedis (".")
+            , vcf( in )
+    	{}
+
+        friend std::ostream& operator<< (std::ostream& out, const AnnotationVcf& vcf )
+        {
+            out << std::get<0>( vcf.vcf ) << "\t"
+                << std::get<1>( vcf.vcf ) << "\t"
+                << std::get<2>( vcf.vcf ) << "\t"
+                << std::get<3>( vcf.vcf ) << "\t";
+
+            for( auto& gtype : std::get<6>( vcf.vcf ))
+                out << gtype << "\t";
+
+            out << std::get<4>( vcf.vcf ) << "\t"
+                << vcf.gene     << "\t"
+                << vcf.rmsk     << "\t"
+                << vcf.dbsnp    << "\t"
+                << vcf.comonsnp << "\t"
+                << vcf.pub      << "\t"
+                << vcf.clinvar  << "\t"
+                << vcf.genedis  << "\n";
+
+            return out;
+        }
+    };
+
+    struct HitHandler
+    {
+        template< class DB_BED, class ANN_BED >
+        static void run( DB_BED&& db_bed, ANN_BED&& ann_bed, int& db_idx )
+        {
+            auto& type = std::get<4>( db_bed.data );
+            auto& name = std::get<5>( db_bed.data );
+
+            if( type == "Gencode" ) ann_bed.gene = name;
+            if( type == "RMSK" || type == "NonRMSKofDuplications1000Base" ) ann_bed.rmsk = "Y";
+            if( type == "Snp150All" ) ann_bed.dbsnp = name;
+            if( type == "Snp150Common" ) ann_bed.comonsnp = "Y";
+            if( type == "PubsMarkerSnp" ) ann_bed.pub = "Y";
+
+            if( type == "OmimClinvar" )
+            {
+                std::vector< std::string > splits;
+                boost::iter_split( splits, name, boost::algorithm::first_finder( ";" ));
+                ann_bed.clinvar = splits[0] + "\t" + splits[1];
+            }
+
+            if( type == "GeneticDisorders" ) ann_bed.genedis = name;
+        }
+    };
+
+    using BedFileReaderImpl =  FileReader_impl<
+          Bed
+        , std::tuple< std::string, uint32_t, uint32_t, char, std::string, std::string >
+        , SOURCE_TYPE::IFSTREAM_TYPE
+    >;
+
+    using AnnotationTrait = Annotation<
+          BedFileReaderImpl
+        , AnnoIgnoreStrand::IGNORE
+        , AnnoType::INTERSET
+        , HitHandler
+    >;
+
+    using Annotations = AnnotationSet <
+          AnnotationVcf
+        , AnnotationTrait
+    >;
+
+    std::vector< std::string > annotation_files_;
+
+    int task_number_;
+    int thread_num_;
+
+  protected:
+
+    virtual void config_parameters( const bpt::ptree& p ) override
+    {
+        auto& db( this->mut_data_pool() );
+        auto& pipeline_schema (db.pipeline_schema() );
+
+        for( auto& child : pipeline_schema.get_child( "input" ).get_child( "sample_files" ))
+            db.push_path( "sample_files", child.second );
+
+        for( auto& child : pipeline_schema.get_child( "input" ).get_child( "annotation_files" ))
+            db.push_path( "annotation_files", child.second );
+
+        task_number_ = p.get_optional< int >( "task_number" ).value_or( 50000 );
+        thread_num_  = p.get_optional< int >( "thread_num" ).value_or( 16 );
+    }
+
+  public:
+
+    using Base::Base;
+
+    virtual void initialize() override
+    {
+        auto& db( this->mut_data_pool() );
+        std::vector< std::string > genome_fastas( db.require_genome( db ));
+
+        if( db.exist_path_tag( "annotation_files" ))
+        {
+            for( auto& bed : db.get_path_list( "annotation_files" ))
+            {
+                annotation_files_.emplace_back( bed.string() );
+            }
+        }
+    }
+
+    virtual void start() override
+    {
+        auto& db( this->mut_data_pool() );
+        auto& monitor = db.monitor();
+
+        Annotations annotator( annotation_files_ );
+
+        std::vector< std::string > vcf_paths( get_path_list_string( db.get_path_list( "sample_files" )));
+        std::vector< std::vector< AnnotationVcf >> vcf_smp_pool( vcf_paths.size(), std::vector< AnnotationVcf >() );
+
+        std::vector< std::pair< size_t, AnnotationVcf >> vcf_pool;
+        std::map< std::thread::id, std::vector< std::pair< size_t, AnnotationVcf >>> vcf_tread_pool;
+
+        monitor.set_monitor( "Component VcfMinAnnotationCohortsAnalysis", 5 );
+        monitor.log( "Component VcfMinAnnotationCohortsAnalysis", "Reading Data" );
+
+        ParaThreadPool smp_parallel_pool( vcf_paths.size() );
+        ParaThreadPool vcf_parallel_pool( thread_num_ );
+        std::mutex vcf_mutex;
+
+        std::vector< std::vector< std::string >> gtype_header( vcf_paths.size(), std::vector< std::string >() );
+
+        for( size_t smp = 0; smp < vcf_paths.size(); ++smp )
+        {
+            smp_parallel_pool.job_post([ smp, &vcf_paths, &vcf_smp_pool, &gtype_header, this ] ()
+            {
+                std::string line;
+                std::vector< std::string > splits;
+                std::vector< std::string > temp;
+                std::vector< std::string > gentypes;
+
+                std::string sample_name = get_sample_name( vcf_paths[ smp ]);
+                std::fstream filein( vcf_paths[ smp ], std::ios::in );
+
+                while( std::getline( filein, line ))
+                {
+                    boost::iter_split( splits, line, boost::algorithm::first_finder( "\t" ));
+                    boost::iter_split( temp, splits[0], boost::algorithm::first_finder( "_" ));
+
+                    if( line.at(1) == 'C' )
+                    {
+                        for( std::size_t i = 9; i < splits.size(); ++i )
+                            gtype_header[ smp ].emplace_back( splits[i] );
+                    }
+
+                    if( line.at(0) == '#' ) continue;
+                    if( temp.size() != 1 ) continue;
+                    gentypes.clear();
+
+                    for( std::size_t i = 9; i < splits.size(); ++i )
+                    {
+                        boost::iter_split( temp, splits[i], boost::algorithm::first_finder( ":" ));
+                        gentypes.emplace_back( temp[0] );
+                    }
+
+                    vcf_smp_pool[ smp ].emplace_back( AnnotationVcf( VcfType{
+                            ( splits[0].length() > 3 ? splits[0] : "chr" + splits[0] )
+                            , std::stol( splits[1] )
+                            , splits[3]
+                            , splits[4]
+                            , std::stod( splits[5] )
+                            , splits[2]
+                            , gentypes
+                            }));
+                }
+
+                filein.close();
+            });
+        }
+
+        smp_parallel_pool.flush_pool();
+        monitor.log( "Component VcfMinAnnotationCohortsAnalysis", "Annotating Data" );
+
+        for( size_t smp = 0; smp < vcf_paths.size(); ++smp )
+        {
+            for( auto& vcf : vcf_smp_pool[ smp ] )
+            {
+                vcf_pool.emplace_back( std::make_pair( smp, vcf ));
+
+                if( vcf_pool.size() >= task_number_ )
+                {
+                    vcf_parallel_pool.job_post([ vcf_pool, &vcf_tread_pool, &annotator, &vcf_mutex, this ] () mutable
+                    {
+                        {
+                            std::lock_guard< std::mutex > smp_lock( vcf_mutex );
+                            if( vcf_tread_pool.find( std::this_thread::get_id() ) == vcf_tread_pool.end() )
+                                vcf_tread_pool[ std::this_thread::get_id() ] = std::vector< std::pair< size_t, AnnotationVcf >>(); 
+                        }
+
+                        for( auto& anno_vcf : vcf_pool )
+                        {
+                            annotator.AnnotateAll( anno_vcf.second );
+                            vcf_tread_pool[ std::this_thread::get_id() ].emplace_back(
+                                std::make_pair( anno_vcf.first, anno_vcf.second ));
+                        }
+                    });
+
+                    vcf_pool.clear();
+                }
+            }
+        }
+
+        vcf_parallel_pool.job_post([ vcf_pool, &vcf_tread_pool, &annotator, &vcf_mutex, this ] () mutable
+        {
+            {
+                std::lock_guard< std::mutex > vcf_lock( vcf_mutex );
+                if( vcf_tread_pool.find( std::this_thread::get_id() ) == vcf_tread_pool.end() )
+                    vcf_tread_pool[ std::this_thread::get_id() ] = std::vector< std::pair< size_t, AnnotationVcf >>(); 
+            }
+
+            for( auto& anno_vcf : vcf_pool )
+            {
+                annotator.AnnotateAll( anno_vcf.second );
+                vcf_tread_pool[ std::this_thread::get_id() ].emplace_back(
+                    std::make_pair( anno_vcf.first, anno_vcf.second ));
+            }
+        });
+
+        vcf_pool.clear();
+        vcf_smp_pool = std::vector< std::vector< AnnotationVcf >>( vcf_paths.size(), std::vector< AnnotationVcf >() );
+
+        vcf_parallel_pool.flush_pool();
+        monitor.log( "Component VcfMinAnnotationCohortsAnalysis", "Transforming Data" );
+
+        for( auto& thread : vcf_tread_pool )
+        {
+            for( auto& smp_vcf : thread.second )
+            {
+                vcf_smp_pool[ smp_vcf.first ].emplace_back( smp_vcf.second );
+            }
+        }
+
+        monitor.log( "Component VcfMinAnnotationCohortsAnalysis", "Outputing Data" );
+
+        for( size_t smp = 0; smp < vcf_paths.size(); ++smp )
+        {
+            smp_parallel_pool.job_post([ smp, &vcf_paths, &vcf_smp_pool, &gtype_header, this ] ()
+            {
+                std::ofstream output( get_sample_name( vcf_paths[ smp ] ) + ".tsv" );
+                output << "Chr\tPos\tRef\tAlt\t";
+                for( auto& header : gtype_header[ smp ] ) output << header << "\t";
+                output << "Qul\tGene\tRmsk\tdbSNP\tCommonSNP\tPublication\tOMIM\tClinvar\tGeneticDisorders\n";
+                for( auto& anno_vcf : vcf_smp_pool[ smp ]) output << anno_vcf;
+                output.close();
+            });
+        }
+
+        smp_parallel_pool.flush_pool();
+        monitor.log( "Component VcfMinAnnotationCohortsAnalysis", "Complete" );
+    }
+
+    std::vector< std::string > get_path_list_string( const std::vector< boost::filesystem::path >& paths )
+    {
+        std::vector< std::string > res;
+        for( auto& path : paths ) res.emplace_back( path.string() );
+        return res;
+    }
+
+    std::string get_sample_name( const std::string& path )
+    {
+        std::vector< std::string > path_file;
+        boost::iter_split( path_file, path, boost::algorithm::first_finder( "/" ));
+
+        std::vector< std::string > sample;
+        boost::iter_split( sample, path_file[ path_file.size()-1 ], boost::algorithm::first_finder( "." ));
+
+        return sample[0];
+    }
+};
+
+} // end of namespace component
+} // end of namespace ago

@@ -93,7 +93,7 @@ class Annotator : public engine::NamedComponent
             db.push_path( "annotation_files", child.second );
         }
 
-        output_archive_ = p.get_optional< bool >( "output_archive" ).value_or( false );
+        output_archive_ = p.get_optional< bool >( "output_archive" ).value_or( true );
     }
 
   public:
