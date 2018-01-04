@@ -80,6 +80,7 @@ class Annotator : public engine::NamedComponent
     std::vector< std::string > annotation_files_;
 
     bool output_archive_;
+    bool output_annobed_;
 
   protected:
 
@@ -94,6 +95,7 @@ class Annotator : public engine::NamedComponent
         }
 
         output_archive_ = p.get_optional< bool >( "output_archive" ).value_or( true );
+        output_annobed_ = p.get_optional< bool >( "output_annobed" ).value_or( true );
     }
 
   public:
@@ -130,6 +132,7 @@ class Annotator : public engine::NamedComponent
         monitor.log( "Component Annotator", "Annotating Bed" );
 
         std::vector< std::ofstream > archive_outputs;
+        std::vector< std::ofstream > annobed_outputs;
 
         if( output_archive_ )
         {
@@ -138,6 +141,17 @@ class Annotator : public engine::NamedComponent
                 archive_outputs.push_back( std::move( std::ofstream(
                     db.output_dir().string() + db.bed_samples[ smp ].first + ".arc"
                 )));
+            }
+        }
+
+        if( output_annobed_ )
+        {
+            for( size_t smp = 0; smp < db.bed_samples.size(); ++smp )
+            {
+                annobed_outputs.push_back( std::move( std::ofstream(
+                    db.output_dir().string() + db.bed_samples[ smp ].first + "_annobed.tsv"
+                )));
+                annobed_outputs[ smp ] << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tType\tAnno\tSeed\n";
             }
         }
 
@@ -150,7 +164,7 @@ class Annotator : public engine::NamedComponent
         {
             smp_parallel_pool.job_post( [
                 sample_bed_pair{ std::make_pair( smp, std::move( db.bed_samples[ smp ].second ))},
-                &db, &archive_outputs, &annotator, &monitor, &smp_mutex, this ] () mutable
+                &db, &archive_outputs, &annobed_outputs, &annotator, &monitor, &smp_mutex, this ] () mutable
             {
                 for( auto& anno_rawbed : sample_bed_pair.second )
                 {
@@ -166,6 +180,56 @@ class Annotator : public engine::NamedComponent
                         boost::archive::binary_oarchive archive_out( archive_outputs[ sample_bed_pair.first ] );
                         archive_out & sample_bed_pair.second;
                         archive_outputs[ sample_bed_pair.first ].close();
+                    }
+
+                    if( output_annobed_ )
+                    {
+                        for( auto& anno : sample_bed_pair.second )
+                        {
+                            for( auto& info : anno.annotation_info_ )
+                            {
+                                if( info.size() == 0 )
+                                {
+                                    annobed_outputs[ sample_bed_pair.first ]
+                                        << anno.chromosome_ << "\t"
+                                        << anno.start_ << "\t"
+                                        << anno.end_ << "\t"
+                                        << anno.strand_ << "\t"
+                                        << anno.multiple_alignment_site_count_ << "\t"
+                                        << anno.reads_count_ << "\t"
+                                        << (int)anno.length_ - (int)anno.tail_length_ << "\t"
+                                        << (int)anno.tail_length_ << "\t"
+                                        << anno.getReadSeq( db.genome_table ) << "\t"
+                                        << anno.getTail() << "\t"
+                                        << ".\t"
+                                        << ".\t"
+                                        << ".\n"
+                                        ;
+                                }
+                                else
+                                {
+                                    for( int i = 0; i < info.size(); i+=2 )
+                                    {
+                                        annobed_outputs[ sample_bed_pair.first ]
+                                            << anno.chromosome_ << "\t"
+                                            << anno.start_ << "\t"
+                                            << anno.end_ << "\t"
+                                            << anno.strand_ << "\t"
+                                            << anno.multiple_alignment_site_count_ << "\t"
+                                            << anno.reads_count_ << "\t"
+                                            << (int)anno.length_ - (int)anno.tail_length_ << "\t"
+                                            << (int)anno.tail_length_ << "\t"
+                                            << anno.getReadSeq( db.genome_table ) << "\t"
+                                            << anno.getTail() << "\t"
+                                            << info[i] << "\t"
+                                            << info[ i+1 ] << "\t"
+                                            << anno.getReadSeq( db.genome_table ).substr(1,7) << "\n"
+                                            ;
+                                    }
+                                }
+                            }
+                        }
+                        annobed_outputs[ sample_bed_pair.first ].close();
                     }
 
                     db.bed_samples[ sample_bed_pair.first ].second = std::move( sample_bed_pair.second );
