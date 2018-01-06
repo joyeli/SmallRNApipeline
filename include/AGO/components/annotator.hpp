@@ -151,7 +151,7 @@ class Annotator : public engine::NamedComponent
                 annobed_outputs.push_back( std::move( std::ofstream(
                     db.output_dir().string() + db.bed_samples[ smp ].first + "_annobed.tsv"
                 )));
-                annobed_outputs[ smp ] << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tType\tAnno\tSeed\n";
+                annobed_outputs[ smp ] << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tType\tAnnoSeed\n";
             }
         }
 
@@ -200,8 +200,7 @@ class Annotator : public engine::NamedComponent
                                         << (int)anno.length_ - (int)anno.tail_length_ << "\t"
                                         << (int)anno.tail_length_ << "\t"
                                         << anno.getReadSeq( db.genome_table ) << "\t"
-                                        << anno.getTail() << "\t"
-                                        << ".\t"
+                                        << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
                                         << ".\t"
                                         << ".\n"
                                         ;
@@ -220,9 +219,9 @@ class Annotator : public engine::NamedComponent
                                             << (int)anno.length_ - (int)anno.tail_length_ << "\t"
                                             << (int)anno.tail_length_ << "\t"
                                             << anno.getReadSeq( db.genome_table ) << "\t"
-                                            << anno.getTail() << "\t"
+                                            << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
                                             << info[i] << "\t"
-                                            << info[ i+1 ] << "\t"
+                                            << info[ i+1 ] << "_"
                                             << anno.getReadSeq( db.genome_table ).substr(1,7) << "\n"
                                             ;
                                     }

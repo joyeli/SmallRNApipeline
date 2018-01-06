@@ -368,13 +368,13 @@ class FilterAnalyzer : public engine::NamedComponent
                         counting_table_inserter( total_table, annotation, length, count + sudo_count );
 
                         if( tail_len != 0 )
-                            counting_table_inserter( tail_table, annotation, length, count );
+                            counting_table_inserter( tail_table, annotation, length, count + sudo_count );
                     }
                 }
                 
                 counting_table_refinder( total_table, ano_len_idx, sudo_count );
-                counting_table_refinder( tail_table, ano_len_idx, 0.0 );
-                tailing_ratio_transfer( total_table, tail_table );
+                counting_table_refinder( tail_table, ano_len_idx, sudo_count );
+                tailing_ratio_transfer( total_table, tail_table, sudo_count );
 
                 counting_tables[ smp ] = std::make_pair( total_table, tail_table );
             });
@@ -489,13 +489,13 @@ class FilterAnalyzer : public engine::NamedComponent
         }
     }
 
-    void tailing_ratio_transfer( CountingTableType& total_table, CountingTableType& tail_table )
+    void tailing_ratio_transfer( CountingTableType& total_table, CountingTableType& tail_table, const double& sudo_count = 0.0 )
     {
         for( auto& anno : tail_table )
         {
             for( auto& len : anno.second )
             {
-                if( len.second != 0 )
+                if( len.second != 0 && len.second != sudo_count )
                 {
                     len.second = len.second / total_table[ anno.first ][ len.first ];
                 }
@@ -637,6 +637,7 @@ class FilterAnalyzer : public engine::NamedComponent
         std::pair< double, std::size_t > max;
         std::pair< double, std::size_t > min;
 
+
         for( std::size_t smp = 0; smp < vec.size(); ++smp )
         {
             if( smp == 0 )
@@ -657,7 +658,21 @@ class FilterAnalyzer : public engine::NamedComponent
             }
         }
 
-        return{(( max.first/sum )-( min.first/sum ))/( min.first/sum ), max.second, min.second };
+        std::vector< double > folds;
+        double fold = (( max.first/sum )-( min.first/sum ))/( min.first/sum );
+
+        for( std::size_t smp = 0; smp < vec.size(); ++smp )
+        {
+            if( smp == max.second || smp == min.second ) continue;
+            folds.emplace_back( (( vec[ smp ]/sum )-( min.first/sum ))/( min.first/sum ));
+        }
+
+        bool fold_tag = false;
+
+        for( auto& fd : folds )
+            if( fd >= 1 ) fold_tag = true;
+
+        return{ fold_tag ? ( -1 * fold ) : fold, max.second, min.second };
     }
 
     std::vector< std::size_t > get_length_difference( const std::vector< std::map< std::size_t, double >>& len_vec )
@@ -812,20 +827,9 @@ class FilterAnalyzer : public engine::NamedComponent
             res_gm   = "\n" + anno + "\t" + std::to_string( sum_gm   ) + "\t";
             res_pm   = "\n" + anno + "\t" + std::to_string( sum_pm   ) + "\t";
 
-            // if( std::get<0>( df_tuple_gmpm ) > 1 )
-                res_gmpm += std::to_string( std::get<0>( df_tuple_gmpm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gmpm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gmpm )].first;
-            // else
-            //     res_gmpm += "-\t-:-";
-
-            // if( std::get<0>( df_tuple_gm ) > 1 )
-                res_gm += std::to_string( std::get<0>( df_tuple_gm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gm )].first;
-            // else
-            //     res_gm += "-\t-:-";
-
-            // if( std::get<0>( df_tuple_pm ) > 1 )
-                res_pm += std::to_string( std::get<0>( df_tuple_pm )) + "\t" + bed_samples[ std::get<1>( df_tuple_pm )].first + ":" + bed_samples[ std::get<2>( df_tuple_pm )].first;
-            // else
-            //     res_pm += "-\t-:-";
+            res_gmpm += std::to_string( std::get<0>( df_tuple_gmpm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gmpm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gmpm )].first;
+            res_gm += std::to_string( std::get<0>( df_tuple_gm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gm )].first;
+            res_pm += std::to_string( std::get<0>( df_tuple_pm )) + "\t" + bed_samples[ std::get<1>( df_tuple_pm )].first + ":" + bed_samples[ std::get<2>( df_tuple_pm )].first;
 
             res_gmpm += "\t" + std::to_string( get_length_distance( len_gmpm ));
             res_gm   += "\t" + std::to_string( get_length_distance( len_gm   ));

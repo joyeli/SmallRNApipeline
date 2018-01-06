@@ -84,7 +84,7 @@ int main( int argc, char** argv )
     filein.close();
     output.open( arche.substr( 0, arche.size() -4 ) + "_annobed.tsv" );
 
-    output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tType\tAnno\tSeed\n";
+    output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tType\tAnnoSeed\n";
 
     for( auto& anno : annotation_rawbeds )
     {
@@ -102,8 +102,7 @@ int main( int argc, char** argv )
                     << (int)anno.length_ - (int)anno.tail_length_ << "\t"
                     << (int)anno.tail_length_ << "\t"
                     << anno.getReadSeq( genome_map ) << "\t"
-                    << anno.getTail() << "\t"
-                    << ".\t"
+                    << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
                     << ".\t"
                     << ".\n"
                     ;
@@ -122,9 +121,9 @@ int main( int argc, char** argv )
                         << (int)anno.length_ - (int)anno.tail_length_ << "\t"
                         << (int)anno.tail_length_ << "\t"
                         << anno.getReadSeq( genome_map ) << "\t"
-                        << anno.getTail() << "\t"
+                        << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
                         << info[i] << "\t"
-                        << info[ i+1 ] << "\t"
+                        << info[ i+1 ] << "_"
                         << anno.getReadSeq( genome_map ).substr(1,7) << "\n"
                         ;
                 }
