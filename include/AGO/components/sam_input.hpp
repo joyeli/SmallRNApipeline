@@ -62,7 +62,7 @@ class SamInput : public engine::NamedComponent
 
 			    while( true )
 			    {
-				    sam = sam_reader.get_next_entry( 0 );
+				    sam = sam_reader.get_next_entry( smp );
 
                     if( sam.eof_flag )
                     {

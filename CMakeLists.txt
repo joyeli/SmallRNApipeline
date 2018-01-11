@@ -61,20 +61,20 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
         ${Boost_LIBRARIES} ${CURL_LIBRARIES}
         pthread thread_pool ) 
 
-    add_executable( tailor_test unit_test/aligner/tailor.cpp )
-        target_link_libraries( tailor_test
-        ${Boost_LIBRARIES} ${CURL_LIBRARIES}
-        gtest gtest_main pthread thread_pool boost_program_options ) 
+    # add_executable( tailor_test unit_test/aligner/tailor.cpp )
+    #     target_link_libraries( tailor_test
+    #     ${Boost_LIBRARIES} ${CURL_LIBRARIES}
+    #     gtest gtest_main pthread thread_pool boost_program_options ) 
 
-    add_executable( annotator_test unit_test/annotator/annotator.cpp )
-        target_link_libraries( annotator_test
-        ${Boost_LIBRARIES} ${CURL_LIBRARIES}
-        gtest gtest_main pthread thread_pool ) 
+    # add_executable( annotator_test unit_test/annotator/annotator.cpp )
+    #     target_link_libraries( annotator_test
+    #     ${Boost_LIBRARIES} ${CURL_LIBRARIES}
+    #     gtest gtest_main pthread thread_pool ) 
 
-    add_executable( gtf2bed src/application/gtf2bed/main.cpp )
-        target_link_libraries( gtf2bed ${Boost_LIBRARIES} )
+    # add_executable( gtf2bed src/application/gtf2bed/main.cpp )
+    #     target_link_libraries( gtf2bed ${Boost_LIBRARIES} )
 
-    add_executable( arcReader src/application/arc_reader/main.cpp )
-        target_link_libraries( arcReader ${Boost_LIBRARIES} )
+    # add_executable( arcReader src/application/arc_reader/main.cpp )
+    #     target_link_libraries( arcReader ${Boost_LIBRARIES} )
 
 endif()

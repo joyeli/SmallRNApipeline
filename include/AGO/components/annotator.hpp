@@ -10,6 +10,56 @@
 namespace ago {
 namespace component {
 
+void output_annobed( auto& output, auto& genome, auto& sample_beds )
+{
+    output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tType\tAnnoSeed\n";
+
+    for( auto& anno : sample_beds )
+    {
+        for( auto& info : anno.annotation_info_ )
+        {
+            if( info.size() == 0 )
+            {
+                output
+                    << anno.chromosome_ << "\t"
+                    << anno.start_ << "\t"
+                    << anno.end_ << "\t"
+                    << anno.strand_ << "\t"
+                    << anno.multiple_alignment_site_count_ << "\t"
+                    << anno.reads_count_ << "\t"
+                    << (int)anno.length_ - (int)anno.tail_length_ << "\t"
+                    << (int)anno.tail_length_ << "\t"
+                    << anno.getReadSeq( genome ) << "\t"
+                    << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
+                    << ".\t"
+                    << ".\n"
+                    ;
+            }
+            else
+            {
+                for( int i = 0; i < info.size(); i+=2 )
+                {
+                    output
+                        << anno.chromosome_ << "\t"
+                        << anno.start_ << "\t"
+                        << anno.end_ << "\t"
+                        << anno.strand_ << "\t"
+                        << anno.multiple_alignment_site_count_ << "\t"
+                        << anno.reads_count_ << "\t"
+                        << (int)anno.length_ - (int)anno.tail_length_ << "\t"
+                        << (int)anno.tail_length_ << "\t"
+                        << anno.getReadSeq( genome ) << "\t"
+                        << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
+                        << info[i] << "\t"
+                        << info[ i+1 ] << "_"
+                        << anno.getReadSeq( genome ).substr(1,7) << "\n"
+                        ;
+                }
+            }
+        }
+    }
+}
+
 class Annotator : public engine::NamedComponent
 {
     struct HitHandler
@@ -151,7 +201,6 @@ class Annotator : public engine::NamedComponent
                 annobed_outputs.push_back( std::move( std::ofstream(
                     db.output_dir().string() + db.bed_samples[ smp ].first + "_annobed.tsv"
                 )));
-                annobed_outputs[ smp ] << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tType\tAnnoSeed\n";
             }
         }
 
@@ -184,50 +233,7 @@ class Annotator : public engine::NamedComponent
 
                     if( output_annobed_ )
                     {
-                        for( auto& anno : sample_bed_pair.second )
-                        {
-                            for( auto& info : anno.annotation_info_ )
-                            {
-                                if( info.size() == 0 )
-                                {
-                                    annobed_outputs[ sample_bed_pair.first ]
-                                        << anno.chromosome_ << "\t"
-                                        << anno.start_ << "\t"
-                                        << anno.end_ << "\t"
-                                        << anno.strand_ << "\t"
-                                        << anno.multiple_alignment_site_count_ << "\t"
-                                        << anno.reads_count_ << "\t"
-                                        << (int)anno.length_ - (int)anno.tail_length_ << "\t"
-                                        << (int)anno.tail_length_ << "\t"
-                                        << anno.getReadSeq( db.genome_table ) << "\t"
-                                        << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
-                                        << ".\t"
-                                        << ".\n"
-                                        ;
-                                }
-                                else
-                                {
-                                    for( int i = 0; i < info.size(); i+=2 )
-                                    {
-                                        annobed_outputs[ sample_bed_pair.first ]
-                                            << anno.chromosome_ << "\t"
-                                            << anno.start_ << "\t"
-                                            << anno.end_ << "\t"
-                                            << anno.strand_ << "\t"
-                                            << anno.multiple_alignment_site_count_ << "\t"
-                                            << anno.reads_count_ << "\t"
-                                            << (int)anno.length_ - (int)anno.tail_length_ << "\t"
-                                            << (int)anno.tail_length_ << "\t"
-                                            << anno.getReadSeq( db.genome_table ) << "\t"
-                                            << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
-                                            << info[i] << "\t"
-                                            << info[ i+1 ] << "_"
-                                            << anno.getReadSeq( db.genome_table ).substr(1,7) << "\n"
-                                            ;
-                                    }
-                                }
-                            }
-                        }
+                        output_annobed( annobed_outputs[ sample_bed_pair.first ], db.genome_table, sample_bed_pair.second );
                         annobed_outputs[ sample_bed_pair.first ].close();
                     }
 

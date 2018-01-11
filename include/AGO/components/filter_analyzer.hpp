@@ -743,125 +743,102 @@ class FilterAnalyzer : public engine::NamedComponent
             std::vector< std::pair< CountingTableType, CountingTableType >>& counting_tables
             )
     {
-        std::ofstream out_gmpm( output_path + "/SampleDifference_GMPM.tsv" );
-        std::ofstream out_gm  ( output_path + "/SampleDifference_GM.tsv"   );
-        std::ofstream out_pm  ( output_path + "/SampleDifference_PM.tsv"   );
+        std::ofstream out_loading( output_path + "/SampleDifference_Loading.tsv" );
+        std::ofstream out_tailing( output_path + "/SampleDifference_Tailing.tsv"   );
 
-        out_gmpm << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2\tLengthDifference";
-        out_gm   << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2\tLengthDifference";
-        out_pm   << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2\tLengthDifference";
+        out_loading << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2\tLengthDifference";
+        out_tailing << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2\tLengthDifference";
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            out_gmpm << "\t" << bed_samples[ smp ].first << "Length";
-            out_gm   << "\t" << bed_samples[ smp ].first << "Length";
-            out_pm   << "\t" << bed_samples[ smp ].first << "Length";
+            out_loading << "\t" << bed_samples[ smp ].first << "Length";
+            out_tailing << "\t" << bed_samples[ smp ].first << "Length";
         }
 
-        std::vector< double > vec_gmpm;
-        std::vector< double > vec_gm;
-        std::vector< double > vec_pm;
+        std::vector< double > vec_loading;
+        std::vector< double > vec_tailing;
 
-        std::vector< std::size_t > len_gmpm;
-        std::vector< std::size_t > len_gm;
-        std::vector< std::size_t > len_pm;
+        std::vector< std::size_t > len_loading;
+        std::vector< std::size_t > len_tailing;
 
-        std::vector< std::map< std::size_t, double >> vec_len_gmpm( bed_samples.size(), std::map< std::size_t, double >() );
-        std::vector< std::map< std::size_t, double >> vec_len_gm  ( bed_samples.size(), std::map< std::size_t, double >() );
-        std::vector< std::map< std::size_t, double >> vec_len_pm  ( bed_samples.size(), std::map< std::size_t, double >() );
+        std::vector< std::map< std::size_t, double >> vec_len_loading( bed_samples.size(), std::map< std::size_t, double >() );
+        std::vector< std::map< std::size_t, double >> vec_len_tailing( bed_samples.size(), std::map< std::size_t, double >() );
 
-        std::vector< std::pair< double, std::string >> temp_gmpm;
-        std::vector< std::pair< double, std::string >> temp_gm;
-        std::vector< std::pair< double, std::string >> temp_pm;
+        std::vector< std::pair< double, std::string >> temp_loading;
+        std::vector< std::pair< double, std::string >> temp_tailing;
 
-        std::tuple< double, std::size_t, std::size_t > df_tuple_gmpm;
-        std::tuple< double, std::size_t, std::size_t > df_tuple_gm;
-        std::tuple< double, std::size_t, std::size_t > df_tuple_pm;
+        std::tuple< double, std::size_t, std::size_t > df_tuple_loading;
+        std::tuple< double, std::size_t, std::size_t > df_tuple_tailing;
 
         double pm = 0.0;
-        double sum_gmpm = 0.0;
-        double sum_gm   = 0.0;
-        double sum_pm   = 0.0;
+        double gmpm = 0.0;
+        double sum_loading = 0.0;
+        double sum_tailing = 0.0;
 
-        std::string res_gmpm;
-        std::string res_gm;
-        std::string res_pm;
+        std::string res_loading;
+        std::string res_tailing;
 
         for( auto& anno : ano_len_idx.first )
         {
-            vec_gmpm.clear();
-            vec_gm  .clear();
-            vec_pm  .clear();
+            vec_loading.clear();
+            vec_tailing.clear();
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                pm = counting_tables[ smp ].first[ anno ][ 0 ] * counting_tables[ smp ].second[ anno ][ 0 ];
+                pm   = counting_tables[ smp ].first[ anno ][ 0 ] * counting_tables[ smp ].second[ anno ][ 0 ];
+                gmpm = counting_tables[ smp ].first[ anno ][ 0 ];
 
-                vec_gmpm.emplace_back( counting_tables[ smp ].first[ anno ][ 0 ] );
-                vec_gm  .emplace_back( counting_tables[ smp ].first[ anno ][ 0 ] - pm );
-                vec_pm  .emplace_back( pm );
+                vec_loading.emplace_back( gmpm );
+                vec_tailing.emplace_back( pm / gmpm * 100 );
 
                 for( auto& len : ano_len_idx.second )
                 {
-                    pm = counting_tables[ smp ].first[ anno ][ len ] * counting_tables[ smp ].second[ anno ][ len ];
+                    pm   = counting_tables[ smp ].first[ anno ][ len ] * counting_tables[ smp ].second[ anno ][ len ];
+                    gmpm = counting_tables[ smp ].first[ anno ][ len ];
 
-                    vec_len_gmpm[ smp ][ len ] = counting_tables[ smp ].first[ anno ][ len ];
-                    vec_len_gm  [ smp ][ len ] = counting_tables[ smp ].first[ anno ][ len ] - pm;
-                    vec_len_pm  [ smp ][ len ] = pm;
+                    vec_len_loading[ smp ][ len ] = gmpm;
+                    vec_len_tailing[ smp ][ len ] = pm / gmpm * 100;
                 }
             }
 
-            sum_gmpm = get_sum( vec_gmpm );
-            sum_gm   = get_sum( vec_gm   );
-            sum_pm   = get_sum( vec_pm   );
+            sum_loading = get_sum( vec_loading );
 
-            df_tuple_gmpm = get_difference( vec_gmpm );
-            df_tuple_gm   = get_difference( vec_gm   );
-            df_tuple_pm   = get_difference( vec_pm   );
+            df_tuple_loading = get_difference( vec_loading );
+            df_tuple_tailing = get_difference( vec_tailing );
 
-            len_gmpm = get_length_difference( vec_len_gmpm );
-            len_gm   = get_length_difference( vec_len_gm   );
-            len_pm   = get_length_difference( vec_len_pm   );
+            len_loading = get_length_difference( vec_len_loading );
+            len_tailing = get_length_difference( vec_len_tailing );
 
-            res_gmpm = "\n" + anno + "\t" + std::to_string( sum_gmpm ) + "\t";
-            res_gm   = "\n" + anno + "\t" + std::to_string( sum_gm   ) + "\t";
-            res_pm   = "\n" + anno + "\t" + std::to_string( sum_pm   ) + "\t";
+            res_loading = "\n" + anno + "\t" + std::to_string( sum_loading ) + "\t";
+            res_tailing = "\n" + anno + "\t" + std::to_string( sum_loading ) + "\t";
 
-            res_gmpm += std::to_string( std::get<0>( df_tuple_gmpm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gmpm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gmpm )].first;
-            res_gm += std::to_string( std::get<0>( df_tuple_gm )) + "\t" + bed_samples[ std::get<1>( df_tuple_gm )].first + ":" + bed_samples[ std::get<2>( df_tuple_gm )].first;
-            res_pm += std::to_string( std::get<0>( df_tuple_pm )) + "\t" + bed_samples[ std::get<1>( df_tuple_pm )].first + ":" + bed_samples[ std::get<2>( df_tuple_pm )].first;
+            res_loading += std::to_string( std::get<0>( df_tuple_loading )) + "\t" + bed_samples[ std::get<1>( df_tuple_loading )].first + ":" + bed_samples[ std::get<2>( df_tuple_loading )].first;
+            res_tailing += std::to_string( std::get<0>( df_tuple_tailing )) + "\t" + bed_samples[ std::get<1>( df_tuple_tailing )].first + ":" + bed_samples[ std::get<2>( df_tuple_tailing )].first;
 
-            res_gmpm += "\t" + std::to_string( get_length_distance( len_gmpm ));
-            res_gm   += "\t" + std::to_string( get_length_distance( len_gm   ));
-            res_pm   += "\t" + std::to_string( get_length_distance( len_pm   ));
+            res_loading += "\t" + std::to_string( get_length_distance( len_loading ));
+            res_tailing += "\t" + std::to_string( get_length_distance( len_tailing ));
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                res_gmpm += "\t" + std::to_string( len_gmpm[ smp ]);
-                res_gm   += "\t" + std::to_string( len_gm  [ smp ]);
-                res_pm   += "\t" + std::to_string( len_pm  [ smp ]);
+                res_loading += "\t" + std::to_string( len_loading[ smp ]);
+                res_tailing += "\t" + std::to_string( len_tailing[ smp ]);
             }
 
-            temp_gmpm.emplace_back( std::make_pair( sum_gmpm, res_gmpm ));
-            temp_gm  .emplace_back( std::make_pair( sum_gm  , res_gm   ));
-            temp_pm  .emplace_back( std::make_pair( sum_pm  , res_pm   ));
+            temp_loading.emplace_back( std::make_pair( sum_loading, res_loading ));
+            temp_tailing.emplace_back( std::make_pair( sum_loading, res_tailing ));
         }
 
-        sort_difference( temp_gmpm );
-        sort_difference( temp_gm   );
-        sort_difference( temp_pm   );
+        sort_difference( temp_loading );
+        sort_difference( temp_tailing );
 
-        for( auto& output : temp_gmpm ) out_gmpm << output.second;
-        for( auto& output : temp_gm   ) out_gm   << output.second;
-        for( auto& output : temp_pm   ) out_pm   << output.second;
+        for( auto& output : temp_loading ) out_loading << output.second;
+        for( auto& output : temp_tailing ) out_tailing << output.second;
 
-        out_gmpm << "\n";
-        out_gm   << "\n";
-        out_pm   << "\n";
+        out_loading << "\n";
+        out_tailing << "\n";
 
-        out_gmpm.close();
-        out_gm.close();
-        out_pm.close();
+        out_loading.close();
+        out_tailing.close();
     }
 
     void output_annotated_tailing(

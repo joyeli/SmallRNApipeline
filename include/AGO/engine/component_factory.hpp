@@ -8,10 +8,10 @@
 #include <AGO/components/fastq_input.hpp>
 #include <AGO/components/fasta_input.hpp>
 #include <AGO/components/sam_input.hpp>
+#include <AGO/components/annotator.hpp>
 #include <AGO/components/archive_input.hpp>
 #include <AGO/components/tailor_align.hpp>
 #include <AGO/components/sam_to_bed.hpp>
-#include <AGO/components/annotator.hpp>
 #include <AGO/components/filter.hpp>
 #include <AGO/components/analyzer.hpp>
 #include <AGO/components/vcf_annotation_analysis.hpp>

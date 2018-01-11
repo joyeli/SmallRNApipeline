@@ -9,6 +9,7 @@ namespace component {
 class ArchiveInput : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
+    bool output_annobed_;
 
   protected:
 
@@ -21,6 +22,8 @@ class ArchiveInput : public engine::NamedComponent
         {
             db.push_path( "sample_files", child.second );
         }
+
+        output_annobed_ = p.get_optional< bool >( "output_annobed" ).value_or( true );
     }
 
   public:
@@ -61,6 +64,17 @@ class ArchiveInput : public engine::NamedComponent
 
             db.bed_samples[ smp ].second = std::move( annotation_rawbeds );
             monitor.log( "Component ArchiveInput", ( db.bed_samples[ smp ].first ).c_str() );
+        }
+
+        if( output_annobed_ )
+        {
+            std::ofstream annobed_output;
+            for( size_t smp = 0; smp < db.bed_samples.size(); ++smp )
+            {
+                annobed_output.open( db.output_dir().string() + db.bed_samples[ smp ].first + "_annobed.tsv" );
+                output_annobed( annobed_output, db.genome_table, db.bed_samples[ smp ].second );
+                annobed_output.close();
+            }
         }
 
         monitor.log( "Component ArchiveInput", "Complete" );
