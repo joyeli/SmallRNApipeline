@@ -197,6 +197,14 @@ class Visualization
         boost::filesystem::create_directory( lendist_path );
         std::ofstream output;
 
+        // output.open( "test.log" );
+        // for( auto& result_type : all_results )
+        //     for( auto& samp : result_type.second )
+        //         for( auto& anno_len : samp.second )
+        //             for( auto& len : anno_len.second )
+        //                 output << result_type.first << "\t" << samp.first << "\t" << anno_len.first << "\t" << len << "\n";
+        // output.close();
+
         for( auto& result_type : all_results )
         {
             std::map< int, int > length_index;
@@ -235,7 +243,7 @@ class Visualization
 
                     output << "\n";
 
-                    std::vector< std::vector< int >> length_index_check;
+                    std::vector< std::set< int >> length_index_check;
 
                     int it = 0;
                     for( auto& biotype : result_type.second.begin()->second )
@@ -250,12 +258,12 @@ class Visualization
 
                             if( anno_check[0] == ".LenDist" )
                             {
-                                std::vector< int > length_index_check_new;
+                                std::set< int > length_index_check_new;
                                 std::map< std::string, std::vector< double >>::iterator anno = result_sample.second.find( biotype.first );
 
                                 for( auto& length : anno->second )
                                 {
-                                    length_index_check_new.push_back( length );
+                                    length_index_check_new.emplace( length );
                                 }
 
                                 length_index_check.push_back( length_index_check_new );
@@ -268,31 +276,13 @@ class Visualization
                             output << result_sample.first;
                             std::map< std::string, std::vector< double >>::iterator anno = result_sample.second.find( biotype.first );
 
-                                if( gmpm[1] == "GMPM" )
-                                {
-                                    int length = 0;
-
-                                    for( auto& index : length_index )
-                                    {
-                                        length++;
-                                    }
-
-
-                                    length = 0;
-
-                                    for( auto& index : length_index )
-                                    {
-                                        length++;
-                                    }
-                                }
-
                             int length = 0;
                             for( auto& index : length_index )
                             {
                                 if( index.first == 0 )
                                     continue;
 
-                                if( index.first != length_index_check[it][length] )
+                                if( length_index_check[it].find( index.first ) == length_index_check[it].end() )
                                 {
                                     output << "\t" << 0;
                                     continue;
@@ -322,7 +312,7 @@ class Visualization
 
                     output << "\n";
 
-                    std::vector< std::vector< int >> length_index_check;
+                    std::vector< std::set< int >> length_index_check;
 
                     int it = 0;
                     for( auto& biotype : result_type.second.begin()->second )
@@ -337,11 +327,11 @@ class Visualization
 
                             if( anno_check[0] == ".LenDist" )
                             {
-                                std::vector< int > length_index_check_new;
+                                std::set< int > length_index_check_new;
                                 std::map< std::string, std::vector< double >>::iterator anno = result_sample.second.find( biotype.first );
 
                                 for( auto& length : anno->second )
-                                    length_index_check_new.push_back( length );
+                                    length_index_check_new.emplace( length );
 
                                 length_index_check.push_back( length_index_check_new );
                                 continue;
@@ -359,7 +349,7 @@ class Visualization
                                 if( index.first == 0 )
                                     continue;
 
-                                if( index.first != length_index_check[it][length] )
+                                if( length_index_check[it].find( index.first ) == length_index_check[it].end() )
                                 {
                                     output << "\t" << 0;
                                     continue;

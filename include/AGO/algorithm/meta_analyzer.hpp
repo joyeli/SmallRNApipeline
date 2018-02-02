@@ -27,8 +27,63 @@ class MetaAnalyzer
 
         size_t sample_count = 0;
 
-        for( auto& sample : analyzer_result_samples )
+        // if( type == ".LenDist" )
+        // {
+        //     std::ofstream output( "test.log" );
+        //     for( auto& samp : analyzer_result_samples )
+        //         for( auto& anno_len : samp.second )
+        //             for( auto& anno : anno_len )
+        //             {
+        //                 for( auto& len : anno.second )
+        //                     output << samp.first << "\t" << anno.first << "\t" << len.first << "\t" << len.second << "\n";
+        //                 output << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n";
+        //             }
+        //     std::ofstream output( "test.log" );
+        //     output.close();
+        //     output.close();
+        // }
+        
+        std::map< std::size_t, std::vector< int >> lens_index;
+        
+        for( std::size_t i = 0; i < analyzer_result_samples.size(); ++i )
         {
+            for( auto& annos : analyzer_result_samples[i].second )
+            {
+                if( annos.find( read_count ) != annos.end() )
+                {
+                    std::size_t idx = 0;
+                    for( auto& len : annos.begin()->second )
+                    {
+                        if( lens_index.find( len.second ) == lens_index.end() )
+                            lens_index[ len.second ] = std::vector< int >( analyzer_result_samples.size(), -1 );
+
+                        lens_index[ len.second ][i] = idx; 
+                        idx++;
+                    }
+                }
+            }
+        }
+
+        // for( auto& len : lens_index )
+        // {
+        //     std::cerr << len.first;
+        //     for( auto& smp : len.second )
+        //         std::cerr << "\t" << smp;
+        //     std::cerr << "\n";
+        // }
+
+        std::vector< double > head_vec;
+        for( auto& len : lens_index )
+        {
+            if( len.first == 0 ) continue;
+            head_vec.emplace_back( len.first );
+        }
+        head_vec.emplace_back( 0 );
+
+        for( std::size_t smp = 0; smp < analyzer_result_samples.size(); ++smp )
+        {
+            auto& sample = analyzer_result_samples[ smp ];
+
             std::map< std::string, std::vector< double >> rd_anno_map;
             std::map< std::string, std::vector< double >> pp_anno_map;
 
@@ -36,13 +91,6 @@ class MetaAnalyzer
             {
                 if( annos.find( read_count ) != annos.end() )
                 {
-                    std::vector< double > head_vec;
-
-                    for( auto& len : annos.begin()->second )
-                    {
-                        head_vec.push_back( len.second );
-                    }
-
                     rd_anno_map.emplace( read_count, head_vec );
                     pp_anno_map.emplace( ppm, head_vec );
 
@@ -73,13 +121,24 @@ class MetaAnalyzer
                                 average = qres[ sample_count ].value_[ anno_count ].first / ppm_sum;
                             }
 
-                            std::vector< double > rd_vec;
-                            std::vector< double > pp_vec;
+                            std::vector< double > rd_vec = std::vector< double >( head_vec.size(), 0 );
+                            std::vector< double > pp_vec = std::vector< double >( head_vec.size(), 0 );
 
+                            int lenidx = 0;
+                            int shift = 0;
                             for( auto& len : it->second )
                             {
-                                rd_vec.push_back( len.second );
-                                pp_vec.push_back( len.second * average );
+                                if( lens_index[ head_vec[ lenidx ]][ smp ] == -1 ) shift++;
+                                rd_vec[ lens_index[ head_vec[ lenidx + shift ]][ smp ] + shift ] = len.second;
+                                pp_vec[ lens_index[ head_vec[ lenidx + shift ]][ smp ] + shift ] = len.second * average;
+
+                                // if( type == ".LenDist" && idx == "miRNA" )
+                                //     std::cerr << len.first << "\t"
+                                //               << len.second << "\t"
+                                //               << lenidx << "+" << shift << "\t"
+                                //               << head_vec[ lenidx + shift ] << "\t" 
+                                //               << lens_index[ head_vec[ lenidx + shift ]][ smp ] << "+" << shift << "\n";
+                                lenidx++;
                             }
 
                             rd_anno_map.emplace( idx, rd_vec );
@@ -87,8 +146,8 @@ class MetaAnalyzer
                         }
                         else
                         {
-                            rd_anno_map.emplace( idx, std::vector< double >( 0, annos.begin()->second.size() ));
-                            pp_anno_map.emplace( idx, std::vector< double >( 0, annos.begin()->second.size() ));
+                            rd_anno_map.emplace( idx, std::vector< double >( head_vec.size(), 0 ));
+                            pp_anno_map.emplace( idx, std::vector< double >( head_vec.size(), 0 ));
                         }
 
                         anno_count++;
@@ -110,8 +169,8 @@ class MetaAnalyzer
             rd_anno_map.emplace( anno_sum, get_sum_vec( rd_anno_map ));
             pp_anno_map.emplace( anno_sum, get_sum_vec( pp_anno_map ));
 
-            emplace_lens( rd_anno_map );
-            emplace_lens( pp_anno_map );
+            // emplace_lens( rd_anno_map );
+            // emplace_lens( pp_anno_map );
 
             rd_res.emplace( sample.first, rd_anno_map );
             pp_res.emplace( sample.first, pp_anno_map );
@@ -121,6 +180,17 @@ class MetaAnalyzer
 
         all_results.emplace_back( read_count, rd_res );
         all_results.emplace_back( ppm, pp_res );
+
+        // if( type == ".LenDist" )
+        // {
+        //     std::ofstream output( "test.log" );
+        //     for( auto& result_type : all_results )
+        //         for( auto& samp : result_type.second )
+        //             for( auto& anno_len : samp.second )
+        //                 for( auto& len : anno_len.second )
+        //                     output << result_type.first << "\t" << samp.first << "\t" << anno_len.first << "\t" << len << "\n";
+        //     output.close();
+        // }
     }
 
     std::vector< double > get_sum_vec( const std::map< std::string, std::vector< double >>& annos )

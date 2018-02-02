@@ -6,6 +6,27 @@
 namespace ago {
 namespace component {
 
+void output_result_for_test( const std::string& name, const std::string& sample, const std::string& type,
+        std::vector< std::map< std::string, std::map< std::string, double >>>& analyzer_result )
+//         Each    LenMir_Map  Anno_Seed           All_Length      Length
+{
+    std::ofstream output( name + "_" + sample + "_" + type + ".test" );
+
+    for( auto& map : analyzer_result )
+    {
+        for( auto& mir : map )
+        {
+            if( type != "" && mir.first != type && mir.first.at(0) != '.' )
+                continue;
+
+            for( auto& len : mir.second )
+                output << sample << "\t" << mir.first << "\t" << len.first << "\t" << len.second << "\n";
+        }
+    }
+
+    output.close();
+}
+
 class Analyzer : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
@@ -33,9 +54,9 @@ class Analyzer : public engine::NamedComponent
 
         for( auto& sample : db.bed_samples )
         {
-
             len.analyzer.run( &sample.second, 0, true, output_path, sample.first, db.genome_table, db.analyzer_result, 0 );
             len.tailing_ratio( db.analyzer_result );
+
 
             mir.analyzer.run( &sample.second, 0, true, output_path, sample.first, db.genome_table, db.analyzer_result, 0 );
             mir.tailing_ratio( db.analyzer_result );
@@ -49,6 +70,7 @@ class Analyzer : public engine::NamedComponent
             monitor.log( "Component Analyzer", ( sample.first ).c_str() );
 
             db.analyzer_result_samples.emplace_back( sample.first, db.analyzer_result );
+            output_result_for_test( output_path + "AnaDone", sample.first, "miRNA", db.analyzer_result );
             db.analyzer_result.clear();
             sample.second.clear();
         }
@@ -201,7 +223,6 @@ class Analyzer : public engine::NamedComponent
             anno_tail_map.emplace( anno, len_tail_temp );
         }
     }
-
 };
 
 } // end of namespace component

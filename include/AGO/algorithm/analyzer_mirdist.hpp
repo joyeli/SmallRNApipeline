@@ -207,7 +207,7 @@ class AnalyzerMirDist
                 total = tail_N.second + total;
 
             for( auto& tail_N : tail_length.second )
-                tail_N.second = tail_N.second / total;
+                tail_N.second = ( total == 0 ? 0 : ( tail_N.second / total ));
         }
 
         std::string NN;
