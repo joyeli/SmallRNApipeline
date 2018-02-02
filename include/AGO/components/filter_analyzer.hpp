@@ -812,7 +812,7 @@ class FilterAnalyzer : public engine::NamedComponent
                 gmpm = counting_tables[ smp ].first[ anno ][ 0 ];
 
                 vec_loading.emplace_back( gmpm );
-                vec_tailing.emplace_back(( pm < 1 ? 0 : pm ) / gmpm * 100 );
+                vec_tailing.emplace_back( pm < 1 ? sudo_count : ( pm / gmpm * 100 ));
             }
 
             sum_loading = get_sum( vec_loading );
