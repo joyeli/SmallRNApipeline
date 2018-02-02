@@ -70,7 +70,7 @@ class Analyzer : public engine::NamedComponent
             monitor.log( "Component Analyzer", ( sample.first ).c_str() );
 
             db.analyzer_result_samples.emplace_back( sample.first, db.analyzer_result );
-            output_result_for_test( output_path + "AnaDone", sample.first, "miRNA", db.analyzer_result );
+            // output_result_for_test( output_path + "AnaDone", sample.first, "miRNA", db.analyzer_result );
             db.analyzer_result.clear();
             sample.second.clear();
         }
