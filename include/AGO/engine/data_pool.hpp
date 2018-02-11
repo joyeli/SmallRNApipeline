@@ -10,8 +10,8 @@
 #include <AGO/engine/data_pool/genome.hpp>
 #include <AGO/engine/data_pool/formats.hpp>
 #include <AGO/engine/data_pool/tailor.hpp>
-#include <AGO/engine/data_pool/analyzer.hpp>
-#include <AGO/engine/data_pool/meta_analyzer.hpp>
+// #include <AGO/engine/data_pool/analyzer.hpp>
+// #include <AGO/engine/data_pool/meta_analyzer.hpp>
 
 namespace ago {
 namespace engine {
@@ -28,8 +28,8 @@ class DataPoolImpl
 , public ago::engine::data_pool::GenomeImpl
 , public ago::engine::data_pool::Formats
 , public ago::engine::data_pool::Tailor
-, public ago::engine::data_pool::Analyzer
-, public ago::engine::data_pool::MetaAnalyzer
+// , public ago::engine::data_pool::Analyzer
+// , public ago::engine::data_pool::MetaAnalyzer
 // [Opts]
 {
     cpt::engine::data_pool::Monitor< decltype( monitor_output_ )> monitor_;
@@ -43,8 +43,8 @@ class DataPoolImpl
     , GenomeImpl( *this )
     , Formats( *this )
     , Tailor( *this )
-    , Analyzer( *this )
-    , MetaAnalyzer( *this )
+    // , Analyzer( *this )
+    // , MetaAnalyzer( *this )
     , monitor_( monitor_output_, mointor_outfile_ )
     {
         monitor_.set_output_dir( this->output_dir().string() );

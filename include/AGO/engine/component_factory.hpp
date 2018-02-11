@@ -3,22 +3,23 @@
 #include <memory>
 #include <string>
 #include <AGO/engine/data_pool.hpp>
-#include <AGO/components/tailor_fastq_to_bed.hpp>
-#include <AGO/components/tailor_fasta_to_bed.hpp>
+// #include <AGO/components/tailor_fastq_to_bed.hpp>
+// #include <AGO/components/tailor_fasta_to_bed.hpp>
 #include <AGO/components/fastq_input.hpp>
 #include <AGO/components/fasta_input.hpp>
 #include <AGO/components/sam_input.hpp>
 #include <AGO/components/annotator.hpp>
 #include <AGO/components/archive_input.hpp>
-#include <AGO/components/tailor_align.hpp>
+// #include <AGO/components/tailor_align.hpp>
 #include <AGO/components/sam_to_bed.hpp>
 #include <AGO/components/filter.hpp>
-#include <AGO/components/analyzer.hpp>
+// #include <AGO/components/analyzer.hpp>
 #include <AGO/components/vcf_annotation_analysis.hpp>
 #include <AGO/components/vcf_min_annotation_cohorts_analysis.hpp>
-#include <AGO/components/filter_analyzer.hpp>
-#include <AGO/components/meta_analyzer.hpp>
-#include <AGO/components/visualization.hpp>
+// #include <AGO/components/filter_analyzer.hpp>
+#include <AGO/components/gene_type_analyzer.hpp>
+// #include <AGO/components/meta_analyzer.hpp>
+// #include <AGO/components/visualization.hpp>
 #include <AGO/components/github_tailor_fastq_to_bed.hpp>
 #include <AGO/components/github_tailor_fastq_to_sam_out.hpp>
 
@@ -52,22 +53,23 @@ class ComponentFactory
     {
 
         if( identifier == "" ){ /* TODO a error handle */ }
-        ID_MAP_TYPE( "TailorFastqToBed" , component::TailorFastqToBed )
-        ID_MAP_TYPE( "TailorFastaToBed" , component::TailorFastaToBed )
+        // ID_MAP_TYPE( "TailorFastqToBed" , component::TailorFastqToBed )
+        // ID_MAP_TYPE( "TailorFastaToBed" , component::TailorFastaToBed )
         ID_MAP_TYPE( "FastqInput" , component::FastqInput )
         ID_MAP_TYPE( "FastaInput" , component::FastaInput )
         ID_MAP_TYPE( "SamInput" , component::SamInput )
         ID_MAP_TYPE( "ArchiveInput" , component::ArchiveInput )
-        ID_MAP_TYPE( "TailorAlign" , component::TailorAlign )
+        // ID_MAP_TYPE( "TailorAlign" , component::TailorAlign )
         ID_MAP_TYPE( "SamToBed" , component::SamToBed )
         ID_MAP_TYPE( "Annotator" , component::Annotator )
         ID_MAP_TYPE( "Filter" , component::Filter )
-        ID_MAP_TYPE( "Analyzer", component::Analyzer )
+        // ID_MAP_TYPE( "Analyzer", component::Analyzer )
         ID_MAP_TYPE( "VcfAnnotationAnalysis", component::VcfAnnotationAnalysis )
         ID_MAP_TYPE( "VcfMinAnnotationCohortsAnalysis", component::VcfMinAnnotationCohortsAnalysis )
-        ID_MAP_TYPE( "FilterAnalyzer", component::FilterAnalyzer )
-        ID_MAP_TYPE( "MetaAnalyzer", component::MetaAnalyzer )
-        ID_MAP_TYPE( "Visualization", component::Visualization )
+        // ID_MAP_TYPE( "FilterAnalyzer", component::FilterAnalyzer )
+        ID_MAP_TYPE( "GeneTypeAnalyzer", component::GeneTypeAnalyzer )
+        // ID_MAP_TYPE( "MetaAnalyzer", component::MetaAnalyzer )
+        // ID_MAP_TYPE( "Visualization", component::Visualization )
         ID_MAP_TYPE( "GithubTailorFastqToBed", component::GithubTailorFastqToBed )
         ID_MAP_TYPE( "GithubTailorFastqToSamOut", component::GithubTailorFastqToSamOut )
         /* TODO ADD COMPONENT HERE */
