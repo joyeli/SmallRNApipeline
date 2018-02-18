@@ -217,36 +217,61 @@ class GeneTypeAnalyzerCounting
         }
     }
 
-    void table_refinding(
-            const AnnoLengthIndexType& ano_len_idx,
+    static void table_refinding(
+            AnnoLengthIndexType& ano_len_idx,
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
+            const std::size_t& min_len,
+            const std::size_t& max_len,
             const double& sudo_count = 0.0
             )
     {
+        std::set< std::size_t > len_idx;
+
+        std::vector< std::vector< CountingTableType >> anno_table_tail_temp
+            ( anno_table_tail.size(), std::vector< CountingTableType >( anno_table_tail[0].size() ));
+
+        for( auto& len : ano_len_idx.second )
+        {
+            if( min_len != 0 && len < min_len ) continue;
+            if( max_len != 0 && len > max_len ) continue;
+
+            len_idx.emplace( len );
+        }
+
+        if( min_len != 0 || max_len != 0 ) ano_len_idx.second = len_idx;
+
         for( auto& anno : ano_len_idx.first )
         {
             for( auto& len : ano_len_idx.second )
             {
+                if( min_len != 0 && len < min_len ) continue;
+                if( max_len != 0 && len > max_len ) continue;
+
                 for( std::size_t smp = 0; smp < anno_table_tail.size(); ++smp )
                 {
-                    for( auto& anno_table : anno_table_tail[ smp ] )
+                    for( std::size_t tal = 0; tal < anno_table_tail[ smp ].size(); ++tal )
                     {
-                        if( anno_table.find( anno ) == anno_table.end() ||
-                            anno_table[ anno ].find( len ) == anno_table[ anno ].end() )
-                            anno_table[ anno ][ len ] = sudo_count;
+                        if( min_len == 0 && max_len == 0 )
+                        {
+                            if( anno_table_tail[ smp ][ tal ].find( anno )        == anno_table_tail[ smp ][ tal ].end() ||
+                                anno_table_tail[ smp ][ tal ][ anno ].find( len ) == anno_table_tail[ smp ][ tal ][ anno ].end() )
+                                anno_table_tail[ smp ][ tal ][ anno ][ len ] = sudo_count;
+
+                            continue;
+                        }
+
+                        if( anno_table_tail_temp[ smp ][ tal ][ anno ].find( len ) == anno_table_tail_temp[ smp ][ tal ][ anno ].end() )
+                            anno_table_tail_temp[ smp ][ tal ][ anno ][ len ] = sudo_count;
+
+                        if( anno_table_tail[ smp ][ tal ][ anno ].find( len ) != anno_table_tail[ smp ][ tal ][ anno ].end() )
+                            anno_table_tail_temp[ smp ][ tal ][ anno ][ len ]  = anno_table_tail[ smp ][ tal ][ anno ][ len ];
                     }
                 }
             }
         }
+
+        if( min_len != 0 || max_len != 0 ) anno_table_tail = anno_table_tail_temp;
     }
-
-
-
-
-
-
-
-
 
 
 
@@ -437,54 +462,6 @@ class GeneTypeAnalyzerCounting
             }
         }
     }
-
-    // void XXX(
-    //         const std::vector< AnnotationRawBed<> >& annotations,
-    //         std::map< std::string, std::string >& anno_mark;
-    //         )
-    // {
-    //     //          annotation  count
-    //     std::map< std::string, double > anno_check;
-    //     std::map< std::string, std::map< std::string, double > annoseed_count;
-    //     //          annotation  token
-
-    //     double anno_check_sum;
-    //     double anno_counts;
-
-    //     for( auto& raw_bed : annotations )
-    //     {
-    //         anno_check.clear();
-    //         anno_check_sum = 0.0;
-
-    //         for( auto& raw_bed_info : raw_bed.annotation_info_ )
-    //         {
-    //             for( std::size_t i = 0; i < raw_bed_info.size(); i+=2 )
-    //             {
-    //                 anno_check_sum++;
-    //                 anno_counts = raw_bed.reads_count_ / raw_bed.multiple_alignment_site_count_;
-
-    //                 if( anno_check.find( raw_bed_info[i] ) == anno_check.end() )
-    //                     anno_check[ raw_bed_info[i] ] = anno_counts;
-
-    //                 anno_check[ raw_bed_info[i] ] += anno_counts;
-    //             }
-    //         }
-    //         // annos.emplace( raw_bed_info[ i+1 ] + "_" + raw_bed.getReadSeq( genome_table ).substr( 1, 7 ));
-
-    //         for( auto& anno : anno_check )
-    //         {
-    //             anno.second = anno.second / anno_check_sum;
-
-    //             if( anno_table.find( anno.first ) == anno_table.end() )
-    //                 anno_table[ anno.first ][ read_len ] = anno.second;
-
-    //             if( anno_table[ anno.first ].find( read_len ) == anno_table[ anno.first ].end() )
-    //                 anno_table[ anno.first ][ read_len ] = anno.second;
-
-    //             anno_table[ anno.first ][ read_len ] += anno.second;
-    //         }
-    //     }
-    // }
 };
 
 } // end of namespace algorithm

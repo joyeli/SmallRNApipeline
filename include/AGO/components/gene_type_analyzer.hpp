@@ -29,14 +29,20 @@ class GeneTypeAnalyzer
     std::vector< std::string > biotype_list;
 
     double sudo_count;
+
     bool is_filter_drop;
     bool output_annobed;
+
+    std::size_t min_len;
+    std::size_t max_len;
 
     virtual void config_parameters( const bpt::ptree& p ) override
     {
         sudo_count     = p.get_optional< double >( "sudo_count"     ).value_or( 0.000001 );
         is_filter_drop = p.get_optional< bool   >( "is_filter_drop" ).value_or( true     );
         output_annobed = p.get_optional< bool   >( "output_annobed" ).value_or( true     );
+        min_len = p.get_optional< std::size_t   >( "min_len"        ).value_or( 0        );
+        max_len = p.get_optional< std::size_t   >( "max_len"        ).value_or( 0        );
 
         if(  p.get_child_optional( "biotype_list" ))
         {
@@ -68,11 +74,12 @@ class GeneTypeAnalyzer
         auto& genome_table = db.genome_table;
 
         drop_filtering( bed_samples );
-
         ParaThreadPool smp_parallel_pool( bed_samples.size() );
-        boost::filesystem::create_directory( boost::filesystem::path( db.output_dir().string() + "/biotypes" ));
 
-        algorithm::GeneTypeAnalyzerBiotype( db.output_dir().string() + "/biotypes", genome_table, bed_samples );
+        std::string output_path = db.output_dir().string() + ( db.output_dir().string().at( db.output_dir().string().length() -1 ) != '/' ? "/" : "" ) ;
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "biotypes" ));
+
+        algorithm::GeneTypeAnalyzerBiotype( output_path + "biotypes", genome_table, bed_samples, min_len, max_len, sudo_count );
         algorithm::AnnoLengthIndexType ano_len_idx;
 
         std::vector< std::vector< algorithm::CountingTableType >> anno_table_tail;
@@ -81,7 +88,7 @@ class GeneTypeAnalyzer
         for( std::size_t i = 0; i < biotype_list.size(); ++i )
         {
             auto& biotype = biotype_list[i];
-            boost::filesystem::create_directory( boost::filesystem::path( db.output_dir().string() + "/" + biotype ));
+            boost::filesystem::create_directory( boost::filesystem::path( output_path + biotype ));
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
                     bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
@@ -99,22 +106,24 @@ class GeneTypeAnalyzer
             smp_parallel_pool.flush_pool();
 
             ano_len_idx = get_ano_len_idx( db.genome_table, bed_samples, biotype );
-            table_refinding( ano_len_idx, anno_table_tail, sudo_count );
+            table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
             algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
-            algorithm::GeneTypeAnalyzerEachtype( db.output_dir().string() + "/" + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark );
 
-            // output_loading_difference( db.output_dir().string() + "/" + biotype, bed_samples, ano_len_idx, ppm_counting_tables, sudo_count );
-            // output_length_difference( db.output_dir().string() + "/" + biotype, bed_samples, ano_len_idx, ppm_counting_tables );
+            algorithm::GeneTypeAnalyzerEachtype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark
+                    );
+
+            // output_loading_difference( output_path + biotype, bed_samples, ano_len_idx, ppm_counting_tables, sudo_count );
+            // output_length_difference( output_path + biotype, bed_samples, ano_len_idx, ppm_counting_tables );
             // if( biotype == "miRNA" )
-            //     output_arms_difference( db.output_dir().string() + "/" + biotype, bed_samples, ano_len_idx, ppm_counting_tables );
+            //     output_arms_difference( output_path + biotype, bed_samples, ano_len_idx, ppm_counting_tables );
         }
 
         if( output_annobed )
         {
             for( size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                std::ofstream annobed_output( db.output_dir().string() + bed_samples[ smp ].first + "_annobed.tsv" );
+                std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_annobed.tsv" );
                 annobed_outputing( annobed_output, db.genome_table, bed_samples[ smp ].second );
                 annobed_output.close();
             }

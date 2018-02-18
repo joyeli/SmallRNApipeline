@@ -40,7 +40,10 @@ class GeneTypeAnalyzerBiotype
     GeneTypeAnalyzerBiotype(
             std::string output_path_,
             std::map< std::string, std::string >& genome_table,
-            std::vector< BedSampleType >& bed_samples
+            std::vector< BedSampleType >& bed_samples,
+            const std::size_t& min_len,
+            const std::size_t& max_len,
+            const double& sudo_count
             )
         : output_path( output_path_ + ( output_path_.at( output_path_.length() -1 ) != '/' ? "/" : "" ))
         , smp_parallel_pool( bed_samples.size() )
@@ -66,6 +69,7 @@ class GeneTypeAnalyzerBiotype
         }
 
         smp_parallel_pool.flush_pool();
+        GeneTypeAnalyzerCounting::table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
@@ -101,9 +105,9 @@ class GeneTypeAnalyzerBiotype
         GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot );
         GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist );
 
-        GeneTypeAnalyzerValplot::output_valplot( output_path + biotype + "All_", bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM" );
-        GeneTypeAnalyzerValplot::output_valplot( output_path + biotype + "All_", bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"   );
-        GeneTypeAnalyzerValplot::output_valplot( output_path + biotype + "All_", bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"   );
+        output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM" );
+        output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"   );
+        output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"   );
 
         GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
         GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
@@ -171,6 +175,90 @@ class GeneTypeAnalyzerBiotype
 
             for( std::size_t ldx = 0; ldx < ano_len_idx.second.size(); ++ldx )
                 output << "\t" << ( token == "GMPM" ? gm[ ldx ] + pm[ ldx ] : ( token == "GM" ? gm[ ldx ] : pm[ ldx ] ));
+        }
+
+        output << "\n";
+        output.close();
+    }
+
+    std::vector< double > get_sums( const std::vector< std::pair< std::string, std::vector< double >>>& value_vecs )
+    {
+        std::vector< double > sample_sums( value_vecs[0].second.size(), 0 );
+        for( auto& anno : value_vecs )
+        {
+            for( std::size_t smp = 0; smp < anno.second.size(); ++smp )
+                sample_sums[ smp ] += anno.second[ smp ];
+        }
+        return sample_sums;
+    }
+
+    void output_biotype(
+            const std::string& output_name,
+            const std::vector< BedSampleType >& bed_samples,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< std::vector< CountingTableType >> anno_table_tail,
+            std::vector< std::map< std::string, std::string >>& anno_mark,
+            const std::string& token
+            )
+    {
+        std::ofstream output( output_name + "All_" + token + ".tsv" );
+        output << "Annotation";
+
+        double gm = 0.0;
+        double pm = 0.0;
+
+        std::vector< double > sample_sums;
+        std::vector< double > sample_values;
+        std::vector< std::pair< std::string, std::vector< double >>> value_vecs;
+
+        for( auto& smp  : bed_samples ) output << "\t" << smp.first;
+        for( auto& anno : ano_len_idx.first )
+        {
+            sample_values = std::vector< double >( bed_samples.size() );
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                gm = 0.0;
+                pm = 0.0;
+
+                if( token != "PM" || token == "Tailing" )
+                {
+                    if( anno_table_tail[ smp ][5].find( anno ) != anno_table_tail[ smp ][5].end() )
+                        for( auto& len : ano_len_idx.second )
+                        {
+                            if( anno_table_tail[ smp ][5][ anno ].find( len ) != anno_table_tail[ smp ][5][ anno ].end() )
+                                gm += anno_table_tail[ smp ][5][ anno ][ len ];
+                        }
+                }
+
+                if( token != "GM" || token == "Tailing" )
+                {
+                    for( std::size_t i = 0; i < 5; i++ )
+                    {
+                        if( anno_table_tail[ smp ][i].find( anno ) != anno_table_tail[ smp ][i].end() )
+                            for( auto& len : ano_len_idx.second )
+                            {
+                                if( anno_table_tail[ smp ][i][ anno ].find( len ) != anno_table_tail[ smp ][i][ anno ].end() )
+                                    pm += anno_table_tail[ smp ][i][ anno ][ len ];
+                            }
+                    }
+                }
+
+                sample_values[ smp ] = 
+                    ( token == "GMPM" ? gm + pm : ( token == "GM" ? gm : ( token == "PM" ? pm : (( gm + pm ) < 1 ? 0 : ( pm * 100 / ( gm + pm ))))));
+            }
+
+            value_vecs.emplace_back( std::make_pair( anno +
+                ( anno_mark[0].find( anno ) != anno_mark[0].end() ? anno_mark[0][ anno ] : "" ), sample_values ));
+        }
+
+        sample_sums = get_sums( value_vecs );
+
+        for( auto& anno : value_vecs )
+        {
+            output << "\n" << anno.first << std::setprecision( 0 ) << std::fixed;
+            for( std::size_t smp = 0; smp < anno.second.size(); ++smp )
+                output << "\t" << anno.second[ smp ] * 100 / sample_sums[ smp ];
         }
 
         output << "\n";

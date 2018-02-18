@@ -62,7 +62,7 @@ class GeneTypeAnalyzerValplot
                     }
                 }
 
-                output << "\t" << ( token == "GMPM" ? gm + pm : ( token == "GM" ? gm : ( token == "PM" ? pm : ( pm * 100 / ( gm + pm )))));
+                output << "\t" << ( token == "GMPM" ? gm + pm : ( token == "GM" ? gm : ( token == "PM" ? pm : (( gm + pm ) < 1 ? 0 : ( pm * 100 / ( gm + pm ))))));
             }
         }
 

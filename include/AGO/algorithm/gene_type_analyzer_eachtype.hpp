@@ -4,6 +4,8 @@
 #include <AGO/algorithm/gene_type_analyzer_dotplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_lendist.hpp>
 #include <AGO/algorithm/gene_type_analyzer_valplot.hpp>
+#include <AGO/algorithm/gene_type_analyzer_ranking.hpp>
+#include <AGO/algorithm/gene_type_analyzer_bubplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
 
 namespace ago {
@@ -17,6 +19,8 @@ class GeneTypeAnalyzerEachtype
     std::string dotplot;
     std::string lendist;
     std::string valplot;
+    std::string ranking;
+    std::string bubplot;
 
   public:
 
@@ -26,6 +30,8 @@ class GeneTypeAnalyzerEachtype
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
         , valplot( "ValPlot/" )
+        , ranking( "Ranking/" )
+        , bubplot( "Bubplot/" )
     {}
 
     GeneTypeAnalyzerEachtype(
@@ -40,10 +46,14 @@ class GeneTypeAnalyzerEachtype
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
         , valplot( "ValPlot/" )
+        , ranking( "Ranking/" )
+        , bubplot( "Bubplot/" )
     {
         boost::filesystem::create_directory( boost::filesystem::path( output_path + dotplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + lendist ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + valplot ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + ranking ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + bubplot ));
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
@@ -60,15 +70,24 @@ class GeneTypeAnalyzerEachtype
             });
         }
 
-        GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot );
-        GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist );
 
         GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
         GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
         GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
         GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
 
+        GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
+        GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
+        GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
+        GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
+
+        GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples );
+
+        GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot );
+        GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist );
+
         GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + valplot );
+        GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + ranking );
 
         smp_parallel_pool.flush_pool();
     }
