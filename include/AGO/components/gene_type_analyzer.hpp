@@ -109,14 +109,8 @@ class GeneTypeAnalyzer
             table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
             algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
-
-            algorithm::GeneTypeAnalyzerEachtype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark
-                    );
-
-            // output_loading_difference( output_path + biotype, bed_samples, ano_len_idx, ppm_counting_tables, sudo_count );
-            // output_length_difference( output_path + biotype, bed_samples, ano_len_idx, ppm_counting_tables );
-            // if( biotype == "miRNA" )
-            //     output_arms_difference( output_path + biotype, bed_samples, ano_len_idx, ppm_counting_tables );
+            algorithm::GeneTypeAnalyzerEachtype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark );
+            algorithm::GeneTypeAnalyzerDifference( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail );
         }
 
         if( output_annobed )
