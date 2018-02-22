@@ -6,7 +6,6 @@
 #include <AGO/algorithm/gene_type_analyzer_biotype.hpp>
 #include <AGO/algorithm/gene_type_analyzer_quantile.hpp>
 #include <AGO/algorithm/gene_type_analyzer_eachtype.hpp>
-#include <AGO/algorithm/gene_type_analyzer_difference.hpp>
 #include <AGO/algorithm/gene_type_analyzer_annobed.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
 #include <iomanip>
@@ -109,8 +108,7 @@ class GeneTypeAnalyzer
             table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
             algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
-            algorithm::GeneTypeAnalyzerEachtype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark );
-            algorithm::GeneTypeAnalyzerDifference( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail );
+            algorithm::GeneTypeAnalyzerEachtype( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail, anno_mark, sudo_count );
         }
 
         if( output_annobed )

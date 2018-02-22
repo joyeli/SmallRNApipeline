@@ -20,7 +20,8 @@ class GeneTypeAnalyzerBubplot
 
         for( auto& smp : bed_samples )
         {
-            boost::filesystem::create_symlink(( "../LenDist/" + smp.first + ".tsv" ).c_str(), ( output_name + smp.first + ".tsv" ).c_str() );
+            if( !boost::filesystem::exists( output_name + smp.first + ".tsv" ))
+                boost::filesystem::create_symlink(( "../LenDist/" + smp.first + ".tsv" ).c_str(), ( output_name + smp.first + ".tsv" ).c_str() );
         }
     }
 
