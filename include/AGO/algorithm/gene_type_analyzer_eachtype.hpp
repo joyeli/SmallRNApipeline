@@ -15,7 +15,7 @@ namespace algorithm {
 class GeneTypeAnalyzerEachtype
 {
     std::string output_path;
-    ParaThreadPool smp_parallel_pool;
+    ParaThreadPool parallel_pool;
 
     std::string dotplot;
     std::string lendist;
@@ -28,7 +28,7 @@ class GeneTypeAnalyzerEachtype
 
     GeneTypeAnalyzerEachtype()
         : output_path( "" )
-        , smp_parallel_pool( 0 )
+        , parallel_pool( 0 )
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
         , valplot( "ValPlot/" )
@@ -44,10 +44,11 @@ class GeneTypeAnalyzerEachtype
             AnnoLengthIndexType& ano_len_idx,
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
             std::vector< std::map< std::string, std::string >>& anno_mark,
-            double& sudo_count_
+            std::size_t& thread_number,
+            auto& genome_table
             )
         : output_path( output_path_ + ( output_path_.at( output_path_.length() -1 ) != '/' ? "/" : "" ) + biotype + "/" )
-        , smp_parallel_pool( bed_samples.size() * 2 + 25 )
+        , parallel_pool( thread_number )
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
         , valplot( "ValPlot/" )
@@ -66,12 +67,12 @@ class GeneTypeAnalyzerEachtype
         {
             const auto& sample_name = bed_samples[ smp ].first;
 
-            smp_parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+            parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
             {
                 GeneTypeAnalyzerDotplot::output_dotplot( output_path + dotplot, ano_len_idx, anno_table_tail[ smp ], anno_mark[ smp ], sample_name );
             });
 
-            smp_parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+            parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
             {
                 GeneTypeAnalyzerLendist::output_lendist( output_path + lendist, ano_len_idx, anno_table_tail[ smp ], anno_mark[ smp ], sample_name );
             });
@@ -79,117 +80,110 @@ class GeneTypeAnalyzerEachtype
 
 
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
         {
             GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
         {
             GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
         {
             GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
         {
             GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
         });
 
 
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
         {
             GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
         {
             GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
         {
             GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
         {
             GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
         });
 
 
 
-        smp_parallel_pool.job_post([ this ] ()
+        parallel_pool.job_post([ this ] ()
         {
             GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot );
         });
 
-        smp_parallel_pool.job_post([ this ] ()
+        parallel_pool.job_post([ this ] ()
         {
             GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist );
         });
 
-        smp_parallel_pool.job_post([ this ] ()
+        parallel_pool.job_post([ this ] ()
         {
             GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + valplot );
         });
 
-        smp_parallel_pool.job_post([ this ] ()
+        parallel_pool.job_post([ this ] ()
         {
             GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + ranking );
         });
 
 
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
-        {
-            GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples );
-        });
-
-
-
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
         {
             GeneTypeAnalyzerDifference::output_loading_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "GMPM" );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
         {
             GeneTypeAnalyzerDifference::output_loading_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "GM" );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
         {
             GeneTypeAnalyzerDifference::output_loading_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "PM" );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
         {
             GeneTypeAnalyzerDifference::output_loading_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
         });
 
 
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
         {
             GeneTypeAnalyzerDifference::output_length_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "GMPM" );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
         {
             GeneTypeAnalyzerDifference::output_length_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "GM" );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
         {
             GeneTypeAnalyzerDifference::output_length_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "PM" );
         });
 
-        smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
         {
             GeneTypeAnalyzerDifference::output_length_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
         });
@@ -198,28 +192,30 @@ class GeneTypeAnalyzerEachtype
 
         if( biotype == "miRNA" )
         {
-            smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "GMPM" );
             });
 
-            smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "GM" );
             });
 
-            smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "PM" );
             });
 
-            smp_parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
             });
+
+            GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, genome_table );
         }
 
-        smp_parallel_pool.flush_pool();
+        parallel_pool.flush_pool();
     }
 };
 

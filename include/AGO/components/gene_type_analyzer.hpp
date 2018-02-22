@@ -32,14 +32,16 @@ class GeneTypeAnalyzer
     bool is_filter_drop;
     bool output_annobed;
 
+    std::size_t thread_number;
     std::size_t min_len;
     std::size_t max_len;
 
     virtual void config_parameters( const bpt::ptree& p ) override
     {
-        sudo_count     = p.get_optional< double >( "sudo_count"     ).value_or( 0.000001 );
-        is_filter_drop = p.get_optional< bool   >( "is_filter_drop" ).value_or( true     );
-        output_annobed = p.get_optional< bool   >( "output_annobed" ).value_or( true     );
+        sudo_count     = p.get_optional< double      >( "sudo_count"     ).value_or( 0.000001 );
+        is_filter_drop = p.get_optional< bool        >( "is_filter_drop" ).value_or( true     );
+        output_annobed = p.get_optional< bool        >( "output_annobed" ).value_or( true     );
+        thread_number  = p.get_optional< std::size_t >( "thread_number"  ).value_or( 8   );
         min_len = p.get_optional< std::size_t   >( "min_len"        ).value_or( 0        );
         max_len = p.get_optional< std::size_t   >( "max_len"        ).value_or( 0        );
 
@@ -104,11 +106,11 @@ class GeneTypeAnalyzer
 
             smp_parallel_pool.flush_pool();
 
-            ano_len_idx = get_ano_len_idx( db.genome_table, bed_samples, biotype );
+            ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype );
             table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
             algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
-            algorithm::GeneTypeAnalyzerEachtype( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail, anno_mark, sudo_count );
+            algorithm::GeneTypeAnalyzerEachtype( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail, anno_mark, thread_number, genome_table );
         }
 
         if( output_annobed )
@@ -116,7 +118,7 @@ class GeneTypeAnalyzer
             for( size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
                 std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_annobed.tsv" );
-                annobed_outputing( annobed_output, db.genome_table, bed_samples[ smp ].second );
+                annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second );
                 annobed_output.close();
             }
         }
