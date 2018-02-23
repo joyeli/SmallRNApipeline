@@ -83,32 +83,38 @@ class GeneTypeAnalyzerBubplot
         }
 
         ParaThreadPool parallel_pool( thread_number );
+        std::vector< std::pair< std::string, std::vector< std::pair< ChrRangeType, std::size_t >>>> parallel_vec;
+        std::vector< std::size_t > parallel_indx;
 
-        std::size_t task_number = thread_number * 1000;
-        std::size_t task_counts = 0;
+        std::size_t task_number = thread_number * 10;
 
         for( auto& anno : chr_mappings )
+            parallel_vec.emplace_back( anno );
+
+        chr_mappings.clear();
+
+        for( std::size_t anno = 0; anno < parallel_vec.size(); ++anno )
         {
-            task_counts++;
+            parallel_indx.emplace_back( anno );
 
-            parallel_pool.job_post([ &anno ] ()
-            {
-                recursive_merge( anno.second, 0 );
-                range_counting_sort( anno.second );
-            });
+            if( parallel_indx.size() >= task_number )
+                parallel_pool.job_post([ parallel_indx, &parallel_vec ] ()
+                {
+                    for( auto& idx : parallel_indx )
+                    {
+                        recursive_merge( parallel_vec[ idx ].second, 0 );
+                        range_counting_sort( parallel_vec[ idx ].second );
+                    }
+                });
 
-            if( task_counts >= task_number )
-            {
-                task_counts = 0;
-                parallel_pool.flush_pool();
-            }
+            parallel_indx.clear();
         }
 
         parallel_pool.flush_pool();
 
         std::map< std::string, ChrRangeType > chr_mapping_res;
 
-        for( auto& anno : chr_mappings )
+        for( auto& anno : parallel_vec )
             chr_mapping_res[ anno.first ] = anno.second[0].first;
 
         return chr_mapping_res;
