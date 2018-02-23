@@ -212,7 +212,12 @@ class GeneTypeAnalyzerEachtype
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
             });
 
-            GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, genome_table );
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+            {
+                GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + bubplot );
+            });
+
+            GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot , bed_samples, biotype, thread_number, genome_table );
         }
 
         parallel_pool.flush_pool();

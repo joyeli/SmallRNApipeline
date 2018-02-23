@@ -87,7 +87,7 @@ class GeneTypeAnalyzerDotplot
         output << "    <body>" << "\n";
         output << "" << "\n";
         output << "    <? " << "\n";
-        output << "        // Shell_Exec( 'rm /tmp/*' );" << "\n";
+        output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
         output << "        $GMPM = $_POST['GMPM'];" << "\n";
         output << "        $FGMPM = $_POST['FGMPM'];" << "\n";
         output << "        $isLog = $_POST['isLog'];" << "\n";
