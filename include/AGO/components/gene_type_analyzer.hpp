@@ -36,14 +36,19 @@ class GeneTypeAnalyzer
     std::size_t min_len;
     std::size_t max_len;
 
+    std::string node_path;
+    std::string heatbub_js;
+
     virtual void config_parameters( const bpt::ptree& p ) override
     {
         sudo_count     = p.get_optional< double      >( "sudo_count"     ).value_or( 0.000001 );
         is_filter_drop = p.get_optional< bool        >( "is_filter_drop" ).value_or( true     );
         output_annobed = p.get_optional< bool        >( "output_annobed" ).value_or( true     );
         thread_number  = p.get_optional< std::size_t >( "thread_number"  ).value_or( 8   );
-        min_len = p.get_optional< std::size_t   >( "min_len"        ).value_or( 0        );
-        max_len = p.get_optional< std::size_t   >( "max_len"        ).value_or( 0        );
+        min_len = p.get_optional< std::size_t    >( "min_len"    ).value_or( 0        );
+        max_len = p.get_optional< std::size_t    >( "max_len"    ).value_or( 0        );
+        node_path  = p.get_optional< std::string >( "node_path"  ).value_or( "/home/joyel/bin/node" );
+        heatbub_js = p.get_optional< std::string >( "heatbub_js" ).value_or( "/home/joyel/WorkDir/AgoD3/heatmap_bubble_plot/heatmap_bubble_plot.js" );
 
         if(  p.get_child_optional( "biotype_list" ))
         {
@@ -110,7 +115,8 @@ class GeneTypeAnalyzer
             table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
             algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
-            algorithm::GeneTypeAnalyzerEachtype( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail, anno_mark, thread_number, genome_table );
+            algorithm::GeneTypeAnalyzerEachtype(
+                    biotype, output_path, bed_samples, ano_len_idx, anno_table_tail, anno_mark, thread_number, genome_table, node_path, heatbub_js );
         }
 
         if( output_annobed )

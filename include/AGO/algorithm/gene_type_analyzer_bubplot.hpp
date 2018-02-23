@@ -203,7 +203,11 @@ class GeneTypeAnalyzerBubplot
 		return c;
 	}
 
-    static void output_bubplot_visualization( const std::string& output_name )
+    static void output_bubplot_visualization(
+            const std::string& output_name,
+            const std::string& node_path,
+            const std::string& heatbub_js
+            )
     {
         std::ofstream output( output_name + "index.php" );
 
@@ -356,13 +360,23 @@ class GeneTypeAnalyzerBubplot
         output << "" << "\n";
         output << "#<!--======================== Debug ==========================-->" << "\n";
         output << "" << "\n";
-        output << "        echo \"<br/> node heatmap_bubble_plot.js\";" << "\n";
-        output << "        if( $Chart_Types != '' ) echo \" --mode $Chart_Types\";" << "\n";
-        output << "        if( $GMPMT_Types != '' ) echo \" --type $GMPMT_Types\";" << "\n";
-        output << "        if( $Annotation_Select != '' ) echo \" --input $Annotation_Select\";" << "\n";
-        output << "        if( !Empty( $Annotation_Arms )) echo \" --arm \".Implode( '', $Annotation_Arms );" << "\n";
-        output << "        if( !Empty( $Sample_Files )) echo \"  --files \".Implode( ' ', $Sample_Files );" << "\n";
-        output << "        if( $isLog2 != '' ) echo \" $isLog2\";" << "\n";
+        output << "        $Script = '" << node_path << " " << heatbub_js << "';" << "\n";
+        output << "        if( $Chart_Types != '' ) $Script = $Script.' --mode '.$Chart_Types;" << "\n";
+        output << "        if( $GMPMT_Types != '' ) $Script = $Script.' --type '.$GMPMT_Types;" << "\n";
+        output << "        if( $Annotation_Select != '' ) $Script = $Script.' --input '.$Annotation_Select;" << "\n";
+        output << "        if( !Empty( $Annotation_Arms )) $Script = $Script.' --arm '.Implode( '', $Annotation_Arms );" << "\n";
+        output << "        if( !Empty( $Sample_Files )) $Script = $Script.' --files '.Implode( ' ', $Sample_Files );" << "\n";
+        output << "        if( $isLog2 != '' ) $Script = $Script.' '.$isLog2;" << "\n";
+        output << "        echo '<br/>'.$Script;" << "\n";
+        output << "" << "\n";
+        output << "        if( $Chart_Types != '' && $GMPMT_Types != '' && $Annotation_Select != '' &&" << "\n";
+        output << "            !Empty( $Annotation_Arms ) && !Empty( $Sample_Files ))" << "\n";
+        output << "        {" << "\n";
+        output << "            $handle = popen( \"$Script 2>&1\", 'r' );" << "\n";
+        output << "            while( $read = fread( $handle, 20096 )) $response[] = trim( $read );" << "\n";
+        output << "            pclose( $handle ); flush();" << "\n";
+        output << "            echo '<br />'.print_r( $response );" << "\n";
+        output << "        }" << "\n";
         output << "" << "\n";
         output << "    ?>" << "\n";
         output << "    </body>" << "\n";
