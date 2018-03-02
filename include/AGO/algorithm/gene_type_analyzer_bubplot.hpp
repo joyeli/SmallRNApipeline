@@ -6,7 +6,8 @@ namespace algorithm {
 
 class GeneTypeAnalyzerBubplot
 {
-    using ChrRangeType = std::tuple< std::string, std::size_t, std::size_t, char >;
+    using ChrRangeType = std::tuple< std::string, std::size_t, std::size_t, char, std::size_t >;
+    //                                  chr         start           end   strand   seed_end
 
   public:
 
@@ -15,16 +16,18 @@ class GeneTypeAnalyzerBubplot
 
     static void output_bubplot(
             const std::string& output_name,
-            const std::vector< BedSampleType >& bed_samples,
+            std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
             const std::size_t& thread_number,
+            const std::size_t& extand_mer,
+            const double& ppm_filter,
             auto& genome_table
             )
     {
         for( auto& smp : bed_samples ) if( !boost::filesystem::exists( output_name + smp.first + ".tsv" ))
             boost::filesystem::create_symlink(( "../LenDist/" + smp.first + ".tsv" ).c_str(), ( output_name + smp.first + ".tsv" ).c_str() );
 
-        std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number );
+        std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extand_mer, ppm_filter );
         std::vector< std::string > out_vec = sequence_formating( chr_mapping, genome_table );
 
         std::ofstream output( output_name + "AnnoSeq.tsv" );
@@ -38,15 +41,21 @@ class GeneTypeAnalyzerBubplot
     }
 
     static std::map< std::string, ChrRangeType > get_chrmap_table(
-            const std::vector< BedSampleType >& bed_samples,
+            std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
-            const std::size_t& thread_number
+            const std::size_t& thread_number,
+            const std::size_t& extand_mer,
+            const double& ppm_filter
             )
     {
-        std::map< std::string, std::vector< std::pair< ChrRangeType, std::size_t >>> chr_mappings;
+        double ppm;
+        ChrRangeType range_temp;
+        std::map< std::string, std::map< ChrRangeType, std::size_t >> chr_mappings;
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
+            ppm = GeneTypeAnalyzerCounting::get_ppm( bed_samples[ smp ].second );
+
             for( auto& raw_bed : bed_samples[ smp ].second )
             {
                 for( auto& raw_bed_info : raw_bed.annotation_info_ )
@@ -54,31 +63,38 @@ class GeneTypeAnalyzerBubplot
                     for( std::size_t i = 0; i < raw_bed_info.size(); i+=2 )
                     {
                         if( raw_bed_info[i] != biotype ) continue;
+                        if( raw_bed.reads_count_ * ppm / raw_bed.multiple_alignment_site_count_ < ppm_filter ) continue;
 
-                        if( chr_mappings.find( raw_bed_info[ i+1 ] ) == chr_mappings.end() )
-                            chr_mappings[ raw_bed_info[ i+1 ]] = std::vector< std::pair< ChrRangeType, std::size_t >>();
+                        range_temp = std::make_tuple(
+                                raw_bed.chromosome_,
+                                ( raw_bed.strand_ == '+' ? raw_bed.start_ : raw_bed.start_ - extand_mer ),
+                                ( raw_bed.strand_ == '+' ? raw_bed.end_ + extand_mer : raw_bed.end_ ),
+                                raw_bed.strand_,
+                                ( raw_bed.strand_ == '+' ? raw_bed.start_ + 8 : raw_bed.end_ - 8 )
+                                );
 
-                        chr_mappings[ raw_bed_info[ i+1 ]].emplace_back(
-                                std::make_pair( std::make_tuple(
-                                    raw_bed.chromosome_,
-                                    raw_bed.start_,
-                                    raw_bed.end_,
-                                    raw_bed.strand_ ),
-                                    0
-                                ));
+                        if( chr_mappings[ raw_bed_info[ i+1 ]].find( range_temp ) == chr_mappings[ raw_bed_info[ i+1 ]].end() )
+                            chr_mappings[ raw_bed_info[ i+1 ]][ range_temp ] = 0;
+
+                        chr_mappings[ raw_bed_info[ i+1 ]][ range_temp ]++;
                     }
                 }
             }
         }
 
         ParaThreadPool parallel_pool( thread_number );
-        std::vector< std::pair< std::string, std::vector< std::pair< ChrRangeType, std::size_t >>>> parallel_vec;
-        std::vector< std::size_t > parallel_indx;
-
         std::size_t task_number = thread_number * 10;
 
+        std::vector< std::size_t > parallel_indx;
+        std::vector< std::pair< ChrRangeType, std::size_t >> ranges_temp;
+        std::vector< std::pair< std::string, std::vector< std::pair< ChrRangeType, std::size_t >>>> parallel_vec;
+
         for( auto& anno : chr_mappings )
-            parallel_vec.emplace_back( anno );
+        {
+            for( auto& ranges : anno.second ) ranges_temp.emplace_back( ranges );
+            parallel_vec.emplace_back( std::make_pair( anno.first, ranges_temp ));
+            ranges_temp.clear();
+        }
 
         chr_mappings.clear();
 
@@ -87,18 +103,32 @@ class GeneTypeAnalyzerBubplot
             parallel_indx.emplace_back( anno );
 
             if( parallel_indx.size() >= task_number )
+            {
                 parallel_pool.job_post([ parallel_indx, &parallel_vec ] ()
                 {
                     for( auto& idx : parallel_indx )
                     {
-                        recursive_merge( parallel_vec[ idx ].second, 0 );
+                        bool isbreak = false;
+                        recursive_merge( parallel_vec[ idx ].second, 0, isbreak );
                         range_counting_sort( parallel_vec[ idx ].second );
                     }
                 });
 
-            parallel_indx.clear();
+                parallel_indx.clear();
+            }
         }
 
+        parallel_pool.job_post([ parallel_indx, &parallel_vec ] ()
+        {
+            for( auto& idx : parallel_indx )
+            {
+                bool isbreak = false;
+                recursive_merge( parallel_vec[ idx ].second, 0, isbreak );
+                range_counting_sort( parallel_vec[ idx ].second );
+            }
+        });
+
+        parallel_indx.clear();
         parallel_pool.flush_pool();
 
         std::map< std::string, ChrRangeType > chr_mapping_res;
@@ -109,33 +139,57 @@ class GeneTypeAnalyzerBubplot
         return chr_mapping_res;
     }
 
-    static void recursive_merge( std::vector< std::pair< ChrRangeType, std::size_t >>& ranges, std::size_t start_idx )
+    static void recursive_merge( std::vector< std::pair< ChrRangeType, std::size_t >>& ranges, std::size_t start_idx, bool& isbreak )
     {
-        if( start_idx == ranges.size() ) return;
-        std::size_t counts  = ranges[ start_idx ].second;
+        if( start_idx+1 == ranges.size() ) 
+        {
+            isbreak = true;
+            return;
+        }
+
+        std::size_t counts = ranges[ start_idx ].second;
 
         for( std::size_t idx = 0; idx < ranges.size(); ++idx )
         {
             if( idx == start_idx ) continue;
-            
-            if( std::get<0>( ranges[ idx ].first ) != std::get<0>( ranges[ start_idx ].first )) continue;
-            if( std::get<3>( ranges[ idx ].first ) != std::get<3>( ranges[ start_idx ].first )) continue;
 
-            if( std::get<1>( ranges[ idx ].first ) <= std::get<2>( ranges[ start_idx ].first ) && std::get<2>( ranges[ idx ].first ) >= std::get<1>( ranges[ start_idx ].first ) || 
-                std::get<1>( ranges[ idx ].first ) >= std::get<1>( ranges[ start_idx ].first ) && std::get<2>( ranges[ idx ].first ) <= std::get<2>( ranges[ start_idx ].first ) || 
-                std::get<1>( ranges[ idx ].first ) <= std::get<1>( ranges[ start_idx ].first ) && std::get<2>( ranges[ idx ].first ) >= std::get<2>( ranges[ start_idx ].first ) )
+            if( std::get<0>( ranges[ start_idx ].first ) != std::get<0>( ranges[ idx ].first )) continue;
+            if( std::get<3>( ranges[ start_idx ].first ) != std::get<3>( ranges[ idx ].first )) continue;
+            
+            if(( std::get<1>( ranges[ start_idx ].first ) >= std::get<1>( ranges[ idx ].first ) && std::get<1>( ranges[ start_idx ].first ) <= std::get<2>( ranges[ idx ].first )) ||
+               ( std::get<2>( ranges[ start_idx ].first ) <= std::get<2>( ranges[ idx ].first ) && std::get<2>( ranges[ start_idx ].first ) >= std::get<1>( ranges[ idx ].first )) ||
+               ( std::get<1>( ranges[ start_idx ].first ) <= std::get<1>( ranges[ idx ].first ) && std::get<2>( ranges[ start_idx ].first ) >= std::get<2>( ranges[ idx ].first )) ||
+               ( std::get<1>( ranges[ start_idx ].first ) >= std::get<1>( ranges[ idx ].first ) && std::get<2>( ranges[ start_idx ].first ) <= std::get<2>( ranges[ idx ].first )) ) 
             {
-                if( std::get<1>( ranges[ idx ].first ) < std::get<1>( ranges[ start_idx ].first )) std::get<1>( ranges[ start_idx ].first ) = std::get<1>( ranges[ idx ].first );
-                if( std::get<2>( ranges[ idx ].first ) > std::get<2>( ranges[ start_idx ].first )) std::get<2>( ranges[ start_idx ].first ) = std::get<2>( ranges[ idx ].first );
+                if( std::get<1>( ranges[ start_idx ].first ) > std::get<1>( ranges[ idx ].first ))
+                    std::get<1>( ranges[ start_idx ].first ) = std::get<1>( ranges[ idx ].first );
+
+                if( std::get<2>( ranges[ start_idx ].first ) < std::get<2>( ranges[ idx ].first ))
+                    std::get<2>( ranges[ start_idx ].first ) = std::get<2>( ranges[ idx ].first );
+
+                switch( std::get<3>( ranges[ start_idx ].first ))
+                {
+                    case '+' :
+                    if( std::get<4>( ranges[ start_idx ].first ) < std::get<4>( ranges[ idx ].first ))
+                        std::get<4>( ranges[ start_idx ].first ) = std::get<4>( ranges[ idx ].first );
+                    break;
+
+                    case '-' :
+                    if( std::get<4>( ranges[ start_idx ].first ) > std::get<4>( ranges[ idx ].first ))
+                        std::get<4>( ranges[ start_idx ].first ) = std::get<4>( ranges[ idx ].first );
+                    break;
+                }
+
+                ranges[ start_idx ].second += ranges[ idx ].second;
                 if( idx < start_idx ) start_idx--;
 
-                ranges.erase( ranges.begin(), ranges.begin() + idx + 1 );
-                counts++;
+                ranges.erase( ranges.begin() + idx );
                 idx--;
             }
         }
 
-        if( counts == ranges[ start_idx ].second ) recursive_merge( ranges, start_idx +1 );
+        if( counts == ranges[ start_idx ].second ) recursive_merge( ranges, start_idx +1, isbreak );
+        if( !isbreak ) recursive_merge( ranges, start_idx, isbreak );
     }
 
     static void range_counting_sort( std::vector< std::pair< ChrRangeType, std::size_t >>& ranges )
@@ -178,8 +232,13 @@ class GeneTypeAnalyzerBubplot
 
     static std::string get_sequence( const ChrRangeType& range, auto& genome_table )
     {
-		std::string read_seq =
-            genome_table[ std::get<0>( range )].substr( std::get<1>( range ) - 1, std::get<2>( range ) - std::get<1>( range ));
+		std::string read_seq;
+
+        switch( std::get<3>( range ))
+        {
+            case '+' : read_seq = genome_table[ std::get<0>( range )].substr( std::get<1>( range ) -1, std::get<4>( range ) - std::get<1>( range ) -1 ); break;
+            case '-' : read_seq = genome_table[ std::get<0>( range )].substr( std::get<4>( range ) -1, std::get<2>( range ) - std::get<4>( range ) -1 ); break;
+        }
 
 		std::transform( read_seq.begin(), read_seq.end(), read_seq.begin(), ::toupper );
 
@@ -364,18 +423,26 @@ class GeneTypeAnalyzerBubplot
         output << "        if( $Chart_Types != '' ) $Script = $Script.' --mode '.$Chart_Types;" << "\n";
         output << "        if( $GMPMT_Types != '' ) $Script = $Script.' --type '.$GMPMT_Types;" << "\n";
         output << "        if( $Annotation_Select != '' ) $Script = $Script.' --input '.$Annotation_Select;" << "\n";
-        output << "        if( !Empty( $Annotation_Arms )) $Script = $Script.' --arm '.Implode( '', $Annotation_Arms );" << "\n";
+        output << "        if( !Empty( $Annotation_Arms ))" << "\n"; 
+        output << "        {" << "\n";
+        output << "            $Script = $Script.' --arm '.Implode( '', $Annotation_Arms );" << "\n";
+        output << "            For( $i = 0; $i < Count( $Annotation_Arms ); ++$i )" << "\n";
+        output << "            {" << "\n";
+        output << "                if( $Annotation_Arms[ $i ] == '5p' ) $Script = $Script.' --arm5seq '.$Arm_Array[0];" << "\n";
+        output << "                if( $Annotation_Arms[ $i ] == '3p' ) $Script = $Script.' --arm3seq '.$Arm_Array[1];" << "\n";
+        output << "            }" << "\n";
+        output << "        }" << "\n";
         output << "        if( !Empty( $Sample_Files )) $Script = $Script.' --files '.Implode( ' ', $Sample_Files );" << "\n";
         output << "        if( $isLog2 != '' ) $Script = $Script.' '.$isLog2;" << "\n";
-        output << "        echo '<br/>'.$Script;" << "\n";
+        output << "        // echo '<br/>'.$Script;" << "\n";
         output << "" << "\n";
         output << "        if( $Chart_Types != '' && $GMPMT_Types != '' && $Annotation_Select != '' &&" << "\n";
         output << "            !Empty( $Annotation_Arms ) && !Empty( $Sample_Files ))" << "\n";
         output << "        {" << "\n";
-        output << "            $handle = popen( \"$Script 2>&1\", 'r' );" << "\n";
-        output << "            while( $read = fread( $handle, 20096 )) $response[] = trim( $read );" << "\n";
-        output << "            pclose( $handle ); flush();" << "\n";
-        output << "            echo '<br />'.print_r( $response );" << "\n";
+        output << "            $Handle = Popen( \"$Script 2>&1\", 'r' );" << "\n";
+        output << "            while( $Read = Fread( $Handle, 20096 )) $Response[] = Trim( $Read );" << "\n";
+        output << "            Pclose( $Handle ); Flush();" << "\n";
+        output << "            for( $i = 0; $i < Count( $Response ); ++$i ) Echo $Response[ $i ];" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "    ?>" << "\n";

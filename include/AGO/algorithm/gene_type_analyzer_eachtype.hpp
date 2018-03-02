@@ -5,7 +5,6 @@
 #include <AGO/algorithm/gene_type_analyzer_lendist.hpp>
 #include <AGO/algorithm/gene_type_analyzer_valplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_ranking.hpp>
-#include <AGO/algorithm/gene_type_analyzer_bubplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
 
@@ -21,7 +20,6 @@ class GeneTypeAnalyzerEachtype
     std::string lendist;
     std::string valplot;
     std::string ranking;
-    std::string bubplot;
     std::string difference;
 
   public:
@@ -33,7 +31,6 @@ class GeneTypeAnalyzerEachtype
         , lendist( "LenDist/" )
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
-        , bubplot( "BubPlot/" )
         , difference( "Difference/" )
     {}
 
@@ -44,10 +41,7 @@ class GeneTypeAnalyzerEachtype
             AnnoLengthIndexType& ano_len_idx,
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
             std::vector< std::map< std::string, std::string >>& anno_mark,
-            std::size_t& thread_number,
-            auto& genome_table,
-            std::string& node_path,
-            std::string& heatbub_js
+            std::size_t& thread_number
             )
         : output_path( output_path_ + ( output_path_.at( output_path_.length() -1 ) != '/' ? "/" : "" ) + biotype + "/" )
         , parallel_pool( thread_number )
@@ -55,14 +49,12 @@ class GeneTypeAnalyzerEachtype
         , lendist( "LenDist/" )
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
-        , bubplot( "BubPlot/" )
         , difference( "Difference/" )
     {
         boost::filesystem::create_directory( boost::filesystem::path( output_path + dotplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + lendist ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + valplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + ranking ));
-        boost::filesystem::create_directory( boost::filesystem::path( output_path + bubplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + difference ));
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
@@ -213,13 +205,6 @@ class GeneTypeAnalyzerEachtype
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
             });
-
-            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &node_path, &heatbub_js, this ] ()
-            {
-                GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + bubplot, node_path, heatbub_js );
-            });
-
-            GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot , bed_samples, biotype, thread_number, genome_table );
         }
 
         parallel_pool.flush_pool();
