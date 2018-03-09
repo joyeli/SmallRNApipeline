@@ -3,6 +3,7 @@
 #include <AGO/algorithm/gene_type_analyzer_counting.hpp>
 #include <AGO/algorithm/gene_type_analyzer_dotplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_lendist.hpp>
+#include <AGO/algorithm/gene_type_analyzer_mirdist.hpp>
 #include <AGO/algorithm/gene_type_analyzer_valplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_ranking.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
@@ -18,6 +19,7 @@ class GeneTypeAnalyzerEachtype
 
     std::string dotplot;
     std::string lendist;
+    std::string mirdist;
     std::string valplot;
     std::string ranking;
     std::string difference;
@@ -29,6 +31,7 @@ class GeneTypeAnalyzerEachtype
         , parallel_pool( 0 )
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
+        , mirdist( "MirDist/" )
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
         , difference( "Difference/" )
@@ -47,12 +50,14 @@ class GeneTypeAnalyzerEachtype
         , parallel_pool( thread_number )
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
+        , mirdist( "MirDist/" )
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
         , difference( "Difference/" )
     {
         boost::filesystem::create_directory( boost::filesystem::path( output_path + dotplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + lendist ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + mirdist ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + valplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + ranking ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + difference ));
@@ -71,6 +76,23 @@ class GeneTypeAnalyzerEachtype
                 GeneTypeAnalyzerLendist::output_lendist( output_path + lendist, ano_len_idx, anno_table_tail[ smp ], anno_mark[ smp ], sample_name );
             });
         }
+
+
+
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        {
+            GeneTypeAnalyzerMirdist::output_mirdist( output_path + mirdist, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
+        });
+
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        {
+            GeneTypeAnalyzerMirdist::output_mirdist( output_path + mirdist, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
+        });
+
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        {
+            GeneTypeAnalyzerMirdist::output_mirdist( output_path + mirdist, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
+        });
 
 
 
@@ -126,6 +148,11 @@ class GeneTypeAnalyzerEachtype
         parallel_pool.job_post([ this ] ()
         {
             GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist );
+        });
+
+        parallel_pool.job_post([ this ] ()
+        {
+            GeneTypeAnalyzerMirdist::output_mirdist_visualization( output_path + mirdist );
         });
 
         parallel_pool.job_post([ this ] ()
