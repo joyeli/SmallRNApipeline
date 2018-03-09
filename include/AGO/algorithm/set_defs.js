@@ -28,9 +28,14 @@ module.exports = {
             gap    : 10
         };
 
-        const height      = 615;
+        let height      = 615;
         const widthCell   = 36;
         const widthLegend = 90;
+
+        const labelsLength = module.exports.getLength( argv.minlen, argv.maxlen );
+        const numRows = labelsLength.length;
+
+        height = height / 17 * numRows;
 
         const chartHeight = height + margin.top + margin.bottom;
         const chartWidth  = ( widthCell * datasize * (
@@ -39,13 +44,6 @@ module.exports = {
                         labelsSeed[ "5p" ].length + labelsSeed[ "3p" ].length ))
                 + ( margin.gap * datasize ) + margin.right +
                 ( widthLegend * ( argv.mode == "heatmap" ? 2 : 1 ));
-
-        const labelsLength = [ "Total",
-            "30", "29", "28", "27", "26", "25", "24", "23",
-            "22", "21", "20", "19", "18", "17", "16", "15"
-                ];
-
-        const numRows = labelsLength.length;
 
         const svg = d3.select( document.body ).append( "svg" )
             .attr( "xmlns", "http://www.w3.org/2000/svg" )
@@ -93,5 +91,16 @@ module.exports = {
                         argv.arm == "3p" ? labelsSeed[ "3p" ].length :
                         labelsSeed[ "5p" ].length + labelsSeed[ "3p" ].length ))
         }
+    },
+
+    getLength: function( minlen, maxlen ) {
+
+        let labelsLength = [ "Total" ];
+
+        for( let i = maxlen; i >= minlen; --i ){
+            labelsLength.push( i.toString() );
+        }
+
+        return labelsLength;
     }
 };

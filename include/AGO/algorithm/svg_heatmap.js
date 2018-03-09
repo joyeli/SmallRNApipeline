@@ -35,7 +35,7 @@ module.exports = {
             .attr(  "y", y.bandwidth() / 2 )
             .attr(  "text-anchor", "middle" )
             .style( "fill", function( d, i ){ return d >= maxValue/2 ? 'white' : 'black'; })
-            .text( function( d, i ){ return d == "" || d == null ? "" : d.toPrecision(5); });
+            .text( function( d, i ){ return d == "" || d == null ? "" : d.toPrecision(3); });
 
         row.selectAll( ".cell-" + file_name + type + arm )
             .data( function( d, i ){ return data[i]; })

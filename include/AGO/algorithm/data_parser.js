@@ -4,18 +4,28 @@ const split = require( "split-string" );
 module.exports = {
 
     readFiles: function( argv ) {
+
         let files = {};
+        let seed_obj = { "5p" : argv.arm5seq, "3p" : argv.arm3seq };
 
         for( let i = 0, ilen = argv.files.length; i < ilen; i++ ){
-            files[ split( argv.files[i], "." )[0] ] = module.exports.readData( argv.files[i], argv.input );
+            files[ split( argv.files[i], "." )[0] ] = module.exports.readData( argv.files[i], argv.input, argv.minlen, argv.maxlen, seed_obj );
         }
 
         return files;
     },
 
-    readData: function( filein, miRNA ) {
+    readData: function( filein, miRNA, minlen, maxlen, seed_obj ) {
         // miRNA_Length	A_Tail	C_Tail	G_Tail	T_Tail	Other_Tail	GM
         // MIR17HG-206-3p_ATTGCAC*:15	0	0	0	0	0	1.27017
+
+        let idx = 0;
+        let lens = {};
+
+        for( let i = minlen; i <= maxlen; ++i ){
+            lens[ i ] = idx;
+            idx++;
+        }
 
         let miRNA_5p = miRNA + "-5p";
         let miRNA_3p = miRNA + "-3p";
@@ -29,49 +39,59 @@ module.exports = {
 
             if( temp_miRNA[0] != miRNA_5p && temp_miRNA[0] != miRNA_3p ){ continue; }
 
-            let seed = String( split( temp_miRNA[1], ":" )).substr( 0, 7 );
-            let splits = split( indata_split_line[i], "\t" );
-            let length = Number( split( splits[0], ":" )[1] ) -15;
-
             let arm_split = split( temp_miRNA[0], "-" );
-            let arm = arm_split[ arm_split.length -1 ];
+            let arm  = arm_split[ arm_split.length -1 ];
+            let seed = String( split( temp_miRNA[1], ":" )).substr( 0, 7 );
+
+            if( seed_obj[ arm ].indexOf( seed ) == -1 ) continue;
+
+            let splits = split( indata_split_line[i], "\t" );
+            let length = split( splits[0], ":" )[1];
+
+            if( !( length in lens )) continue;
 
             if( file[ arm ][ seed ] == null ){
                 file[ arm ][ seed ] = {
-                    GM:         Array( 16 ).fill( 0 ),
-                    PM:         Array( 16 ).fill( 0 ),
-                    GMPM:       Array( 16 ).fill( 0 ),
-                    A_Tail:     Array( 16 ).fill( 0 ),
-                    C_Tail:     Array( 16 ).fill( 0 ),
-                    G_Tail:     Array( 16 ).fill( 0 ),
-                    T_Tail:     Array( 16 ).fill( 0 ),
-                    Other_Tail: Array( 16 ).fill( 0 )
+                    GM:         Array( lens.length ).fill( 0 ),
+                    PM:         Array( lens.length ).fill( 0 ),
+                    GMPM:       Array( lens.length ).fill( 0 ),
+                    A_Tail:     Array( lens.length ).fill( 0 ),
+                    C_Tail:     Array( lens.length ).fill( 0 ),
+                    G_Tail:     Array( lens.length ).fill( 0 ),
+                    T_Tail:     Array( lens.length ).fill( 0 ),
+                    Other_Tail: Array( lens.length ).fill( 0 )
                 };
             }
 
             for( let j = 1, jlen = indata_split_head.length; j < jlen; j++ ){
-                file[ arm ][ seed ][ indata_split_head[j] ][ length ] = Number( splits[j] );
+                file[ arm ][ seed ][ indata_split_head[j] ][ lens[ length ]] = Number( splits[j] );
             }
 
-            file[ arm ][ seed ][ "PM" ][ length ]
-                = file[ arm ][ seed ][ "A_Tail" ][ length ]
-                + file[ arm ][ seed ][ "C_Tail" ][ length ]
-                + file[ arm ][ seed ][ "G_Tail" ][ length ]
-                + file[ arm ][ seed ][ "T_Tail" ][ length ]
-                + file[ arm ][ seed ][ "Other_Tail" ][ length ];
+            file[ arm ][ seed ][ "PM" ][ lens[ length ]]
+                = file[ arm ][ seed ][ "A_Tail" ][ lens[ length ]]
+                + file[ arm ][ seed ][ "C_Tail" ][ lens[ length ]]
+                + file[ arm ][ seed ][ "G_Tail" ][ lens[ length ]]
+                + file[ arm ][ seed ][ "T_Tail" ][ lens[ length ]]
+                + file[ arm ][ seed ][ "Other_Tail" ][ lens[ length ]];
 
-            file[ arm ][ seed ][ "GMPM" ][ length ]
-                = file[ arm ][ seed ][ "GM" ][ length ]
-                + file[ arm ][ seed ][ "PM" ][ length ];
+            file[ arm ][ seed ][ "GMPM" ][ lens[ length ]]
+                = file[ arm ][ seed ][ "GM" ][ lens[ length ]]
+                + file[ arm ][ seed ][ "PM" ][ lens[ length ]];
         }
 
         return file;
     },
 
     getData: function( argv, file, seed_index ){
+
+        let lens = [];
+        for( let i = argv.minlen; i <= argv.maxlen; ++i ){
+            lens.push( i );
+        }
+
         let file_data  = {
-            "value"   : { "5p": Array( 16 ), "3p": Array( 16 ) },
-            "density" : { "5p": Array( 16 ), "3p": Array( 16 ) }
+            "value"   : { "5p": Array( lens.length ), "3p": Array( lens.length ) },
+            "density" : { "5p": Array( lens.length ), "3p": Array( lens.length ) }
         };
 
         for( let arm in seed_index ){
@@ -80,7 +100,7 @@ module.exports = {
             let total_array = Array();
             total_array[0] = 0;
 
-            for( let length = 0; length < 16; length++ ){
+            for( let length = 0; length < lens.length; length++ ){
                 let values    = Array();
                 let densities = Array();
                 let total = 0;

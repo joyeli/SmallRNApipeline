@@ -24,7 +24,7 @@ module.exports = {
         empty_array.push( empty_object );
         tail_path.push( empty_array );
 
-        for( let idx = 15; idx >= 0; idx-- ){
+        for( let idx = tail_data[ Object.keys( tail_data )[0] ][ "GMPM" ].length -1; idx >= 0; idx-- ){
 
             let row_array = [];
             for( let seed in seed_index ){

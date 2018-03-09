@@ -8,6 +8,8 @@ const svgLabel = require( "./svg_label" );
 const svgHeatmap = require( "./svg_heatmap" );
 const svgBubble = require( "./svg_bubble" );
 
+const makeTable = require( "./table_funs" );
+
 const argv = require( "yargs" )
     .option({
         "input": {
@@ -51,6 +53,18 @@ const argv = require( "yargs" )
             default: "",
             describe: "Input raw sequence of 3p reads"
         },
+        "minlen": {
+            alias: "n",
+            type : "number",
+            default: 15,
+            describe: "Input min length for plot axis"
+        },
+        "maxlen": {
+            alias: "x",
+            type : "number",
+            default: 30,
+            describe: "Input max length for plot axis"
+        },
         "mode": {
             alias: "m",
             choices: [ "heatmap", "bubble" ],
@@ -72,7 +86,7 @@ let maxArray = { value: Array(), density: Array() };
 let minArray = { value: Array(), density: Array() };
 
 for( let file_name in defines.files ){
-    datas[ file_name ] = dataParser.getData( argv, defines.files[ file_name ], defines.seed_index );
+    datas[  file_name ] = dataParser.getData( argv, defines.files[ file_name ], defines.seed_index );
 
     for( let arm in { "5p":0, "3p":0 }){
         if( argv.arm != "5p3p" ){ if( arm != argv.arm ){ continue; }}
@@ -155,6 +169,7 @@ for( let file_name in datas ){
 }
 
 let scale_count = 0;
+
 for( let type in maxValue ){
     if( argv.mode != "heatmap" && type == "value" ){ continue; }
 
@@ -168,3 +183,4 @@ svgLabel.drewMiRNA( argv.rename == null ? argv.input : argv.rename, defines.labe
 svgLabel.drewLabely( defines.labelsLength, defines.label, defines.y );
 
 console.log( defines.document.body.innerHTML );
+makeTable.log( defines.files, datas, argv );
