@@ -344,7 +344,7 @@ class GeneTypeAnalyzerDifference
             const std::string& token
             )
     {
-        std::ofstream output( output_path + "ArmDifference_" + token + ".test" );
+        std::ofstream output( output_path + "ArmDifference_" + token + ".tsv" );
         output << "Annotation\tTotal\tisLoadingDifference";
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )

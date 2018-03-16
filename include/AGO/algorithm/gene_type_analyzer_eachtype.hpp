@@ -3,7 +3,7 @@
 #include <AGO/algorithm/gene_type_analyzer_counting.hpp>
 #include <AGO/algorithm/gene_type_analyzer_dotplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_lendist.hpp>
-#include <AGO/algorithm/gene_type_analyzer_mirdist.hpp>
+#include <AGO/algorithm/gene_type_analyzer_barplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_valplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_ranking.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
@@ -19,7 +19,7 @@ class GeneTypeAnalyzerEachtype
 
     std::string dotplot;
     std::string lendist;
-    std::string mirdist;
+    std::string barplot;
     std::string valplot;
     std::string ranking;
     std::string difference;
@@ -31,7 +31,7 @@ class GeneTypeAnalyzerEachtype
         , parallel_pool( 0 )
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
-        , mirdist( "MirDist/" )
+        , barplot( "BarPlot/" )
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
         , difference( "Difference/" )
@@ -50,14 +50,14 @@ class GeneTypeAnalyzerEachtype
         , parallel_pool( thread_number )
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
-        , mirdist( "MirDist/" )
+        , barplot( "BarPlot/" )
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
         , difference( "Difference/" )
     {
         boost::filesystem::create_directory( boost::filesystem::path( output_path + dotplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + lendist ));
-        boost::filesystem::create_directory( boost::filesystem::path( output_path + mirdist ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + barplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + valplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + ranking ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + difference ));
@@ -79,19 +79,24 @@ class GeneTypeAnalyzerEachtype
 
 
 
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
         {
-            GeneTypeAnalyzerMirdist::output_mirdist( output_path + mirdist, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
+            GeneTypeAnalyzerBarplot::output_barplot( output_path + barplot, bed_samples, ano_len_idx, anno_table_tail, biotype, "GMPM"    );
         });
 
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
         {
-            GeneTypeAnalyzerMirdist::output_mirdist( output_path + mirdist, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
+            GeneTypeAnalyzerBarplot::output_barplot( output_path + barplot, bed_samples, ano_len_idx, anno_table_tail, biotype, "GM"      );
         });
 
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
         {
-            GeneTypeAnalyzerMirdist::output_mirdist( output_path + mirdist, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
+            GeneTypeAnalyzerBarplot::output_barplot( output_path + barplot, bed_samples, ano_len_idx, anno_table_tail, biotype, "PM"      );
+        });
+
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
+        {
+            GeneTypeAnalyzerBarplot::output_barplot( output_path + barplot, bed_samples, ano_len_idx, anno_table_tail, biotype, "Tailing" );
         });
 
 
@@ -152,7 +157,7 @@ class GeneTypeAnalyzerEachtype
 
         parallel_pool.job_post([ this ] ()
         {
-            GeneTypeAnalyzerMirdist::output_mirdist_visualization( output_path + mirdist );
+            GeneTypeAnalyzerBarplot::output_barplot_visualization( output_path + barplot );
         });
 
         parallel_pool.job_post([ this ] ()
@@ -232,6 +237,8 @@ class GeneTypeAnalyzerEachtype
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
             });
+
+            parallel_pool.flush_pool();
         }
 
         parallel_pool.flush_pool();
