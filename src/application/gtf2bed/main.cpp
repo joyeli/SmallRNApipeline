@@ -128,6 +128,7 @@ int main( int argc, char** argv )
     auto& plya = args[ "plya" ];
     auto& sudo = args[ "sudo" ];
 
+    std::vector< std::string > trna_check;
     std::vector< std::vector< std::string >> bed_vec;
     std::vector< std::vector< std::string >> anno_bed_vec;
 
@@ -165,6 +166,14 @@ int main( int argc, char** argv )
 
     for( auto& bed : bed_vec )
     {
+        trna_check = explode( bed[4], "tRNA" );
+
+        if( trna_check.size() != 1 )
+        {
+            bed[5] = bed[4] + "_" + bed[5];
+            bed[4] = "tRNA";
+        }
+
         output
             << bed[0] << "\t"   // chr
             << bed[1] << "\t"   // start
