@@ -75,22 +75,26 @@ class GeneTypeAnalyzer
         auto& db( this->mut_data_pool() );
         auto& monitor = db.monitor();
 
-        monitor.set_monitor( "Component GeneTypeAnalyzer", 2 );
-        monitor.log( "Component GeneTypeAnalyzer", "Start" );
-
         // auto bed_samples = db.bed_samples; for old style analysis
         auto& bed_samples  = db.bed_samples;
         auto& genome_table = db.genome_table;
 
+        monitor.set_monitor( "Component GeneTypeAnalyzer", 5 + biotype_list.size() + ( output_annobed ? bed_samples.size() : 0 ));
+        monitor.log( "Component GeneTypeAnalyzer", "Start" );
+
+
+        monitor.log( "Component GeneTypeAnalyzer", "Filtering ... " );
         drop_filtering( bed_samples );
         ParaThreadPool smp_parallel_pool( bed_samples.size() );
 
         std::string output_path = db.output_dir().string() + ( db.output_dir().string().at( db.output_dir().string().length() -1 ) != '/' ? "/" : "" ) ;
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "biotypes" ));
 
+        monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotpyes" );
         algorithm::GeneTypeAnalyzerBiotype( output_path + "biotypes/", genome_table, bed_samples, min_len, max_len, sudo_count );
         algorithm::AnnoLengthIndexType ano_len_idx;
 
+        monitor.log( "Component GeneTypeAnalyzer", "Making ... Counting Table" );
         std::vector< std::vector< algorithm::CountingTableType >> anno_table_tail;
         std::vector< std::map< std::string, std::string >> anno_mark;
 
@@ -98,6 +102,8 @@ class GeneTypeAnalyzer
         {
             auto& biotype = biotype_list[i];
             boost::filesystem::create_directory( boost::filesystem::path( output_path + biotype ));
+
+            monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
 
             if( biotype == "miRNA" )
             {
@@ -133,6 +139,8 @@ class GeneTypeAnalyzer
         {
             for( size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
+                monitor.log( "Component GeneTypeAnalyzer", "Outputing ... AnnoBed [ " + std::to_string( smp ) + " / " + std::to_string( bed_samples.size() ) + " ]" );
+
                 std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_annobed.tsv" );
                 annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second );
                 annobed_output.close();
