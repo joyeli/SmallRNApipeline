@@ -447,7 +447,7 @@ class GeneTypeAnalyzerBarplot
         output << "                Array_Push( $Single_Anno_List, $inFile_Line[0] );" << "\n";
         output << "            }" << "\n";
         output << "" << "\n";
-        output << "            echo '<select name=SingleAnno onchange=this.form.submit();>';" << "\n";
+        output << "            echo '<select name=Single_Anno onchange=this.form.submit();>';" << "\n";
         output << "" << "\n";
         output << "            $Single_Anno_Size = Count( $Single_Anno_List );" << "\n";
         output << "" << "\n";

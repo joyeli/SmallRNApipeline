@@ -17,7 +17,7 @@ class GeneTypeAnalyzerValplot
             const std::string& output_name,
             const std::vector< BedSampleType >& bed_samples,
             const AnnoLengthIndexType& ano_len_idx,
-            std::vector< std::vector< CountingTableType >> anno_table_tail,
+            std::vector< std::vector< CountingTableType >>& anno_table_tail,
             std::vector< std::map< std::string, std::string >>& anno_mark,
             const std::string& token
             )
@@ -39,7 +39,7 @@ class GeneTypeAnalyzerValplot
                 gm = 0.0;
                 pm = 0.0;
 
-                if( token != "PM" || token == "Tailing" )
+                if( token != "PM" )
                 {
                     if( anno_table_tail[ smp ][5].find( anno ) != anno_table_tail[ smp ][5].end() )
                         for( auto& len : ano_len_idx.second )
@@ -49,7 +49,7 @@ class GeneTypeAnalyzerValplot
                         }
                 }
 
-                if( token != "GM" || token == "Tailing" )
+                if( token != "GM" )
                 {
                     for( std::size_t i = 0; i < 5; i++ )
                     {

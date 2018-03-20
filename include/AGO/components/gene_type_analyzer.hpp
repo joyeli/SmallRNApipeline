@@ -103,7 +103,7 @@ class GeneTypeAnalyzer
             auto& biotype = biotype_list[i];
             boost::filesystem::create_directory( boost::filesystem::path( output_path + biotype ));
 
-            monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
+            monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
 
             if( biotype == "miRNA" )
             {
@@ -139,7 +139,7 @@ class GeneTypeAnalyzer
         {
             for( size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                monitor.log( "Component GeneTypeAnalyzer", "Outputing ... AnnoBed [ " + std::to_string( smp ) + " / " + std::to_string( bed_samples.size() ) + " ]" );
+                monitor.log( "Component GeneTypeAnalyzer", "Outputing ... AnnoBed [ " + std::to_string( smp+1 ) + " / " + std::to_string( bed_samples.size() ) + " ]" );
 
                 std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_annobed.tsv" );
                 annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second );

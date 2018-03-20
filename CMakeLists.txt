@@ -77,4 +77,7 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
     # add_executable( arcReader src/application/arc_reader/main.cpp )
     #     target_link_libraries( arcReader ${Boost_LIBRARIES} )
 
+    add_executable( getCounts src/application/get_counts/main.cpp )
+        target_link_libraries( getCounts ${Boost_LIBRARIES} )
+
 endif()
