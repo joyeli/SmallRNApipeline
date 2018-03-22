@@ -449,6 +449,7 @@ class GeneTypeAnalyzerBarplot
         output << "" << "\n";
         output << "            echo '<select name=Single_Anno onchange=this.form.submit();>';" << "\n";
         output << "" << "\n";
+        output << "            Rsort( $Single_Anno_List );" << "\n";
         output << "            $Single_Anno_Size = Count( $Single_Anno_List );" << "\n";
         output << "" << "\n";
         output << "            For( $i = 0; $i < $Single_Anno_Size; ++$i )" << "\n";
