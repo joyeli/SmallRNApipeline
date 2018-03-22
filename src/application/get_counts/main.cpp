@@ -76,7 +76,7 @@ void filter_via_arm( auto& sample_tables, auto& mexprge, auto& nexprge )
         for( auto& line : smp ) 
         {
             if( line[2] == "Y" &&
-              ( mexprge != 0 ? nexprge <= std::stod( line[1] ) : true ) &&
+              ( nexprge != 0 ? nexprge <= std::stod( line[1] ) : true ) &&
               ( mexprge != 0 ? mexprge >= std::stod( line[1] ) : true ) )
             {
                 arm_count.clear();
@@ -111,7 +111,7 @@ void filter_via_len( auto& sample_tables, auto& mexprge, auto& nexprge, auto& fi
         for( auto& line : smp ) 
         {
             if(( filrlen != 0 ? filrlen <= std::stoi( line[2] ) : true ) &&
-               ( mexprge != 0 ? nexprge <= std::stod( line[1] ) : true ) &&
+               ( nexprge != 0 ? nexprge <= std::stod( line[1] ) : true ) &&
                ( mexprge != 0 ? mexprge >= std::stod( line[1] ) : true ) )
             {
                 file.emplace_back( std::vector< std::string >{ line[0], line[2], line[3], line[4] });
@@ -137,7 +137,7 @@ void filter_via_lod( auto& sample_tables, auto& mexprge, auto& nexprge, auto& fi
             if(( filrchg != 0 ? ( std::stod( line[2] ) > 0
                               ? filrchg <= std::stod( line[2] )
                               : filrchg >= std::stod( line[2] )) : true ) &&
-               ( mexprge != 0 ? nexprge <= std::stod( line[1] )  : true ) &&
+               ( nexprge != 0 ? nexprge <= std::stod( line[1] )  : true ) &&
                ( mexprge != 0 ? mexprge >= std::stod( line[1] )  : true ) )
             {
                 anno_splits = explode( line[0], "_" );
