@@ -77,10 +77,10 @@ class GeneTypeAnalyzerRanking
         make_rank( rank_temps );
         reordring( rank_temps );
 
-        for( auto& smp  : bed_samples ) output << "\t" << smp.first;
-        for( std::size_t idx = 0; idx < anno_names.size(); ++idx )
+        for( auto& smp : bed_samples ) output << "\t" << smp.first;
+        for( std::size_t idx = 0; idx < rank_temps[0].size(); ++idx )
         {
-            output << "\n" << anno_names[ idx ] << std::setprecision( 0 ) << std::fixed;
+            output << "\n" << anno_names[ rank_temps[0][ idx ].first ] << std::setprecision( 0 ) << std::fixed;
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
                 output << "\t" << rank_temps[ smp ][ idx ].second;
         }
@@ -119,7 +119,11 @@ class GeneTypeAnalyzerRanking
 
     static void reordring( std::vector< std::vector< std::pair< std::size_t, double >>>& pair_vecs )
     {
+        double sum;
         std::map< std::size_t, double > temp;
+        std::vector< std::pair< std::size_t, double >> sum_rank;
+        std::vector< std::vector< std::pair< std::size_t, double >>> result( pair_vecs.size() );
+
         for( std::size_t smp = 0; smp < pair_vecs.size(); ++smp )
         {
             temp.clear();
@@ -128,6 +132,30 @@ class GeneTypeAnalyzerRanking
             pair_vecs[ smp ].clear();
             for( auto& pair : temp ) pair_vecs[ smp ].emplace_back( pair );
         }
+
+        for( std::size_t anno = 0; anno < pair_vecs[ 0 ].size(); ++anno )
+        {
+            sum = 0;
+            for( std::size_t samp = 0; samp < pair_vecs.size(); ++samp )
+                sum += pair_vecs[ samp ][ anno ].second;
+            sum_rank.emplace_back( std::make_pair( anno, sum ));
+        }
+
+        std::sort( sum_rank.begin(), sum_rank.end(), [] ( const std::pair< std::size_t, double >& a, const std::pair< std::size_t, double >& b )
+        { 
+            if( a.second == b.second )
+                return a.first < b.first;
+            else
+                return a.second < b.second;
+        });
+
+        for( auto& rank : sum_rank )
+        {
+            for( std::size_t samp = 0; samp < pair_vecs.size(); ++samp )
+                result[ samp ].emplace_back( pair_vecs[ samp ][ rank.first ] );
+        }
+
+        pair_vecs = result;
     }
 };
 
