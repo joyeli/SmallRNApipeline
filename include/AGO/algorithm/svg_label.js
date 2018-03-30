@@ -6,7 +6,7 @@ module.exports = {
         const mirnaLabel = label.selectAll( ".miRNA-label-" + miRNA )
             .data([ 0 ])
             .enter().append( "g" )
-            .attr( "class", "miRNA-label-" + miRNA )
+            // .attr( "class", "miRNA-label-" + miRNA )
             .attr( "font-family", "sans-serif" )
             .attr( "font-size", 12 )
             .attr( "transform", "translate(-" + left + ",-14)" )

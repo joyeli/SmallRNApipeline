@@ -28,6 +28,7 @@ class VcfMinAnnotationCohortsAnalysis : public engine::NamedComponent
         std::string dbsnp;
         std::string comonsnp;
         std::string pub;
+        std::string omim;
         std::string clinvar;
         std::string genedis;
 
@@ -49,7 +50,8 @@ class VcfMinAnnotationCohortsAnalysis : public engine::NamedComponent
             , dbsnp   (".")
             , comonsnp("N")
             , pub     ("N")
-            , clinvar (".\t.")
+            , omim    (".")
+            , clinvar (".")
             , genedis (".")
             , vcf( in )
     	{}
@@ -70,6 +72,7 @@ class VcfMinAnnotationCohortsAnalysis : public engine::NamedComponent
                 << vcf.dbsnp    << "\t"
                 << vcf.comonsnp << "\t"
                 << vcf.pub      << "\t"
+                << vcf.omim     << "\t"
                 << vcf.clinvar  << "\t"
                 << vcf.genedis  << "\n";
 
@@ -90,14 +93,8 @@ class VcfMinAnnotationCohortsAnalysis : public engine::NamedComponent
             if( type == "Snp150All" ) ann_bed.dbsnp = name;
             if( type == "Snp150Common" ) ann_bed.comonsnp = "Y";
             if( type == "PubsMarkerSnp" ) ann_bed.pub = "Y";
-
-            if( type == "OmimClinvar" )
-            {
-                std::vector< std::string > splits;
-                boost::iter_split( splits, name, boost::algorithm::first_finder( ";" ));
-                ann_bed.clinvar = splits[0] + "\t" + splits[1];
-            }
-
+            if( type == "Omim" ) ann_bed.omim = name;
+            if( type == "Clinvar" ) ann_bed.clinvar = name;
             if( type == "GeneticDisorders" ) ann_bed.genedis = name;
         }
     };

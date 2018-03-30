@@ -7,12 +7,11 @@ module.exports = {
         for( let i = argv.minlen; i <= argv.maxlen; ++i ){
             lens.push( i );
         }
-        
-        let types = Object.keys(
-            files[ Object.keys( files )[ 0 ]]
-                         [ Object.keys( files  [ Object.keys( files )[ 0 ]] )[ 0 ]]
-                         [ Object.keys( files  [ Object.keys( files )[ 0 ]]
-                                                       [ Object.keys( files  [ Object.keys( files )[ 0 ]] )[ 0 ]] )[ 0 ]] );
+
+        let file_key = Object.keys( files )[ 0 ];
+        let arms_key = Object.keys( files[ file_key ])[ Object.keys( files[ file_key ][ Object.keys( files[ file_key ])[0] ]).length > 0 ? 0 : 1 ];
+        let seed_key = Object.keys( files[ file_key ][ arms_key ])[0];
+        let types    = Object.keys( files[ file_key ][ arms_key ][ seed_key ]);
         
         console.log(
                 "<table style='border:1px solid black;'><tr><th colspan='2' rowspan='3'"

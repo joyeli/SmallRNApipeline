@@ -123,6 +123,9 @@ for( let file_name in datas ){
 let x = 0;
 let count = 0;
 
+svgLabel.drewMiRNA( argv.rename == null ? argv.input : argv.rename, defines.label, defines.margin.left );
+svgLabel.drewLabely( defines.labelsLength, defines.label, defines.y );
+
 for( let file_name in datas ){
 
     x = d3.scaleBand().domain( d3.range(
@@ -179,8 +182,6 @@ for( let type in maxValue ){
     scale_count++;
 }
 
-svgLabel.drewMiRNA( argv.rename == null ? argv.input : argv.rename, defines.label, defines.margin.left );
-svgLabel.drewLabely( defines.labelsLength, defines.label, defines.y );
 
 console.log( defines.document.body.innerHTML );
-makeTable.log( defines.files, datas, argv );
+// makeTable.log( defines.files, datas, argv );
