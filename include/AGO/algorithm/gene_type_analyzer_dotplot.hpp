@@ -553,7 +553,7 @@ class GeneTypeAnalyzerDotplot
         output << "            var svg_width  = window.innerWidth;" << "\n";
         output << "            var svg_height = window.innerHeight;" << "\n";
         output << "        " << "\n";
-        output << "            var margin = {top: 20, right: 60, bottom: 60, left: 60}" << "\n";
+        output << "            var margin = {top: 20, right: 60, bottom: 70, left: 60}" << "\n";
         output << "                width = svg_width - margin.left - margin.right," << "\n";
         output << "                height = svg_height - margin.top - margin.bottom;" << "\n";
         output << "        " << "\n";
@@ -574,8 +574,8 @@ class GeneTypeAnalyzerDotplot
         output << "                .orient('left');" << "\n";
         output << "        " << "\n";
         output << "            var svg = d3.select('body').append('svg')" << "\n";
-        output << "                .attr('width', width)" << "\n";
-        output << "                .attr('height', height)" << "\n";
+        output << "                .attr('width', width+70)" << "\n";
+        output << "                .attr('height', height+60)" << "\n";
         output << "            .append('g')" << "\n";
         output << "                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');" << "\n";
         output << "        " << "\n";
