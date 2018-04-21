@@ -237,8 +237,6 @@ class GeneTypeAnalyzerEachtype
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
             });
-
-            parallel_pool.flush_pool();
         }
 
         parallel_pool.flush_pool();
