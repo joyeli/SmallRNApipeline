@@ -5,7 +5,6 @@
 #include <AGO/algorithm/gene_type_analyzer_counting.hpp>
 #include <AGO/algorithm/gene_type_analyzer_biotype.hpp>
 #include <AGO/algorithm/gene_type_analyzer_bubplot.hpp>
-#include <AGO/algorithm/gene_type_analyzer_sqalign.hpp>
 #include <AGO/algorithm/gene_type_analyzer_quantile.hpp>
 #include <AGO/algorithm/gene_type_analyzer_eachtype.hpp>
 #include <AGO/algorithm/gene_type_analyzer_annobed.hpp>
@@ -113,10 +112,6 @@ class GeneTypeAnalyzer
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + "miRNA/BubPlot" ));
                 algorithm::GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + "miRNA/BubPlot/", node_path, heatbub_js );
                 algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + "miRNA/BubPlot/", bed_samples, biotype, thread_number, extand_mer, ppm_filter, genome_table );
-
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miRNA/SqAlign" ));
-                algorithm::GeneTypeAnalyzerSqalign::output_sqalign_visualization( output_path + "miRNA/SqAlign/" );
-                algorithm::GeneTypeAnalyzerSqalign::output_sqalign( output_path + "miRNA/SqAlign/", bed_samples, biotype, genome_table );
             }
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
@@ -138,7 +133,7 @@ class GeneTypeAnalyzer
             table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
             algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
-            algorithm::GeneTypeAnalyzerEachtype( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail, anno_mark, thread_number );
+            algorithm::GeneTypeAnalyzerEachtype( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail, anno_mark, thread_number, genome_table );
         }
 
         if( output_annobed )
