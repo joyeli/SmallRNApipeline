@@ -1,4 +1,5 @@
 #pragma once
+#include <AGO/format/md_rawbed.hpp>
 #include <AGO/algorithm/gene_type_analyzer_declare.hpp>
 
 namespace ago {
@@ -36,7 +37,11 @@ class GeneTypeAnalyzerCounting
                         {
                             if( biotype != "" && raw_bed_info[i] != biotype ) continue;
                             smp_ano_idx[ smp ].emplace( raw_bed_info[ i + ( biotype == "" ? 0 : 1 )]
-                                + ( biotype == "" ? "" : ( "_" + raw_bed.getReadSeq( genome_table ).substr( 1, 7 )) ));
+                                + ( biotype == "" ? "" :
+                                (
+                                    "_" + raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                                    + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" )
+                                ) ));
                         }
                     }
                 }
@@ -89,7 +94,8 @@ class GeneTypeAnalyzerCounting
         }
     }
 
-    static double get_ppm( std::vector< AnnotationRawBed<> >& annotations, double ppm = 1000000 )
+    // static double get_ppm( std::vector< AnnotationRawBed<> >& annotations, double ppm = 1000000 )
+    static double get_ppm( std::vector< ago::format::MDRawBed >& annotations, double ppm = 1000000 )
     {
         double sum = 0;
 
@@ -132,7 +138,8 @@ class GeneTypeAnalyzerCounting
     }
 
     static void make_anno_table(
-            std::vector< AnnotationRawBed<> >& annotations,
+            // std::vector< AnnotationRawBed<> >& annotations,
+            std::vector< ago::format::MDRawBed >& annotations,
             std::vector< CountingTableType >& anno_table,
             std::map< std::string, std::string >& anno_mark,
             std::map< std::string, std::string >& genome_table,
@@ -173,7 +180,9 @@ class GeneTypeAnalyzerCounting
                     if( biotype != "" && raw_bed_info[i] != biotype ) continue;
 
                     anno_first  = biotype == "" ? raw_bed_info[i] : raw_bed_info[ i+1 ];
-                    anno_second = biotype == "" ? "" : raw_bed.getReadSeq( genome_table ).substr( 1, 7 );
+                    anno_second = biotype == "" ? ""
+                                :   raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                                + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
                     anno_pair   = std::make_pair( anno_first, anno_second );
 
                     if( biotype != "" && raw_bed.is_filtered_ != 0 ) anno_mark[ anno_first + "_" + anno_second ] = "!";

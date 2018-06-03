@@ -3,6 +3,8 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <CCD/utility/language.hpp>
 #include <pokemon/format/annotation_raw_bed.hpp>
+#include <AGO/format/md_rawbed.hpp>
+#include <AGO/format/md_sam.hpp>
 
 namespace ago {
 namespace engine {
@@ -22,12 +24,12 @@ class Formats
 
     std::vector< std::pair<
         std::string,
-        std::vector< Sam<> >
+        std::vector< ago::format::MDSam<> >
     >> sam_samples;
 
     std::vector< std::pair<
         std::string,
-        std::vector< AnnotationRawBed<> >
+        std::vector< ago::format::MDRawBed >
     >> bed_samples;
 
     std::vector< std::pair<

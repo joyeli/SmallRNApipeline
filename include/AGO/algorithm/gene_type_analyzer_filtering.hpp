@@ -1,4 +1,5 @@
 #pragma once
+#include <AGO/format/md_rawbed.hpp>
 #include <AGO/algorithm/gene_type_analyzer_declare.hpp>
 
 namespace ago {
@@ -14,7 +15,8 @@ class GeneTypeAnalyzerFiltering
     using DropTypeList = boost::mpl::vector<
         boost::mpl::vector< boost::mpl::string< 'rm', 'sk' >, boost::mpl::int_< 1 >, boost::mpl::char_< '=' >>>;
 
-    using Filters = FilterWorker< AnnotationRawBed<>, DropTypeList >;
+    // using Filters = FilterWorker< AnnotationRawBed<>, DropTypeList >;
+    using Filters = FilterWorker< ago::format::MDRawBed, DropTypeList >;
 
     void drop_filtering( std::vector< BedSampleType >& bed_samples )
     {

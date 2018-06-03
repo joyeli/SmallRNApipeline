@@ -2,11 +2,13 @@
 #include <AGO/engine/components/named_component.hpp>
 #include <pokemon/aligner/aligner.hpp>
 #include <Tailor/tailer.hpp>
-#include <pokemon/converter/sam2rawbed.hpp>
+// #include <pokemon/converter/sam2rawbed.hpp>
 #include <CCD/para_thread_pool/para_thread_pool.hpp>
 #include <mutex>
 #include <set>
 
+#include <AGO/format/md_sam.hpp>
+#include <AGO/format/md_rawbed.hpp>
 #include <sys/resource.h>
 
 namespace ago {
@@ -20,13 +22,14 @@ class GithubTailorFastqToBed : public engine::NamedComponent
     int reads_max_length_;
 
     int align_min_length_;
-    int align_limit_algn_;
+    int align_min_multi_;
 
     int task_number_;
     int thread_num_;
 
     bool output_sam_;
     bool align_allow_mismatch_;
+    bool align_allow_t2c_;
 
     std::stringstream sam_header_ss_;
     std::string tailor_genome_fasta_;
@@ -57,7 +60,7 @@ class GithubTailorFastqToBed : public engine::NamedComponent
         reads_min_length_ = p.get_optional< int >( "reads_min_length" ).value_or( 15 );
         reads_max_length_ = p.get_optional< int >( "reads_max_length" ).value_or( 30 );
         align_min_length_ = p.get_optional< int >( "align_min_length" ).value_or( 12 );
-        align_limit_algn_ = p.get_optional< int >( "align_limit_algn" ).value_or( 10 );
+        align_min_multi_  = p.get_optional< int >( "align_min_multi"  ).value_or( 10 );
 
         task_number_ = p.get_optional< int >( "task_number" ).value_or( 50000 );
         thread_num_  = p.get_optional< int >( "thread_num" ).value_or( 16 );
@@ -65,6 +68,7 @@ class GithubTailorFastqToBed : public engine::NamedComponent
         output_sam_ = p.get_optional< bool >( "output_sam" ).value_or( true );
 
         align_allow_mismatch_ = p.get_optional< bool >( "align_allow_mismatch" ).value_or( false );
+        align_allow_t2c_      = p.get_optional< bool >( "align_allow_t2c" ).value_or( false );
         tailor_genome_fasta_  = p.get_optional< std::string >( "tailor_genome_fasta" ).value_or( "" );
     }
 
@@ -101,7 +105,6 @@ class GithubTailorFastqToBed : public engine::NamedComponent
         }
         else
         {
-
             monitor.set_monitor( "Building Index", 3 );
             monitor.log( "Building Index", "Building ..." );
 
@@ -145,7 +148,7 @@ class GithubTailorFastqToBed : public engine::NamedComponent
         std::stringstream fastq_ss;
 
         std::vector< std::string > id_split;
-        std::vector< Sam< SamDefaultTuple >> sams{};
+        // std::vector< Sam<> > sams{};
 
         std::set< std::string > align_count;
         std::map< std::string, size_t > fastq_count;
@@ -158,12 +161,16 @@ class GithubTailorFastqToBed : public engine::NamedComponent
         std::mutex sam_mutex;
         ParaThreadPool parallel_pool( thread_num_ );
 
-        std::vector< AnnotationRawBed<> > annotation_rawbeds;
-        Sam2RawBed< std::vector< Sam< SamDefaultTuple >>* > sam2bed;
+        std::map< ago::format::MDRawBed, std::size_t > md_rawbeds_map;
+        std::vector< ago::format::MDRawBed > md_rawbeds;
+        ago::format::MDRawBed md_rawbed;
+
+        // std::vector< AnnotationRawBed<> > annotation_rawbeds;
+        // Sam2RawBed< std::vector< ago::format::MDSam<> >* > sam2bed;
 
         std::vector< std::pair<
             std::string,            // sam_lines
-            Sam< SamDefaultTuple >  // sams
+            ago::format::MDSam<>    // sams
         >> sam_pair_vec;
 
         for( size_t smp = 0; smp < fastq_paths.size(); ++smp )
@@ -278,31 +285,48 @@ class GithubTailorFastqToBed : public engine::NamedComponent
                 }
 
                 align_count.emplace( std::get< 0 >( sam_pair.second.data ));
-                sams.emplace_back(   std::move( sam_pair.second ));
-                sam_pair.first = "";
+                md_rawbed = ago::format::MDRawBed( sam_pair.second );
+
+                if( md_rawbeds_map.find( md_rawbed ) == md_rawbeds_map.end() )
+                    md_rawbeds_map[ md_rawbed ] = 0;
+
+                md_rawbeds_map[ md_rawbed ]++;
+
+                // sams.emplace_back(   std::move( sam_pair.second ));
+                // sam_pair.first = "";
             }
 
             sam_pair_vec.clear();
             output_sam.close();
 
-            auto raw_beds( sam2bed.Convert( &sams ));
-            sams.clear();
+            // auto raw_beds( sam2bed.Convert( &sams ));
+            // sams.clear();
 
             // print_mem_usage( "Sample " + sample_name + " Sam Releasing" );
 
-            for( auto itr = raw_beds->begin(); itr != raw_beds->end(); ++itr )
-            {
-                annotation_rawbeds.emplace_back( AnnotationRawBed<>( itr->first ));
-            }
+            // for( auto itr = raw_beds->begin(); itr != raw_beds->end(); ++itr )
+            // {
+            //     annotation_rawbeds.emplace_back( AnnotationRawBed<>( itr->first ));
+            // }
 
             // print_mem_usage( "Sample " + sample_name + " Bed Converting" );
 
-            sam2bed.rawbed_map_->clear();
-            sam2bed.rawbed_map2_->clear();
-            raw_beds->clear();
+            // sam2bed.rawbed_map_->clear();
+            // sam2bed.rawbed_map2_->clear();
+            // raw_beds->clear();
 
-            db.bed_samples.emplace_back( sample_name, annotation_rawbeds );
-            annotation_rawbeds.clear();
+            for( auto& mdbed : md_rawbeds_map )
+            {
+                (*(( uint32_t* )( mdbed.first.get_reads_count() ))) = mdbed.second;
+                md_rawbeds.emplace_back( mdbed.first );
+            }
+
+            md_rawbeds_map.clear();
+            db.bed_samples.emplace_back( sample_name, md_rawbeds );
+            md_rawbeds.clear();
+
+            // db.bed_samples.emplace_back( sample_name, annotation_rawbeds );
+            // annotation_rawbeds.clear();
 
             // print_mem_usage( "Sample " + sample_name + " Bed Releasing" );
 
@@ -426,7 +450,7 @@ class GithubTailorFastqToBed : public engine::NamedComponent
         {
             tailor::ABWT_threads< ABWT_table >
             {
-                abwtt_, &fastq_ss, &sam_ss, align_min_length_, align_allow_mismatch_ 
+                abwtt_, &fastq_ss, &sam_ss, align_min_length_, align_min_multi_, align_allow_mismatch_, align_allow_t2c_, false 
             }
         };
 
@@ -443,47 +467,45 @@ class GithubTailorFastqToBed : public engine::NamedComponent
 
         // print_mem_usage( "Tailor Fastq Releasing-" + std::to_string( load_counts ));
 
-        std::string samline;
-        SamDefaultTuple sam_tpl;
-        Sam< SamDefaultTuple > sam;
+        // SamDefaultTuple sam_tpl;
+        // Sam<> sam;
 
+        std::string samline;
         std::vector< std::string > split;
-        std::vector< std::string > sam_nh;
 
         std::vector< std::pair<
             std::string,            // sam_lines
-            Sam< SamDefaultTuple >  // sams
+            ago::format::MDSam<>    // sams
         >> sam_pairs;
 
-        while( true )
+        while( std::getline( sam_ss, samline ))
         {
-            if( !std::getline( sam_ss, samline ))
-            {
-                break;
-            }
-
-            boost::iter_split( split, samline, boost::algorithm::first_finder( "\t" ));
-            boost::iter_split( sam_nh, split[11], boost::algorithm::first_finder( ":" ));
-
-            if( std::stoi( sam_nh[2] ) > align_limit_algn_ )
-            {
-                continue;
-            }
-
-            for( size_t x = 12; x < split.size(); ++x )
-            {
-                split[11] += ( '\t' + split[x] );
-            }
-
-            TupleUtility< SamDefaultTuple, std::tuple_size< SamDefaultTuple >::value - 2 >::FillTuple( sam_tpl, split );
-            std::get< 11 >( sam_tpl ) = typename std::tuple_element< 11, SamDefaultTuple >::type( split[ 11 ]); 
-
-            sam.data = sam_tpl;
-            sam_pairs.emplace_back( std::make_pair( samline, sam ));
-
-            split.clear();
-            sam_nh.clear();
+            if( samline.at(0) == '@' ) continue;
+            sam_pairs.emplace_back( std::make_pair( samline, ago::format::MDSam<>( samline, align_allow_t2c_ )));
         }
+
+        // while( true )
+        // {
+        //     if( !std::getline( sam_ss, samline ))
+        //     {
+        //         break;
+        //     }
+
+        //     boost::iter_split( split, samline, boost::algorithm::first_finder( "\t" ));
+
+        //     for( size_t x = 12; x < split.size(); ++x )
+        //     {
+        //         split[11] += ( '\t' + split[x] );
+        //     }
+
+        //     TupleUtility< SamDefaultTuple, std::tuple_size< SamDefaultTuple >::value -1 >::FillTuple( sam_tpl, split );
+        //     std::get< 11 >( sam_tpl ) = typename std::tuple_element< 11, SamDefaultTuple >::type( split[ 11 ]); 
+
+        //     sam.data = sam_tpl;
+        //     sam_pairs.emplace_back( std::make_pair( samline, sam ));
+
+        //     split.clear();
+        // }
 
         // print_mem_usage( "Tailor Sam Converting-" + std::to_string( load_counts ));
 

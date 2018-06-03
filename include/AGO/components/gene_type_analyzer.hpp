@@ -105,13 +105,13 @@ class GeneTypeAnalyzer
 
             monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
 
-            if( biotype == "miRNA" )
+            if( biotype.substr( 0, 5 ) == "miRNA" )
             {
                 double ppm_filter = 1;
 
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miRNA/BubPlot" ));
-                algorithm::GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + "miRNA/BubPlot/", node_path, heatbub_js );
-                algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + "miRNA/BubPlot/", bed_samples, biotype, thread_number, extand_mer, ppm_filter, genome_table );
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + biotype + "/BubPlot" ));
+                algorithm::GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + biotype + "/BubPlot/", node_path, heatbub_js );
+                algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + biotype + "/BubPlot/", bed_samples, biotype, thread_number, extand_mer, ppm_filter, genome_table );
             }
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(

@@ -61,6 +61,11 @@ if( Boost_FOUND AND Threads_FOUND AND ZLIB_FOUND )
         ${Boost_LIBRARIES} ${CURL_LIBRARIES}
         pthread thread_pool ) 
 
+    # add_executable( md_sam_test unit_test/format/md_sam.cpp )
+    #     target_link_libraries( md_sam_test
+    #     ${Boost_LIBRARIES} ${CURL_LIBRARIES}
+    #     gtest gtest_main pthread thread_pool boost_program_options ) 
+
     # add_executable( tailor_test unit_test/aligner/tailor.cpp )
     #     target_link_libraries( tailor_test
     #     ${Boost_LIBRARIES} ${CURL_LIBRARIES}

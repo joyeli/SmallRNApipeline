@@ -1,6 +1,7 @@
 #pragma once
 #include <AGO/engine/components/named_component.hpp>
-#include <pokemon/format/annotation_raw_bed.hpp>
+// #include <pokemon/format/annotation_raw_bed.hpp>
+#include <AGO/format/md_rawbed.hpp>
 #include <pokemon/annotator/annotation.hpp>
 #include <pokemon/annotator/annotation_set.hpp>
 #include <CCD/para_thread_pool/para_thread_pool.hpp>
@@ -12,7 +13,7 @@ namespace component {
 
 void output_annobed( auto& output, auto& genome, auto& sample_beds )
 {
-    output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tType\tAnnoSeed\n";
+    output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tMM\tT2C\tType\tAnnoSeedMD\n";
 
     for( auto& anno : sample_beds )
     {
@@ -31,6 +32,8 @@ void output_annobed( auto& output, auto& genome, auto& sample_beds )
                     << (int)anno.tail_length_ << "\t"
                     << anno.getReadSeq( genome ) << "\t"
                     << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
+                    << ( anno.md_map.size() != 0 ? anno.getMD() : "." ) << "\t"
+                    << ( anno.tc_set.size() != 0 ? anno.getTC() : "." ) << "\t"
                     << ".\t"
                     << ".\n"
                     ;
@@ -50,9 +53,13 @@ void output_annobed( auto& output, auto& genome, auto& sample_beds )
                         << (int)anno.tail_length_ << "\t"
                         << anno.getReadSeq( genome ) << "\t"
                         << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
+                        << ( anno.md_map.size() != 0 ? anno.getMD() : "." ) << "\t"
+                        << ( anno.tc_set.size() != 0 ? anno.getTC() : "." ) << "\t"
                         << info[i] << "\t"
                         << info[ i+1 ] << "_"
-                        << anno.getReadSeq( genome ).substr(1,7) << "\n"
+                        << anno.getReadSeq( genome ).substr(1,7)
+                        << ( anno.seed_md_tag != "" ? ( "|" + anno.seed_md_tag ) : "" )
+                        << "\n"
                         ;
                 }
             }
@@ -73,13 +80,13 @@ class Annotator : public engine::NamedComponent
                 , std::tuple_size< decltype(db_bed.data) >::value
             > ( db_bed.data , ann_bed.annotation_info_[db_idx] );
 
-            if( std::get<4>( db_bed.data ) == "miRNA" )
+            if( std::get<4>( db_bed.data ).substr( 0, 5 ) == "miRNA" )
             {
                 for( auto& info : ann_bed.annotation_info_ )
                 {
                     for( int i = 0; i < info.size(); i+=2 )
                     {
-                        if( info[i] == "miRNA" && info[i+1].at( info[i+1].size()-1 ) != 'p' )
+                        if( info[i].substr( 0, 5 ) == "miRNA" && info[i+1].at( info[i+1].size()-1 ) != 'p' )
                         {
                             size_t db_mid  = std::get<1>( db_bed.data ) + (( std::get<2>( db_bed.data ) - std::get<1>( db_bed.data )) /2 );
                             size_t ann_mid = ann_bed.start_ + (( ann_bed.end_ - ann_bed.start_ ) /2 );
@@ -123,7 +130,8 @@ class Annotator : public engine::NamedComponent
     >;
 
     using Annotations = AnnotationSet <
-          AnnotationRawBed<>
+          // AnnotationRawBed<>
+          ago::format::MDRawBed
         , AnnotationTrait
     >;
 
@@ -207,7 +215,8 @@ class Annotator : public engine::NamedComponent
         std::mutex smp_mutex;
         ParaThreadPool smp_parallel_pool( db.bed_samples.size() );
 
-        std::pair< size_t, std::vector< AnnotationRawBed<> >> sample_bed_pair;
+        // std::pair< size_t, std::vector< AnnotationRawBed<> >> sample_bed_pair;
+        std::pair< size_t, std::vector< ago::format::MDRawBed >> sample_bed_pair;
 
         for( size_t smp = 0; smp < db.bed_samples.size(); ++smp )
         {

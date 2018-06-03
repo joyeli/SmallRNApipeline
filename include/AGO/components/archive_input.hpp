@@ -1,6 +1,7 @@
 #pragma once
 #include <AGO/engine/components/named_component.hpp>
 #include <CCD/para_thread_pool/para_thread_pool.hpp>
+#include <AGO/format/md_rawbed.hpp>
 #include <mutex>
 
 namespace ago {
@@ -49,20 +50,23 @@ class ArchiveInput : public engine::NamedComponent
         for( auto& archive_path : archive_paths )
         {
             std::string sample_name( get_sample_name( archive_path ));
-            db.bed_samples.emplace_back( sample_name, std::vector< AnnotationRawBed<> >{} );
+            // db.bed_samples.emplace_back( sample_name, std::vector< AnnotationRawBed<> >{} );
+            db.bed_samples.emplace_back( sample_name, std::vector< ago::format::MDRawBed >{} );
         }
 
         for( size_t smp = 0; smp < archive_paths.size(); ++smp )
         {
-            std::vector< AnnotationRawBed<> > annotation_rawbeds;
+            // std::vector< AnnotationRawBed<> > annotation_rawbeds;
+            std::vector< ago::format::MDRawBed > md_rawbeds;
 
             std::ifstream archive( archive_paths[ smp ] );
             boost::archive::binary_iarchive archive_in( archive );
 
-            archive_in & annotation_rawbeds;
+            // archive_in & annotation_rawbeds;
+            archive_in & md_rawbeds;
             archive.close();
 
-            db.bed_samples[ smp ].second = std::move( annotation_rawbeds );
+            db.bed_samples[ smp ].second = std::move( md_rawbeds );
             monitor.log( "Component ArchiveInput", ( db.bed_samples[ smp ].first ).c_str() );
         }
 

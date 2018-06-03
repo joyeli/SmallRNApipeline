@@ -1,5 +1,6 @@
 #pragma once
 #include <unistd.h>
+#include <AGO/format/md_rawbed.hpp>
 
 namespace ago {
 namespace algorithm {
@@ -8,8 +9,8 @@ struct SeqType
 {
     //                                  seed        arm         tail
     using SeedTailType = std::tuple< std::string, std::string, std::string >;
-    using ReadType = std::tuple< std::size_t, std::size_t, double, char, std::size_t >;
-    //                              start       length      ppm   isfilter  index
+    using ReadType = std::tuple< std::size_t, std::size_t, double, char, std::size_t, std::map< std::size_t, char >, std::set< std::size_t >>;
+    //                              start       length      ppm   isfilter  index       md_map    index       nt        tc_set      index
     
     char strand;
 
@@ -29,7 +30,8 @@ struct SeqType
     SeqType()
     {}
 
-    void init( AnnotationRawBed<>& rawbed, auto& genome_table, const std::string& biotype_ )
+    // void init( AnnotationRawBed<>& rawbed, auto& genome_table, const std::string& biotype_ )
+    void init( ago::format::MDRawBed& rawbed, auto& genome_table, const std::string& biotype_ )
     {
         this->chr     = rawbed.chromosome_;
         this->start   = rawbed.start_;
@@ -43,7 +45,8 @@ struct SeqType
         this->reads_vec.clear();
     }
 
-    std::string get_arm( AnnotationRawBed<>& rawbed )
+    // std::string get_arm( AnnotationRawBed<>& rawbed )
+    std::string get_arm( ago::format::MDRawBed& rawbed )
     {
         std::string arm;
         for( auto& info : rawbed.annotation_info_ )
@@ -51,7 +54,7 @@ struct SeqType
             for( std::size_t i = 0; i < info.size(); i+=2 )
             {
                 if( info[i] != biotype ) continue;
-                arm = biotype == "miRNA"
+                arm = biotype.substr( 0, 5 ) == "miRNA"
                     ? info[ i+1 ].substr( info[ i+1 ].length() -2, 2 )
                     : "." ;
             }
@@ -59,7 +62,8 @@ struct SeqType
         return arm;
     }
 
-    SeedTailType make_seed_tail_index( AnnotationRawBed<>& rawbed )
+    // SeedTailType make_seed_tail_index( AnnotationRawBed<>& rawbed )
+    SeedTailType make_seed_tail_index( ago::format::MDRawBed& rawbed )
     {
         SeedTailType seedtemp = {
             rawbed.getReadSeq( *genome ).substr( 1, 7 ),
@@ -69,7 +73,8 @@ struct SeqType
         return seedtemp;
     }
 
-    void insert( AnnotationRawBed<>& rawbed, const double& ppm )
+    // void insert( AnnotationRawBed<>& rawbed, const double& ppm )
+    void insert( ago::format::MDRawBed& rawbed, const double& ppm )
     {
         if( rawbed.end_   > this->end   ) this->end   = rawbed.end_;
         if( rawbed.start_ < this->start ) this->start = rawbed.start_;
@@ -81,7 +86,9 @@ struct SeqType
             (int)rawbed.length_ - (int)rawbed.tail_length_,
             rawbed.reads_count_ * ppm / rawbed.multiple_alignment_site_count_,
             ( rawbed.is_filtered_ == 0 ? 'N' : 'Y' ),
-            reads_vec.size()
+            reads_vec.size(),
+            rawbed.md_map,
+            rawbed.tc_set
         };
 
         seed2read_idx[ seedtemp ] = reads_vec.size();
@@ -158,15 +165,35 @@ struct SeqType
     friend std::ostream& operator<< ( std::ostream& out, SeqType& seqs )
     {
         out << "\t" << seqs.fullseq << "\n";
-        for( auto& seq : seqs.reads_vec ) out
-            << "\t" << std::get<0>( seq )   // start
-            << "\t" << std::get<1>( seq )   // length
-            << "\t" << std::get<2>( seq )   // ppm
-            << "\t" << std::get<3>( seq )   // isfilter
-            // << "\t" << std::get<0>( seqs.read2seed_idx[ std::get<4>( seq ) ])    // seed
-            << "\t" << std::get<1>( seqs.read2seed_idx[ std::get<4>( seq ) ])       // arm
-            << "\t" << std::get<2>( seqs.read2seed_idx[ std::get<4>( seq ) ])       // tail
-            << "\n";
+        for( auto& seq : seqs.reads_vec )
+        {
+            std::string md_tag = "";
+            std::string tc_tag = "";
+
+            if( std::get<5>( seq ).size() != 0 )
+            {
+                for( auto& md : std::get<5>( seq ))
+                    md_tag += std::to_string( md.first ) + md.second;
+            }
+
+            if( std::get<6>( seq ).size() != 0 )
+            {
+                for( auto& tc : std::get<6>( seq ))
+                    tc_tag += std::to_string( tc ) + 'C';
+            }
+
+            out << "\t" << std::get<0>( seq )   // start
+                << "\t" << std::get<1>( seq )   // length
+                << "\t" << std::get<2>( seq )   // ppm
+                << "\t" << std::get<3>( seq )   // isfilter
+                // << "\t" << std::get<0>( seqs.read2seed_idx[ std::get<4>( seq ) ])    // seed
+                << "\t" << std::get<1>( seqs.read2seed_idx[ std::get<4>( seq ) ])       // arm
+                << "\t" << std::get<2>( seqs.read2seed_idx[ std::get<4>( seq ) ])       // tail
+                << "\t" << ( std::get<5>( seq ).size() == 0 ? "." : md_tag )            // MDtag
+                << "\t" << ( std::get<6>( seq ).size() == 0 ? "." : tc_tag )            // TCtag
+                << "\n";
+        }
+
         return out;
     }
 
@@ -216,7 +243,8 @@ class GeneTypeAnalyzerSqalign
     }
 
     static std::map< std::string, SeqType > get_chrmap_table(
-            std::vector< AnnotationRawBed<> >& smp_anno,
+            // std::vector< AnnotationRawBed<> >& smp_anno,
+            std::vector< ago::format::MDRawBed >& smp_anno,
             const std::string& biotype,
             auto& genome_table
             )
@@ -233,7 +261,7 @@ class GeneTypeAnalyzerSqalign
                 {
                     if( raw_bed_info[i] != biotype ) continue;
 
-                    anno = biotype != "miRNA"
+                    anno = biotype.substr( 0, 5 ) != "miRNA"
                          ? raw_bed_info[ i+1 ]
                          : raw_bed_info[ i+1 ].substr( 0, raw_bed_info[ i+1 ].length() -3 );
 
@@ -527,6 +555,8 @@ class GeneTypeAnalyzerSqalign
         output << "                Fwrite( $Ftemp, \"      \\\"SegStart\\\" : \\\"\".  $Segm_Array[$i][0]  . \"\\\",\\n\" );" << "\n";
         output << "                Fwrite( $Ftemp, \"      \\\"SegEnd\\\"   : \\\"\".  $Segm_Array[$i][1]  . \"\\\",\\n\" );" << "\n";
         output << "                Fwrite( $Ftemp, \"      \\\"Tail\\\"     : \\\"\".( $Data_Array[$i][6] != \".\" ? $Data_Array[$i][6] : \"\" ).\"\\\",\\n\" );" << "\n";
+        output << "                Fwrite( $Ftemp, \"      \\\"MDtag\\\"    : \\\"\".( $Data_Array[$i][7] != \".\" ? $Data_Array[$i][7] : \"\" ).\"\\\",\\n\" );" << "\n";
+        output << "                Fwrite( $Ftemp, \"      \\\"TCtag\\\"    : \\\"\".( $Data_Array[$i][8] != \".\" ? $Data_Array[$i][8] : \"\" ).\"\\\",\\n\" );" << "\n";
         output << "" << "\n";
         output << "                if( ( $Length != '' && $Length != 'Length' && $Length != $Data_Array[$i][2] ) ||" << "\n";
         output << "                    ( $Filter != '' && $Filter != 'PPM'    && $Filter >  $Data_Array[$i][3] ) )" << "\n";
@@ -1049,6 +1079,10 @@ class GeneTypeAnalyzerSqalign
         output << "                                tip += ( data[ 'isRMSK' ] == 'N' ? '' : ' (RMSK)' ) + '</br>';" << "\n";
         output << "" << "\n";
         output << "                                tip += 'Sequence: ' + sequ.substr( data[ 'Index' ], data[ 'Length' ]) + '</br>';" << "\n";
+        output << "" << "\n";
+        output << "                                tip += 'MDtag: ' + data[ 'MDtag' ] + '</br>'; " << "\n";
+        output << "                                tip += 'TCtag: ' + data[ 'TCtag' ] + '</br>'; " << "\n";
+        output << "" << "\n";
         output << "                                tip += 'Length: ' + data[ 'Length' ];" << "\n";
         output << "" << "\n";
         output << "                                tip += ( data[ 'Tail' ] == '' ? '</br>'" << "\n";

@@ -1,7 +1,6 @@
 #pragma once
 #include <AGO/engine/components/named_component.hpp>
 #include <CCD/para_thread_pool/para_thread_pool.hpp>
-#include <AGO/format/md_sam.hpp>
 #include <mutex>
 
 namespace ago {
@@ -11,15 +10,12 @@ class SamInput : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
 
-    bool allow_t2c_;
-
   protected:
 
     virtual void config_parameters( const bpt::ptree& p ) override
     {
         auto& db( this->mut_data_pool() );
         auto& pipeline_schema (db.pipeline_schema() );
-        allow_t2c_ = p.get_optional< bool >( "allow_t2c" ).value_or( false );
 
         for( auto& child : pipeline_schema.get_child( "input" ).get_child( "sample_files" ))
         {
@@ -43,6 +39,7 @@ class SamInput : public engine::NamedComponent
         auto& monitor = db.monitor();
 
         std::vector< std::string > sam_paths( get_path_list_string( db.get_path_list( "sample_files" )));
+        Sam_ihandler_impl< IoHandlerIfstream > sam_reader( sam_paths );
 
         monitor.set_monitor( "Component SamInput", sam_paths.size() +2 );
         monitor.log( "Component SamInput", "Start" );
@@ -53,21 +50,26 @@ class SamInput : public engine::NamedComponent
         for( auto& sam_path : sam_paths )
         {
             std::string sample_name( get_sample_name( sam_path ));
-            db.sam_samples.emplace_back( sample_name, std::vector< ago::format::MDSam<> >{} );
+            db.sam_samples.emplace_back( sample_name, std::vector< Sam<> >{} );
         }
 
         for( size_t smp = 0; smp < sam_paths.size(); ++smp )
         {
-            sam_parallel_pool.job_post( [ smp, &db, &sam_paths, &sam_mutex, &monitor, this ] ()
+            sam_parallel_pool.job_post( [ smp, &db, &sam_paths, &sam_reader, &sam_mutex, &monitor, this ] ()
             {
-                std::ifstream input( sam_paths[ smp ] );
-                std::vector< ago::format::MDSam<> > sams;
-                std::string samline;
+                std::vector< Sam<> > sams;
+                Sam<> sam;
 
-                while( std::getline( input, samline ))
+			    while( true )
 			    {
-                    if( samline.at(0) == '@' ) continue;
-                    sams.push_back( ago::format::MDSam<>( samline, allow_t2c_ ));
+				    sam = sam_reader.get_next_entry( smp );
+
+                    if( sam.eof_flag )
+                    {
+                        break;
+                    }
+
+                    sams.push_back( sam );
                 }
 
                 {

@@ -48,7 +48,7 @@ class GeneTypeAnalyzerBarplot
             output.close();
         }
 
-        if( biotype == "miRNA" )
+        if( biotype.substr( 0, 5 ) == "miRNA" )
         {
             boost::filesystem::create_directory( boost::filesystem::path( output_name + "Arm/" ));
             merge_length( bed_samples, total_vec, mirlen_map );

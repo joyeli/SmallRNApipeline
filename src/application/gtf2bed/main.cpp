@@ -83,6 +83,31 @@ std::vector< std::vector< std::string >> read_bed6( const std::string& rmsk, con
     return bed_vec;
 }
 
+std::vector< std::vector< std::string >> read_mirtron( const std::string& mtro )
+{
+    std::fstream file( mtro, std::ios::in );
+    std::string line;
+
+    std::vector< std::vector< std::string >> bed_vec;
+    std::vector< std::string > split_vec;
+
+    while( std::getline( file, line ))
+    {
+        split_vec = explode( line, "\t" );
+        bed_vec.emplace_back( std::vector< std::string >{
+                  split_vec[0]
+                , split_vec[1]
+                , split_vec[2]
+                , split_vec[3]
+                , "mirtron"
+                , split_vec[4]
+                });
+    }
+
+    file.close();
+    return bed_vec;
+}
+
 std::map< std::string, std::string > get_options( int& argc, char** argv )
 {
     std::map< std::string, std::string > args;
@@ -93,6 +118,7 @@ std::map< std::string, std::string > get_options( int& argc, char** argv )
         ( "name,n", boost::program_options::value< std::string >()->required(),"Set output file name" )
         ( "anno,a", boost::program_options::value< std::string >()->required(),"Set input main gtf annotation file from Gencode" )
         ( "rmsk,r", boost::program_options::value< std::string >()->required(),"Set input rmsk bed6 annotation file from UCSC" )
+        ( "mtro,m", boost::program_options::value< std::string >()->required(),"Set input mirtron bed annotation file from liftover bed format" )
         ( "trna,t", boost::program_options::value< std::string >()->default_value(""),"Set input tRNA gtf annotation file from GenCode" )
         ( "plya,p", boost::program_options::value< std::string >()->default_value(""),"Set input polyA gtf annotation file from GenCode" )
         ( "sudo,s", boost::program_options::value< std::string >()->default_value(""),"Set input pseudogene gtf annotation file from GenCode" )
@@ -124,6 +150,7 @@ int main( int argc, char** argv )
     auto& name = args[ "name" ];
     auto& anno = args[ "anno" ];
     auto& rmsk = args[ "rmsk" ];
+    auto& mtro = args[ "mtro" ];
     auto& trna = args[ "trna" ];
     auto& plya = args[ "plya" ];
     auto& sudo = args[ "sudo" ];
@@ -131,9 +158,48 @@ int main( int argc, char** argv )
     std::vector< std::string > trna_check;
     std::vector< std::vector< std::string >> bed_vec;
     std::vector< std::vector< std::string >> anno_bed_vec;
+    std::vector< std::vector< std::string >> mirtron_bed_vec;
+
+    bool is_mirtron = false;
 
     anno_bed_vec = read_gtf( anno, true );
-    bed_vec.insert( bed_vec.end(), anno_bed_vec.begin(), anno_bed_vec.end() );
+    mirtron_bed_vec = read_mirtron( mtro );
+
+    for( auto& bed : anno_bed_vec )
+    {
+        if( bed[4] == "miRNA" )
+        {
+            for( auto& mirtron : mirtron_bed_vec )
+            {
+                if( bed[0] == mirtron[0] && bed[3] == mirtron[3]   &&
+                    std::stoi( bed[2] ) >= std::stoi( mirtron[1] ) &&
+                    std::stoi( bed[1] ) <= std::stoi( mirtron[2] ))
+                {
+                    is_mirtron = true;
+                    break;
+                }
+            }
+
+            if( is_mirtron )
+            {
+                is_mirtron = false;
+                continue;
+            }
+
+            bed_vec.emplace_back( bed );
+            bed[4] = "miRNA_mirtron";
+        }
+        
+        bed_vec.emplace_back( bed );
+    }
+
+    for( auto& bed : mirtron_bed_vec )
+    {
+        bed_vec.emplace_back( bed );
+        bed[4] = "miRNA_mirtron";
+        bed_vec.emplace_back( bed );
+    }
+
     anno_bed_vec.clear();
 
     anno_bed_vec = read_bed6( rmsk, "rmsk" );

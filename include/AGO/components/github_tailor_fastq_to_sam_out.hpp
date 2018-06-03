@@ -2,7 +2,6 @@
 #include <AGO/engine/components/named_component.hpp>
 #include <pokemon/aligner/aligner.hpp>
 #include <Tailor/tailer.hpp>
-#include <pokemon/converter/sam2rawbed.hpp>
 #include <CCD/para_thread_pool/para_thread_pool.hpp>
 #include <mutex>
 #include <set>
@@ -20,12 +19,13 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
     int reads_max_length_;
 
     int align_min_length_;
-    int align_limit_algn_;
+    int align_min_multi_;
 
     int task_number_;
     int thread_num_;
 
     bool align_allow_mismatch_;
+    bool align_allow_t2c_;
 
     std::stringstream sam_header_ss_;
     std::string tailor_genome_fasta_;
@@ -56,12 +56,13 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
         reads_min_length_ = p.get_optional< int >( "reads_min_length" ).value_or( 15 );
         reads_max_length_ = p.get_optional< int >( "reads_max_length" ).value_or( 30 );
         align_min_length_ = p.get_optional< int >( "align_min_length" ).value_or( 12 );
-        align_limit_algn_ = p.get_optional< int >( "align_limit_algn" ).value_or( 10 );
+        align_min_multi_  = p.get_optional< int >( "align_min_multi"  ).value_or( 10 );
 
         task_number_ = p.get_optional< int >( "task_number" ).value_or( 50000 );
         thread_num_  = p.get_optional< int >( "thread_num" ).value_or( 16 );
 
         align_allow_mismatch_ = p.get_optional< bool >( "align_allow_mismatch" ).value_or( false );
+        align_allow_t2c_      = p.get_optional< bool >( "align_allow_t2c" ).value_or( false );
         tailor_genome_fasta_  = p.get_optional< std::string >( "tailor_genome_fasta" ).value_or( "" );
     }
 
@@ -371,7 +372,7 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
         {
             tailor::ABWT_threads< ABWT_table >
             {
-                abwtt_, &fastq_ss, &sam_ss, align_min_length_, align_allow_mismatch_ 
+                abwtt_, &fastq_ss, &sam_ss, align_min_length_, align_min_multi_, align_allow_mismatch_, align_allow_t2c_, false 
             }
         };
 
@@ -390,10 +391,8 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
 
         std::string samline;
         SamDefaultTuple sam_tpl;
-        Sam< SamDefaultTuple > sam;
 
         std::vector< std::string > split;
-        std::vector< std::string > sam_nh;
         std::vector< std::pair< std::string, std::string >> sams;
 
         while( true )
@@ -404,17 +403,8 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
             }
 
             boost::iter_split( split, samline, boost::algorithm::first_finder( "\t" ));
-            boost::iter_split( sam_nh, split[11], boost::algorithm::first_finder( ":" ));
-
-            if( std::stoi( sam_nh[2] ) > align_limit_algn_ )
-            {
-                continue;
-            }
-
             sams.emplace_back( std::make_pair( split[0], samline ));
-
             split.clear();
-            sam_nh.clear();
         }
 
         // print_mem_usage( "Tailor Sam Converting-" + std::to_string( load_counts ));

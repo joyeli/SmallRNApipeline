@@ -4,6 +4,7 @@
 #include <CCD/para_thread_pool/para_thread_pool.hpp>
 #include <mutex>
 #include <boost/archive/text_iarchive.hpp>
+#include <AGO/format/md_rawbed.hpp>
 
 namespace ago {
 namespace component {
@@ -90,7 +91,8 @@ class Filter : public engine::NamedComponent
         , boost::mpl::vector< boost::mpl::string< 'mi',   'RNA'  >, boost::mpl::int_< 0 >, boost::mpl::char_< '=' >>
     >;
 
-    using Filters = FilterWorker< AnnotationRawBed<>, FilterTypeList >;
+    // using Filters = FilterWorker< AnnotationRawBed<>, FilterTypeList >;
+    using Filters = FilterWorker< ago::format::MDRawBed, FilterTypeList >;
 
   public:
 
@@ -113,7 +115,8 @@ class Filter : public engine::NamedComponent
         std::mutex smp_mutex;
         ParaThreadPool smp_parallel_pool( db.bed_samples.size() );
 
-        std::map< std::string, std::vector< AnnotationRawBed<> >> rawbed_samples_map;
+        // std::map< std::string, std::vector< AnnotationRawBed<> >> rawbed_samples_map;
+        std::map< std::string, std::vector< ago::format::MDRawBed >> rawbed_samples_map;
 
         for( auto& sample : db.bed_samples )
         {

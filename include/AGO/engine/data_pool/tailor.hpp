@@ -60,7 +60,7 @@ class Tailor
         }
 
         if( boost::filesystem::exists(
-                boost::filesystem::path( tailor_index + "t_table.bwt" )
+                boost::filesystem::path( tailor_index + ".t_table.bwt" )
         ))
         {
             db.is_tailor_index_build = true;
