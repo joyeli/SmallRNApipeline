@@ -64,7 +64,12 @@ module.exports = {
             }
 
             for( let j = 1, jlen = indata_split_head.length; j < jlen; j++ ){
-                file[ arm ][ seed ][ indata_split_head[j] ][ lens[ length ]] = Number( splits[j] );
+                file[ arm ][ seed ][ indata_split_head[j] ][ lens[ length ]] =
+                (
+                    file[ arm ][ seed ][ indata_split_head[j] ][ lens[ length ]] != null ?
+                  ( file[ arm ][ seed ][ indata_split_head[j] ][ lens[ length ]] + Number( splits[j] ))
+                  : Number( splits[j] )
+                );
             }
 
             file[ arm ][ seed ][ "PM" ][ lens[ length ]]

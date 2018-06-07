@@ -234,7 +234,7 @@ class GeneTypeAnalyzerEachtype
 
 
 
-        if( biotype.substr( 0, 5 ) == "miRNA" )
+        if( biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron" )
         {
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {

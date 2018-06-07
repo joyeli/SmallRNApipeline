@@ -265,7 +265,9 @@ class GeneTypeAnalyzerBubplot
     static void output_bubplot_visualization(
             const std::string& output_name,
             const std::string& node_path,
-            const std::string& heatbub_js
+            const std::string& heatbub_js,
+            const std::size_t& min_len,
+            const std::size_t& max_len
             )
     {
         std::ofstream output( output_name + "index.php" );
@@ -386,7 +388,7 @@ class GeneTypeAnalyzerBubplot
         output << "" << "\n";
         output << "        if( $Min_Length == '' )" << "\n";
         output << "        {" << "\n";
-        output << "            echo 'minLen';" << "\n";
+        output << "            echo '" << min_len << "';" << "\n";
         output << "        }" << "\n";
         output << "        else echo $Min_Length;" << "\n";
         output << "" << "\n";
@@ -398,7 +400,7 @@ class GeneTypeAnalyzerBubplot
         output << "" << "\n";
         output << "        if( $Max_Length == '' )" << "\n";
         output << "        {" << "\n";
-        output << "            echo 'maxLen';" << "\n";
+        output << "            echo '" << max_len << "';" << "\n";
         output << "        }" << "\n";
         output << "        else echo $Max_Length;" << "\n";
         output << "" << "\n";

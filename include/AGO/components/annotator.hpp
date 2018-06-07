@@ -80,13 +80,13 @@ class Annotator : public engine::NamedComponent
                 , std::tuple_size< decltype(db_bed.data) >::value
             > ( db_bed.data , ann_bed.annotation_info_[db_idx] );
 
-            if( std::get<4>( db_bed.data ).substr( 0, 5 ) == "miRNA" )
+            if( std::get<4>( db_bed.data ).substr( 0, 5 ) == "miRNA" || std::get<4>( db_bed.data ) == "mirtron" )
             {
                 for( auto& info : ann_bed.annotation_info_ )
                 {
                     for( int i = 0; i < info.size(); i+=2 )
                     {
-                        if( info[i].substr( 0, 5 ) == "miRNA" && info[i+1].at( info[i+1].size()-1 ) != 'p' )
+                        if(( info[i].substr( 0, 5 ) == "miRNA" || info[i] == "mirtron" )&& info[i+1].at( info[i+1].size()-1 ) != 'p' )
                         {
                             size_t db_mid  = std::get<1>( db_bed.data ) + (( std::get<2>( db_bed.data ) - std::get<1>( db_bed.data )) /2 );
                             size_t ann_mid = ann_bed.start_ + (( ann_bed.end_ - ann_bed.start_ ) /2 );

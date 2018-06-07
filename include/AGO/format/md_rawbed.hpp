@@ -7,6 +7,7 @@
 namespace ago {
 namespace format {
 
+// the start from RawBedBase is 1-base
 struct MDRawBed : public RawBedBase
 {
     char strand_;
@@ -76,7 +77,7 @@ struct MDRawBed : public RawBedBase
 
     uint64_t get_end( const MDSam<>& samin )
     {
-        return std::get<3>( samin.data ) -1 + get_genome_match_length( samin );
+        return std::get<3>( samin.data ) + get_genome_match_length( samin );
     }
 
     std::string get_chromosome( const MDSam<>& samin )

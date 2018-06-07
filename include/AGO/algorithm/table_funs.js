@@ -1,6 +1,6 @@
 module.exports = {
     
-    log: function( files, datas, argv ){
+    log: function( files, labelsSeed, datas, argv ){
 
         let lens = [];
         
@@ -47,11 +47,13 @@ module.exports = {
         
         for( let file_name in datas ){
             for( let arm in datas[ file_name ][ "value" ] ){
-        
+
                 let count_arm = 0;
-                for( let seed in files[ file_name ][ arm ] ){
-        
+                for( let i = 0; i < labelsSeed[ arm ].length -1; ++i ){
+
                     count_arm++;
+                    let seed = labelsSeed[ arm ][ i ];
+        
                     console.log( "<th" + ( count_arm != 1 ? "" : " style='border-left:1px #666 solid;'" )
                             + "><svg width=45 height=85 version='1.1' xmlns='http://www.w3.org/2000/svg'>"
                             + "<text x=-75 y=40 transform='rotate(-70)' font-family='Sans-serif'>"
@@ -85,9 +87,11 @@ module.exports = {
                     for( let arm in datas[ file_name ][ "value" ] ){
         
                         let count_arm = 0;
-                        for( let seed in files[ file_name ][ arm ] ){
-        
+                        for( let j = 0; j < labelsSeed[ arm ].length -1; ++j ){
+
                             count_arm++;
+                            let seed = labelsSeed[ arm ][ j ];
+        
                             console.log(
                                     "<td style='text-align:center;font-family:Sans-serif;font-size:12px;"
                                     + ( count_type != 1 ? "" : "border-top:1px #666 solid;" )

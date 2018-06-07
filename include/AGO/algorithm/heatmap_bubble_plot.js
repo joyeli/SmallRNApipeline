@@ -86,7 +86,7 @@ let maxArray = { value: Array(), density: Array() };
 let minArray = { value: Array(), density: Array() };
 
 for( let file_name in defines.files ){
-    datas[  file_name ] = dataParser.getData( argv, defines.files[ file_name ], defines.seed_index );
+    datas[ file_name ] = dataParser.getData( argv, defines.files[ file_name ], defines.seed_index );
 
     for( let arm in { "5p":0, "3p":0 }){
         if( argv.arm != "5p3p" ){ if( arm != argv.arm ){ continue; }}
@@ -184,4 +184,4 @@ for( let type in maxValue ){
 
 
 console.log( defines.document.body.innerHTML );
-// makeTable.log( defines.files, datas, argv );
+makeTable.log( defines.files, defines.labelsSeed, datas, argv );
