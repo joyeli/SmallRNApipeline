@@ -7,6 +7,7 @@
 #include <AGO/algorithm/gene_type_analyzer_sqalign.hpp>
 #include <AGO/algorithm/gene_type_analyzer_valplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_ranking.hpp>
+#include <AGO/algorithm/gene_type_analyzer_mdtcpos.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
 
@@ -112,6 +113,11 @@ class GeneTypeAnalyzerEachtype
             GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table );
         });
 
+        parallel_pool.job_post([ &bed_samples, &biotype, this ] ()
+        {
+            GeneTypeAnalyzerMDTCpos::make_mdtcpos( bed_samples, biotype );
+        });
+
 
 
         parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
@@ -186,6 +192,11 @@ class GeneTypeAnalyzerEachtype
         parallel_pool.job_post([ this ] ()
         {
             GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + ranking );
+        });
+
+        parallel_pool.job_post([ this ] ()
+        {
+            GeneTypeAnalyzerMDTCpos::output_mdtcpos_visualization( output_path );
         });
 
 

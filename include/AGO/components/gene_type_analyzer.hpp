@@ -43,10 +43,10 @@ class GeneTypeAnalyzer
 
     virtual void config_parameters( const bpt::ptree& p ) override
     {
-        sudo_count     = p.get_optional< double      >( "sudo_count"     ).value_or( 0.000001 );
-        is_filter_drop = p.get_optional< bool        >( "is_filter_drop" ).value_or( true     );
-        output_annobed = p.get_optional< bool        >( "output_annobed" ).value_or( true     );
-        thread_number  = p.get_optional< std::size_t >( "thread_number"  ).value_or( 8 );
+        sudo_count = p.get_optional< double   >( "sudo_count"     ).value_or( 0.000001 );
+        is_filter_drop = p.get_optional< bool >( "is_filter_drop" ).value_or( true     );
+        output_annobed = p.get_optional< bool >( "output_annobed" ).value_or( true     );
+        thread_number  = p.get_optional< std::size_t >( "thread_number" ).value_or( 8 );
         extand_mer = p.get_optional< std::size_t >( "extand_mer" ).value_or( 2 );
         min_len    = p.get_optional< std::size_t >( "min_len"    ).value_or( 0 );
         max_len    = p.get_optional< std::size_t >( "max_len"    ).value_or( 0 );

@@ -11,7 +11,7 @@ class SamInput : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
 
-    bool allow_t2c_;
+    bool allow_t2c;
 
   protected:
 
@@ -19,7 +19,7 @@ class SamInput : public engine::NamedComponent
     {
         auto& db( this->mut_data_pool() );
         auto& pipeline_schema (db.pipeline_schema() );
-        allow_t2c_ = p.get_optional< bool >( "allow_t2c" ).value_or( false );
+        allow_t2c = p.get_optional< bool >( "allow_t2c" ).value_or( false );
 
         for( auto& child : pipeline_schema.get_child( "input" ).get_child( "sample_files" ))
         {
@@ -67,7 +67,7 @@ class SamInput : public engine::NamedComponent
                 while( std::getline( input, samline ))
 			    {
                     if( samline.at(0) == '@' ) continue;
-                    sams.push_back( ago::format::MDSam<>( samline, allow_t2c_ ));
+                    sams.push_back( ago::format::MDSam<>( samline, allow_t2c ));
                 }
 
                 {
