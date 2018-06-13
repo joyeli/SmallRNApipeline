@@ -16,6 +16,7 @@ struct MDRawBed : public RawBedBase
 
     std::string chromosome_;
     std::vector< std::vector< std::string >> annotation_info_;
+    std::vector< std::vector< bool >> is_on_biotype_list_;
 
     std::map< std::size_t, char > md_map; // map< index, nt > for mismatch
     std::set< std::size_t > tc_set; // set< index > fot T-to-C
@@ -33,6 +34,7 @@ struct MDRawBed : public RawBedBase
         , chromosome_( get_chromosome( samin ))
         , is_filtered_(0)
         , annotation_info_(0)
+        , is_on_biotype_list_(0)
         , md_map( samin.md_map )
         , tc_set( samin.tc_set )
         , seed_md_tag( get_md_in_seed( samin ))
@@ -182,6 +184,7 @@ struct MDRawBed : public RawBedBase
 		ar & is_filtered_;
 		ar & chromosome_;
 		ar & annotation_info_;
+		ar & is_on_biotype_list_;
 
         ar & md_map;
         ar & tc_set;

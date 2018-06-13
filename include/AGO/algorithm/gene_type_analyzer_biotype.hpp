@@ -375,7 +375,7 @@ class GeneTypeAnalyzerBiotype
         output << "                                console.log('Render Complete');" << "\n";
         output << "                            });" << "\n";
         output << "            " << "\n";
-        output << "                            var svg = d3.select('#bar').datum(data);" << "\n";
+        output << "                            var svg = d3.select('#bar').attr('height',height*2).datum(data);" << "\n";
         output << "                            console.log('calling chart');" << "\n";
         output << "                            svg.transition().duration(0).call(chart);" << "\n";
         output << "                " << "\n";

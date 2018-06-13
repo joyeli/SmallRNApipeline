@@ -207,7 +207,7 @@ class Annotator : public engine::NamedComponent
             for( size_t smp = 0; smp < db.bed_samples.size(); ++smp )
             {
                 annobed_outputs.push_back( std::move( std::ofstream(
-                    db.output_dir().string() + db.bed_samples[ smp ].first + "_annobed.tsv"
+                    db.output_dir().string() + db.bed_samples[ smp ].first + "_annobed.text"
                 )));
             }
         }
@@ -251,10 +251,87 @@ class Annotator : public engine::NamedComponent
             });
         }
 
+
         smp_parallel_pool.flush_pool();
         Annotations::clear_database();
 
+        output_statistic( db.output_dir().string(), db.bed_samples );
         monitor.log( "Component Annotator", "Complete" );
+    }
+
+    void output_statistic( const auto& output_dir, auto& bed_samples )
+    {
+        std::size_t anno_count = 0;
+        std::set< std::string > bioindex;
+        std::map< std::string, double > temp_map;
+
+        std::vector< std::map< std::string, double >>
+            statistic_samples( bed_samples.size(), std::map< std::string, double >() );
+
+        std::vector< double > statistic_totals( bed_samples.size(), 0.0 );
+
+        for( size_t smp = 0; smp < bed_samples.size(); ++smp )
+        {
+            for( auto& anno : bed_samples[ smp ].second )
+            {
+                for( auto& info : anno.annotation_info_ )
+                {
+                    for( int i = 0; i < info.size(); i+=2 )
+                    {
+                        if( temp_map.find( info[i] ) == temp_map.end() )
+                        {
+                            bioindex.emplace( info[i] );
+                            temp_map[ info[i] ] = 0.0;
+                        }
+
+                        temp_map[ info[i] ] += (double)(anno.reads_count_) / (double)(anno.multiple_alignment_site_count_);
+                        anno_count += 1;
+                    }
+                }
+
+                for( auto& biotype : temp_map )
+                {
+                    statistic_samples[ smp ][ biotype.first ] += biotype.second / (double)(anno_count);
+                    statistic_totals[ smp ] += biotype.second / (double)(anno_count);
+                }
+
+                temp_map.clear();
+                anno_count = 0;
+            }
+        }
+
+        std::ofstream output( output_dir + "annotated.text" );
+
+        output << "Sample";
+
+        for( auto& smp : bed_samples )
+        {
+            output << "\t" << smp.first;
+        }
+
+        output << "\n";
+
+        for( auto& biotype : bioindex )
+        {
+            output << biotype;
+
+            for( size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                output << std::fixed << std::setprecision( 0 ) << "\t" << statistic_samples[ smp ][ biotype ];
+            }
+            
+            output << "\n";
+        }
+
+        output << "Total";
+
+        for( size_t smp = 0; smp < bed_samples.size(); ++smp )
+        {
+                output << std::fixed << std::setprecision( 0 ) << "\t" << statistic_totals[ smp ];
+        }
+
+        output << "\n";
+        output.close();
     }
 };
 

@@ -4,6 +4,7 @@
 #include <AGO/algorithm/gene_type_analyzer_dotplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_lendist.hpp>
 #include <AGO/algorithm/gene_type_analyzer_barplot.hpp>
+#include <AGO/algorithm/gene_type_analyzer_bubplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_sqalign.hpp>
 #include <AGO/algorithm/gene_type_analyzer_valplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_ranking.hpp>
@@ -22,6 +23,7 @@ class GeneTypeAnalyzerEachtype
     std::string dotplot;
     std::string lendist;
     std::string barplot;
+    std::string bubplot;
     std::string sqalign;
     std::string valplot;
     std::string ranking;
@@ -35,6 +37,7 @@ class GeneTypeAnalyzerEachtype
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
         , barplot( "BarPlot/" )
+        , bubplot( "BubPlot/" )
         , sqalign( "SqAlign/" )
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
@@ -49,13 +52,19 @@ class GeneTypeAnalyzerEachtype
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
             std::vector< std::map< std::string, std::string >>& anno_mark,
             std::size_t& thread_number,
-            std::map< std::string, std::string >& genome_table
+            std::map< std::string, std::string >& genome_table,
+            std::string& node_path,
+            std::string& heatbub_js,
+            std::size_t& min_len,
+            std::size_t& max_len,
+            std::size_t& extand_mer
             )
         : output_path( output_path_ + ( output_path_.at( output_path_.length() -1 ) != '/' ? "/" : "" ) + biotype + "/" )
         , parallel_pool( thread_number )
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
         , barplot( "BarPlot/" )
+        , bubplot( "BubPlot/" )
         , sqalign( "SqAlign/" )
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
@@ -247,6 +256,19 @@ class GeneTypeAnalyzerEachtype
 
         if( biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron" )
         {
+            boost::filesystem::create_directory( boost::filesystem::path( output_path + bubplot ));
+
+            parallel_pool.job_post([ &bed_samples, &node_path, &heatbub_js, &min_len, &max_len, this ] ()
+            {
+                algorithm::GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + bubplot, node_path, heatbub_js, min_len, max_len );
+            });
+
+            parallel_pool.job_post([ &bed_samples, &biotype, &thread_number, &extand_mer, &genome_table, this ] ()
+            {
+                double ppm_filter = 1;
+                algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, extand_mer, ppm_filter, genome_table );
+            });
+
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "GMPM" );

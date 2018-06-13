@@ -31,12 +31,15 @@ class GeneTypeAnalyzerCounting
                 {
                     smp_len_idx[ smp ].emplace( raw_bed.length_ - raw_bed.tail_length_ );
 
-                    for( auto& raw_bed_info : raw_bed.annotation_info_ )
+                    for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
                     {
-                        for( std::size_t i = 0; i < raw_bed_info.size(); i+=2 )
+                        for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                         {
-                            if( biotype != "" && raw_bed_info[i] != biotype ) continue;
-                            smp_ano_idx[ smp ].emplace( raw_bed_info[ i + ( biotype == "" ? 0 : 1 )]
+                            if( biotype == "" && raw_bed.annotation_info_[i][j] == "miRNA_mirtron" ) continue;
+                            if( biotype != "" && raw_bed.annotation_info_[i][j] != biotype ) continue;
+                            if( biotype == "" && raw_bed.is_on_biotype_list_[i][j] != true ) continue;
+
+                            smp_ano_idx[ smp ].emplace( raw_bed.annotation_info_[i][ j + ( biotype == "" ? 0 : 1 )]
                                 + ( biotype == "" ? "" :
                                 (
                                     "_" + raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
@@ -97,16 +100,27 @@ class GeneTypeAnalyzerCounting
     // static double get_ppm( std::vector< AnnotationRawBed<> >& annotations, double ppm = 1000000 )
     static double get_ppm( std::vector< ago::format::MDRawBed >& annotations, double ppm = 1000000 )
     {
+        double tmp = 0;
         double sum = 0;
+        std::size_t anno_count = 0;
 
         for( auto& anno : annotations )
         {
-            for( auto& info : anno.annotation_info_ )
+            for( std::size_t i = 0; i < anno.annotation_info_.size(); ++i )
             {
-                for( int i = 0; i < info.size(); i+=2 )
+                for( int j = 0; j < anno.annotation_info_[i].size(); j+=2 )
                 {
-                    sum += ( anno.reads_count_ / anno.multiple_alignment_site_count_ );
+                    anno_count += 1;
+                    if( anno.is_on_biotype_list_[i][j] && anno.annotation_info_[i][j] != "miRNA_mirtron" )
+                        tmp += (double)(anno.reads_count_) / (double)(anno.multiple_alignment_site_count_);
                 }
+            }
+
+            if( anno_count != 0 )
+            {
+                sum += (double)(tmp) / (double)(anno_count);
+                anno_count = 0;
+                tmp = 0;
             }
         }
 
@@ -160,26 +174,28 @@ class GeneTypeAnalyzerCounting
 
         std::size_t tail;
         std::size_t read_len;
+        std::size_t anno_check_sum;
 
-        double anno_check_sum;
         double anno_counts;
         double ppm = get_ppm( annotations );
 
         for( auto& raw_bed : annotations )
         {
             anno_check.clear();
-            anno_check_sum = 0.0;
+            anno_check_sum = 0;
 
             read_len = raw_bed.length_ - raw_bed.tail_length_;
             tail = which_tail( raw_bed.getTail() );
 
-            for( auto& raw_bed_info : raw_bed.annotation_info_ )
+            for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
             {
-                for( std::size_t i = 0; i < raw_bed_info.size(); i+=2 )
+                for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                 {
-                    if( biotype != "" && raw_bed_info[i] != biotype ) continue;
+                    if( biotype == "" && raw_bed.annotation_info_[i][j] == "miRNA_mirtron" ) continue;
+                    if( biotype != "" && raw_bed.annotation_info_[i][j] != biotype ) continue;
+                    if( biotype == "" && raw_bed.is_on_biotype_list_[i][j] != true ) continue;
 
-                    anno_first  = biotype == "" ? raw_bed_info[i] : raw_bed_info[ i+1 ];
+                    anno_first  = biotype == "" ? raw_bed.annotation_info_[i][j] : raw_bed.annotation_info_[i][ j+1 ];
                     anno_second = biotype == "" ? ""
                                 :   raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
                                 + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
@@ -191,18 +207,19 @@ class GeneTypeAnalyzerCounting
                         anno_temp[ anno_first ][ anno_second ][ tail ].end() )
                         anno_temp[ anno_first ][ anno_second ][ tail ][ read_len ] = 0.0;
 
-                    anno_check_sum++;
-                    anno_counts = raw_bed.reads_count_ * ppm / raw_bed.multiple_alignment_site_count_;
+                    anno_check_sum += 1;
+                    anno_counts = (double)(raw_bed.reads_count_) / (double)(raw_bed.multiple_alignment_site_count_);
 
-                    if( anno_check.find( anno_pair ) == anno_check.end() ) anno_check[ anno_pair ] = 0;
+                    if( anno_check.find( anno_pair ) == anno_check.end() )
+                        anno_check[ anno_pair ] = 0.0;
+
                     anno_check[ anno_pair ] += anno_counts;
                 }
             }
 
             for( auto& anno : anno_check )
             {
-                anno.second = anno.second / anno_check_sum;
-                anno_temp[ anno.first.first ][ anno.first.second ][ tail ][ read_len ] += anno.second;
+                anno_temp[ anno.first.first ][ anno.first.second ][ tail ][ read_len ] += anno.second * ppm / anno_check_sum;
             }
         }
 

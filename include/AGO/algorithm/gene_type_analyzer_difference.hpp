@@ -73,7 +73,7 @@ class GeneTypeAnalyzerDifference
             const std::string& token
             )
     {
-        std::ofstream output( output_path + "LoadingDifference_" + token + ".tsv" );
+        std::ofstream output( output_path + "LoadingDifference_" + token + ".text" );
         output << "Annotation\tTotal\tExpressionDifference\tSample1:Sample2";
 
         std::vector< double > vec_gmpm;
@@ -196,7 +196,7 @@ class GeneTypeAnalyzerDifference
             const std::string& token
             )
     {
-        std::ofstream output( output_path + "LengthDifference_" + token + ".tsv" );
+        std::ofstream output( output_path + "LengthDifference_" + token + ".text" );
         output << "Annotation\tTotal\tLengthDifference\tSample1:Sample2\tLength1:Length2";
 
         double sum_loading = 0.0;
@@ -344,7 +344,7 @@ class GeneTypeAnalyzerDifference
             const std::string& token
             )
     {
-        std::ofstream output( output_path + "ArmDifference_" + token + ".tsv" );
+        std::ofstream output( output_path + "ArmDifference_" + token + ".text" );
         output << "Annotation\tTotal\tisLoadingDifference";
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )

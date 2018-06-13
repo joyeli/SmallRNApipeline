@@ -4,7 +4,6 @@
 #include <AGO/algorithm/gene_type_analyzer_filtering.hpp>
 #include <AGO/algorithm/gene_type_analyzer_counting.hpp>
 #include <AGO/algorithm/gene_type_analyzer_biotype.hpp>
-#include <AGO/algorithm/gene_type_analyzer_bubplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_quantile.hpp>
 #include <AGO/algorithm/gene_type_analyzer_eachtype.hpp>
 #include <AGO/algorithm/gene_type_analyzer_annobed.hpp>
@@ -84,11 +83,13 @@ class GeneTypeAnalyzer
 
 
         monitor.log( "Component GeneTypeAnalyzer", "Filtering ... " );
-        drop_filtering( bed_samples );
+        filtering( bed_samples, biotype_list, is_filter_drop );
         ParaThreadPool smp_parallel_pool( bed_samples.size() );
 
         std::string output_path = db.output_dir().string() + ( db.output_dir().string().at( db.output_dir().string().length() -1 ) != '/' ? "/" : "" ) ;
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "biotypes" ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "noQuantile" ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "Quantiled" ));
 
         monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotpyes" );
         algorithm::GeneTypeAnalyzerBiotype( output_path + "biotypes/", genome_table, bed_samples, min_len, max_len, sudo_count );
@@ -101,18 +102,10 @@ class GeneTypeAnalyzer
         for( std::size_t i = 0; i < biotype_list.size(); ++i )
         {
             auto& biotype = biotype_list[i];
-            boost::filesystem::create_directory( boost::filesystem::path( output_path + biotype ));
+            boost::filesystem::create_directory( boost::filesystem::path( output_path + "noQuantile/" + biotype ));
+            boost::filesystem::create_directory( boost::filesystem::path( output_path + "Quantiled/"  + biotype ));
 
             monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
-
-            if( biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron" )
-            {
-                double ppm_filter = 1;
-
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + biotype + "/BubPlot" ));
-                algorithm::GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + biotype + "/BubPlot/", node_path, heatbub_js, min_len, max_len );
-                algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + biotype + "/BubPlot/", bed_samples, biotype, thread_number, extand_mer, ppm_filter, genome_table );
-            }
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
                     bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
@@ -132,8 +125,39 @@ class GeneTypeAnalyzer
             ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype );
             table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
+            algorithm::GeneTypeAnalyzerEachtype(
+                      biotype
+                    , output_path + "noQuantile/"
+                    , bed_samples
+                    , ano_len_idx
+                    , anno_table_tail
+                    , anno_mark
+                    , thread_number
+                    , genome_table
+                    , node_path
+                    , heatbub_js
+                    , min_len
+                    , max_len
+                    , extand_mer
+                    );
+
             algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
-            algorithm::GeneTypeAnalyzerEachtype( biotype, output_path, bed_samples, ano_len_idx, anno_table_tail, anno_mark, thread_number, genome_table );
+
+            algorithm::GeneTypeAnalyzerEachtype(
+                      biotype
+                    , output_path + "Quantiled/"
+                    , bed_samples
+                    , ano_len_idx
+                    , anno_table_tail
+                    , anno_mark
+                    , thread_number
+                    , genome_table
+                    , node_path
+                    , heatbub_js
+                    , min_len
+                    , max_len
+                    , extand_mer
+                    );
         }
 
         if( output_annobed )
@@ -142,7 +166,7 @@ class GeneTypeAnalyzer
             {
                 monitor.log( "Component GeneTypeAnalyzer", "Outputing ... AnnoBed [ " + std::to_string( smp+1 ) + " / " + std::to_string( bed_samples.size() ) + " ]" );
 
-                std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_annobed.tsv" );
+                std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_analyzedbed.text" );
                 annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second );
                 annobed_output.close();
             }

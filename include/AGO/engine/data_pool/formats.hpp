@@ -32,11 +32,6 @@ class Formats
         std::vector< ago::format::MDRawBed >
     >> bed_samples;
 
-    std::vector< std::pair<
-        std::string,
-        std::vector< double >
-    >> statistic_samples;
-
     template< class DB >
     Formats( DB& db )
     {

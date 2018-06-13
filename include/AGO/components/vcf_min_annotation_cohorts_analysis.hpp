@@ -295,7 +295,7 @@ class VcfMinAnnotationCohortsAnalysis : public engine::NamedComponent
         {
             smp_parallel_pool.job_post([ smp, &vcf_paths, &vcf_smp_pool, &gtype_header, this ] ()
             {
-                std::ofstream output( get_sample_name( vcf_paths[ smp ] ) + ".tsv" );
+                std::ofstream output( get_sample_name( vcf_paths[ smp ] ) + ".text" );
                 output << "Chr\tPos\tRef\tAlt\t";
                 for( auto& header : gtype_header[ smp ] ) output << header << "\t";
                 output << "Qul\tGene\tRmsk\tdbSNP\tCommonSNP\tPublication\tOMIM\tClinvar\tGeneticDisorders\n";

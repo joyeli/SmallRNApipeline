@@ -75,7 +75,7 @@ class ArchiveInput : public engine::NamedComponent
             std::ofstream annobed_output;
             for( size_t smp = 0; smp < db.bed_samples.size(); ++smp )
             {
-                annobed_output.open( db.output_dir().string() + db.bed_samples[ smp ].first + "_annobed.tsv" );
+                annobed_output.open( db.output_dir().string() + db.bed_samples[ smp ].first + "_annobed.text" );
                 output_annobed( annobed_output, db.genome_table, db.bed_samples[ smp ].second );
                 annobed_output.close();
             }

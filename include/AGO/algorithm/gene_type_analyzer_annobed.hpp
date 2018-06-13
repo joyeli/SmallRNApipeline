@@ -19,33 +19,11 @@ class GeneTypeAnalyzerAnnobed
     
         for( auto& anno : sample_beds )
         {
-            for( auto& info : anno.annotation_info_ )
+            for( std::size_t i = 0; i < anno.annotation_info_.size(); ++i )
             {
-                if( info.size() == 0 )
+                for( int j = 0; j < anno.annotation_info_[i].size(); j+=2 )
                 {
-                    output
-                        << anno.chromosome_ << "\t"
-                        << anno.start_ << "\t"
-                        << anno.end_ << "\t"
-                        << anno.strand_ << "\t"
-                        << anno.multiple_alignment_site_count_ << "\t"
-                        << anno.reads_count_ << "\t"
-                        << anno.reads_count_       / anno.multiple_alignment_site_count_ << "\t"
-                        << anno.reads_count_ * ppm / anno.multiple_alignment_site_count_ << "\t"
-                        << ( anno.is_filtered_ == 0 ? "N\t" : "Y\t" )
-                        << (int)anno.length_ - (int)anno.tail_length_ << "\t"
-                        << (int)anno.tail_length_ << "\t"
-                        << anno.getReadSeq( genome ) << "\t"
-                        << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
-                        << ( anno.md_map.size() != 0 ? anno.getMD() : "." ) << "\t"
-                        << ( anno.tc_set.size() != 0 ? anno.getTC() : "." ) << "\t"
-                        << ".\t"
-                        << ".\n"
-                        ;
-                }
-                else
-                {
-                    for( int i = 0; i < info.size(); i+=2 )
+                    if( anno.is_on_biotype_list_[i][j] )
                     {
                         output
                             << anno.chromosome_ << "\t"
@@ -54,7 +32,7 @@ class GeneTypeAnalyzerAnnobed
                             << anno.strand_ << "\t"
                             << anno.multiple_alignment_site_count_ << "\t"
                             << anno.reads_count_ << "\t"
-                            << anno.reads_count_       / anno.multiple_alignment_site_count_ << "\t"
+                            << (double)(anno.reads_count_) / (double)(anno.multiple_alignment_site_count_) << "\t"
                             << anno.reads_count_ * ppm / anno.multiple_alignment_site_count_ << "\t"
                             << ( anno.is_filtered_ == 0 ? "N\t" : "Y\t" )
                             << (int)anno.length_ - (int)anno.tail_length_ << "\t"
@@ -63,8 +41,8 @@ class GeneTypeAnalyzerAnnobed
                             << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
                             << ( anno.md_map.size() != 0 ? anno.getMD() : "." ) << "\t"
                             << ( anno.tc_set.size() != 0 ? anno.getTC() : "." ) << "\t"
-                            << info[i] << "\t"
-                            << info[ i+1 ] << "_"
+                            << anno.annotation_info_[i][j] << "\t"
+                            << anno.annotation_info_[i][ j+1 ] << "_"
                             << anno.getReadSeq( genome ).substr(1,7)
                             << ( anno.seed_md_tag != "" ? ( "|" + anno.seed_md_tag ) : "" )
                             << "\n"

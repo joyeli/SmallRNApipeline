@@ -15,9 +15,6 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
 
-    int reads_min_length_;
-    int reads_max_length_;
-
     int align_min_length_;
     int align_min_multi_;
 
@@ -53,8 +50,6 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
             db.push_path( "tailor_index", tailor_index );
         }
 
-        reads_min_length_ = p.get_optional< int >( "reads_min_length" ).value_or( 15 );
-        reads_max_length_ = p.get_optional< int >( "reads_max_length" ).value_or( 30 );
         align_min_length_ = p.get_optional< int >( "align_min_length" ).value_or( 12 );
         align_min_multi_  = p.get_optional< int >( "align_min_multi"  ).value_or( 10 );
 
@@ -136,30 +131,31 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
         sam_header_ss_ << "@HD" << '\t' << "VN:1.0" << '\t' << "SO:unsorted\n";
 
         std::ofstream output_sam;
-
-        std::string line;
-        std::string sample_name;
-
         std::stringstream fastq_ss;
 
-        std::vector< std::string > id_split;
+        std::string sample_name;
         std::set< std::string > align_count;
 
+        std::map< std::string, size_t > rawread_count;
+        std::map< std::string, size_t > fastq_n_count;
         std::map< std::string, size_t > fastq_count;
-        std::map< std::string, size_t >::iterator fq_it;
 
         bool break_flag = false;
         bool new_line_check = false;
 
         std::mutex sam_mutex;
         ParaThreadPool parallel_pool( thread_num_ );
+        std::vector< std::pair< std::string, std::vector< double >>> statistic_samples;
 
         for( size_t smp = 0; smp < fastq_paths.size(); ++smp )
         {
             load_counts = 0;
 
             sample_name = get_sample_name( fastq_paths[ smp ] );
-            db.statistic_samples.emplace_back( sample_name, std::vector< double >{ 0.0, 0.0, 0.0 });
+            statistic_samples.emplace_back( sample_name, std::vector< double >
+                    { 0.0, 0.0, 0.0, 0.0, 0.0 });
+            //     RawReads FilteredReads Mappable%
+            //          ReadsWithN  Mappable
 
             // print_mem_usage( "Sample " + sample_name + " Start" );
 
@@ -186,27 +182,16 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
                         break;
                     }
 
-                    if( fastq.getSeq().size() < reads_min_length_ ||
-                        fastq.getSeq().size() > reads_max_length_ ||
-                        n_check( fastq )
-                      )
+                    insert_statistic( rawread_count, fastq.getName() ); 
+
+                    if( n_check( fastq ))
                     {
+                        insert_statistic( fastq_n_count, fastq.getName() ); 
                         --job;
                         continue;
                     }
 
-                    fq_it = fastq_count.find( fastq.getName() );
-
-                    if( fq_it != fastq_count.end() )
-                    {
-                        fq_it->second++;
-                    }
-                    else
-                    {
-                        line = fastq.getName();
-                        boost::iter_split( id_split, line, boost::algorithm::first_finder( " " ));
-                        fastq_count.emplace( id_split[0], 1 );
-                    }
+                    insert_statistic( fastq_count, fastq.getName() ); 
 
                     if( new_line_check )
                     {
@@ -252,22 +237,34 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
             output_sam.close();
 
             // print_mem_usage( "Sample " + sample_name + " Aligning" );
+            
+            for( auto& raw : rawread_count )
+            {
+                statistic_samples[ smp ].second[0] += raw.second;
+            }
+            
+            for( auto& fqn : fastq_n_count )
+            {
+                statistic_samples[ smp ].second[1] += fqn.second;
+            }
 
             for( auto& fqc : fastq_count )
             {
-                db.statistic_samples[ smp ].second[0] += fqc.second;
+                statistic_samples[ smp ].second[2] += fqc.second;
 
                 if( align_count.find( fqc.first ) != align_count.end() )
                 {
-                    db.statistic_samples[ smp ].second[1] += fqc.second;
+                    statistic_samples[ smp ].second[3] += fqc.second;
                 }
             }
 
+            rawread_count.clear();
+            fastq_n_count.clear();
             fastq_count.clear();
             align_count.clear();
 
-            db.statistic_samples[ smp ].second[2] =
-                db.statistic_samples[ smp ].second[1] * 100 / db.statistic_samples[ smp ].second[0];
+            statistic_samples[ smp ].second[4] =
+                statistic_samples[ smp ].second[3] * 100 / statistic_samples[ smp ].second[2];
 
             // print_mem_usage( "Sample " + sample_name + " Statistic Releasing" );
 
@@ -277,7 +274,7 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
             // print_mem_usage( "Sample " + sample_name + " Complete" );
         }
 
-        make_statistic( db );
+        make_statistic( db.output_dir().string(), statistic_samples );
         monitor.log( "Component GithubTailorFastqToSamOut", "Complete" );
 
         // print_mem_usage( "Component Complete" );
@@ -323,30 +320,43 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
         return false;
     }
 
-    void make_statistic( auto& db )
+    void insert_statistic( std::map< std::string, size_t >& counts, const std::string& fq_name )
     {
-        std::ofstream output( db.output_dir().string() + "mappability.tsv" );
+        std::vector< std::string > split;
+        boost::iter_split( split, fq_name, boost::algorithm::first_finder( " " ));
+
+        if( counts.find( split[0] ) == counts.end() )
+            counts[ split[0] ] = 0;
+        
+        counts[ split[0] ] += 1;
+    }
+
+    void make_statistic( auto& output_dir, auto& statistic_samples )
+    {
+        std::ofstream output( output_dir + "mappability.text" );
 
         output << "Sample";
 
-        for( auto& sts : db.statistic_samples )
+        for( auto& sts : statistic_samples )
         {
             output << "\t" << sts.first;
         }
 
         output << "\n";
 
-        for( size_t i = 0; i < 3; ++i )
+        for( size_t i = 0; i < 5; ++i )
         {
             switch( i )
             {
-                case 0 : output << "RawRead:"; break;
-                case 1 : output << "Mappable:"; break;
-                case 2 : output << "Mappable%:"; break;
-                default: std::runtime_error( "out of row in mappability.tsv" );
+                case 0 : output << "RawReads:"; break;
+                case 1 : output << "ReadsWithN:"; break;
+                case 2 : output << "FilteredReads:"; break;
+                case 3 : output << "Mappable:"; break;
+                case 4 : output << "Mappable%:"; break;
+                default: std::runtime_error( "out of row in mappability.text" );
             }
 
-            for( auto& sts : db.statistic_samples )
+            for( auto& sts : statistic_samples )
             {
                 output << std::fixed << std::setprecision( 0 ) << "\t" << sts.second[i];
             }

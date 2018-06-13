@@ -292,7 +292,7 @@ class VcfAnnotationAnalysis : public engine::NamedComponent
         {
             smp_parallel_pool.job_post([ smp, &vcf_paths, &vcf_smp_pool, this ] ()
             {
-                std::ofstream output( get_sample_name( vcf_paths[ smp ] ) + ".tsv" );
+                std::ofstream output( get_sample_name( vcf_paths[ smp ] ) + ".text" );
                 output << "Chr\tPos\tRef\tAlt\tQul\tGene\tRmsk\tdbSNP\tCommonSNP\tPublication\tOMIM\tClinvar\tGeneticDisorders\tCosmic\tStructuralVariation\tExAC\tExonSequencingProject\t1000Genome\n";
                 for( auto& anno_vcf : vcf_smp_pool[ smp ]) output << anno_vcf;
                 output.close();
