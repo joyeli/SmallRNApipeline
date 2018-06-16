@@ -19,15 +19,14 @@ class GeneTypeAnalyzerBubplot
             std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
             const std::size_t& thread_number,
-            const std::size_t& extand_mer,
-            const double& ppm_filter,
+            const std::size_t& extend_merge,
             auto& genome_table
             )
     {
         for( auto& smp : bed_samples ) if( !boost::filesystem::exists( output_name + smp.first + ".tsv" ))
             boost::filesystem::create_symlink(( "../LenDist/" + smp.first + ".tsv" ).c_str(), ( output_name + smp.first + ".tsv" ).c_str() );
 
-        std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extand_mer, ppm_filter );
+        std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extend_merge );
         std::vector< std::string > out_vec = sequence_formating( chr_mapping, genome_table );
 
         std::ofstream output( output_name + "AnnoSeq.tsv" );
@@ -44,39 +43,40 @@ class GeneTypeAnalyzerBubplot
             std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
             const std::size_t& thread_number,
-            const std::size_t& extand_mer,
-            const double& ppm_filter
+            const std::size_t& extend_merge
             )
     {
-        double ppm;
         ChrRangeType range_temp;
         std::map< std::string, std::map< ChrRangeType, std::size_t >> chr_mappings;
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            ppm = GeneTypeAnalyzerCounting::get_ppm( bed_samples[ smp ].second );
-
             for( auto& raw_bed : bed_samples[ smp ].second )
             {
-                for( auto& raw_bed_info : raw_bed.annotation_info_ )
+                // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
                 {
-                    for( std::size_t i = 0; i < raw_bed_info.size(); i+=2 )
+                    std::size_t i = 0; // do first priority
+                    if( i < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[i].empty() )
                     {
-                        if( raw_bed_info[i] != biotype ) continue;
-                        if( raw_bed.reads_count_ * ppm / raw_bed.multiple_alignment_site_count_ < ppm_filter ) continue;
+                        if(( raw_bed.annotation_info_[i][0] == biotype ) ||
+                           ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" ))) 
+                        {
+                            for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
+                            {
+                                range_temp = std::make_tuple(
+                                        raw_bed.chromosome_,
+                                        ( raw_bed.strand_ == '+' ? raw_bed.start_ : raw_bed.start_ - extend_merge ),
+                                        ( raw_bed.strand_ == '+' ? raw_bed.end_ + extend_merge : raw_bed.end_ ),
+                                        raw_bed.strand_,
+                                        ( raw_bed.strand_ == '+' ? raw_bed.start_ + 8 : raw_bed.end_ - 8 )
+                                        );
 
-                        range_temp = std::make_tuple(
-                                raw_bed.chromosome_,
-                                ( raw_bed.strand_ == '+' ? raw_bed.start_ : raw_bed.start_ - extand_mer ),
-                                ( raw_bed.strand_ == '+' ? raw_bed.end_ + extand_mer : raw_bed.end_ ),
-                                raw_bed.strand_,
-                                ( raw_bed.strand_ == '+' ? raw_bed.start_ + 8 : raw_bed.end_ - 8 )
-                                );
+                                if( chr_mappings[ raw_bed.annotation_info_[i][ j+1 ]].find( range_temp ) == chr_mappings[ raw_bed.annotation_info_[i][ j+1 ]].end() )
+                                    chr_mappings[ raw_bed.annotation_info_[i][ j+1 ]][ range_temp ] = 0;
 
-                        if( chr_mappings[ raw_bed_info[ i+1 ]].find( range_temp ) == chr_mappings[ raw_bed_info[ i+1 ]].end() )
-                            chr_mappings[ raw_bed_info[ i+1 ]][ range_temp ] = 0;
-
-                        chr_mappings[ raw_bed_info[ i+1 ]][ range_temp ]++;
+                                chr_mappings[ raw_bed.annotation_info_[i][ j+1 ]][ range_temp ]++;
+                            }
+                        }
                     }
                 }
             }

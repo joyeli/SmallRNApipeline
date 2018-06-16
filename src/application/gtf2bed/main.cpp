@@ -186,8 +186,8 @@ int main( int argc, char** argv )
                 continue;
             }
 
-            bed_vec.emplace_back( bed );
-            bed[4] = "miRNA_mirtron";
+            // bed_vec.emplace_back( bed );
+            // bed[4] = "miRNA_mirtron";
         }
         
         bed_vec.emplace_back( bed );
@@ -195,8 +195,8 @@ int main( int argc, char** argv )
 
     for( auto& bed : mirtron_bed_vec )
     {
-        bed_vec.emplace_back( bed );
-        bed[4] = "miRNA_mirtron";
+        // bed_vec.emplace_back( bed );
+        // bed[4] = "miRNA_mirtron";
         bed_vec.emplace_back( bed );
     }
 

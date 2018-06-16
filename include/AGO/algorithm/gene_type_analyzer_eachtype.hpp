@@ -45,7 +45,7 @@ class GeneTypeAnalyzerEachtype
     {}
 
     GeneTypeAnalyzerEachtype(
-            std::string& biotype,
+            const std::string& biotype,
             std::string output_path_,
             std::vector< BedSampleType >& bed_samples,
             AnnoLengthIndexType& ano_len_idx,
@@ -57,9 +57,13 @@ class GeneTypeAnalyzerEachtype
             std::string& heatbub_js,
             std::size_t& min_len,
             std::size_t& max_len,
-            std::size_t& extand_mer
+            std::size_t& extend_merge,
+            std::size_t& extend_refseq
             )
-        : output_path( output_path_ + ( output_path_.at( output_path_.length() -1 ) != '/' ? "/" : "" ) + biotype + "/" )
+        : output_path( output_path_
+                + ( output_path_.at( output_path_.length() -1 ) != '/' ? "/" : "" )
+                + ( biotype == "miRNA_mirtron" ? "" : biotype )
+                + "/" )
         , parallel_pool( thread_number )
         , dotplot( "DotPlot/" )
         , lendist( "LenDist/" )
@@ -117,9 +121,9 @@ class GeneTypeAnalyzerEachtype
 
 
 
-        parallel_pool.job_post([ &bed_samples, &biotype, &genome_table, this ] ()
+        parallel_pool.job_post([ &bed_samples, &biotype, &genome_table, &extend_refseq, this ] ()
         {
-            GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table );
+            GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table, extend_refseq );
         });
 
         parallel_pool.job_post([ &bed_samples, &biotype, this ] ()
@@ -188,9 +192,9 @@ class GeneTypeAnalyzerEachtype
             GeneTypeAnalyzerBarplot::output_barplot_visualization( output_path + barplot );
         });
 
-        parallel_pool.job_post([ this ] ()
+        parallel_pool.job_post([ &extend_refseq, this ] ()
         {
-            GeneTypeAnalyzerSqalign::output_sqalign_visualization( output_path + sqalign );
+            GeneTypeAnalyzerSqalign::output_sqalign_visualization( output_path + sqalign, extend_refseq );
         });
 
         parallel_pool.job_post([ this ] ()
@@ -263,10 +267,9 @@ class GeneTypeAnalyzerEachtype
                 algorithm::GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + bubplot, node_path, heatbub_js, min_len, max_len );
             });
 
-            parallel_pool.job_post([ &bed_samples, &biotype, &thread_number, &extand_mer, &genome_table, this ] ()
+            parallel_pool.job_post([ &bed_samples, &biotype, &thread_number, &extend_merge, &genome_table, this ] ()
             {
-                double ppm_filter = 1;
-                algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, extand_mer, ppm_filter, genome_table );
+                algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, extend_merge, genome_table );
             });
 
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()

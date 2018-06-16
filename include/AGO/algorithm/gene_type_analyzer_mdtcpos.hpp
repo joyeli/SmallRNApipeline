@@ -19,9 +19,10 @@ class GeneTypeAnalyzerMDTCpos
 
     static void make_mdtcpos( std::vector< BedSampleType >& bed_samples, const std::string& biotype )
     {
-        double sum = 0;
         std::size_t len = 0;
         std::size_t max_len = 0;
+
+        double sum = 0.0;
 
         isT2C = false;
         idx_string = "";
@@ -31,73 +32,73 @@ class GeneTypeAnalyzerMDTCpos
         std::vector< std::map< std::size_t, double >> md_vecs( bed_samples.size(), std::map< std::size_t, double >() );
         std::vector< std::map< std::size_t, double >> tc_vecs( bed_samples.size(), std::map< std::size_t, double >() );
 
-        for( std::size_t idx = 0; idx < bed_samples.size(); ++idx )
+        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            sum = 0;
-
-            for( auto& raw_bed : bed_samples[ idx ].second )
+            for( auto& raw_bed : bed_samples[ smp ].second )
             {
-                for( auto& raw_bed_info : raw_bed.annotation_info_ )
+                len = (int)(raw_bed.length_) - (int)(raw_bed.tail_length_);
+
+                if( len > max_len ) max_len = len;
+
+                // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
                 {
-                    for( std::size_t i = 0; i < raw_bed_info.size(); i+=2 )
+                    std::size_t i = 0; // do first priority
+                    if( i < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[i].empty() )
                     {
-                        if( raw_bed_info[i] != biotype ) continue;
-
-                        sum += ( raw_bed.reads_count_ / raw_bed.multiple_alignment_site_count_ );
-                        len = ( int )raw_bed.length_ - ( int )raw_bed.tail_length_;
-
-                        if( len > max_len ) max_len = len;
-
-                        if( raw_bed.md_map.size() != 0 )
+                        if(( raw_bed.annotation_info_[i][0] == biotype ) ||
+                           ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" ))) 
                         {
-                            for( auto& pos : raw_bed.md_map )
+                            for( int j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                             {
-                                if( md_vecs[ idx ].find( pos.first +1 ) == md_vecs[ idx ].end() )
-                                    md_vecs[ idx ][ pos.first +1 ] = 0;
+                                if( raw_bed.md_map.size() != 0 )
+                                {
+                                    for( auto& pos : raw_bed.md_map )
+                                    {
+                                        if( md_vecs[ smp ].find( pos.first +1 ) == md_vecs[ smp ].end() )
+                                            md_vecs[ smp ][ pos.first +1 ] = 0.0;
 
-                                md_vecs[ idx ][ pos.first +1 ]++;
-                            }
-                        }
+                                        md_vecs[ smp ][ pos.first +1 ] += raw_bed.ppm_;
+                                    }
+                                }
 
-                        if( raw_bed.tc_set.size() != 0 )
-                        {
-                            isT2C = true;
-                            for( auto& pos : raw_bed.tc_set )
-                            {
-                                if( tc_vecs[ idx ].find( pos +1 ) == tc_vecs[ idx ].end() )
-                                    tc_vecs[ idx ][ pos +1 ] = 0;
+                                if( raw_bed.tc_set.size() != 0 )
+                                {
+                                    isT2C = true;
+                                    for( auto& pos : raw_bed.tc_set )
+                                    {
+                                        if( tc_vecs[ smp ].find( pos +1 ) == tc_vecs[ smp ].end() )
+                                            tc_vecs[ smp ][ pos +1 ] = 0.0;
 
-                                tc_vecs[ idx ][ pos +1 ]++;
+                                        tc_vecs[ smp ][ pos +1 ] += raw_bed.ppm_;
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-
-            for( auto& pos : md_vecs[ idx ] ) pos.second = pos.second / sum;
-            for( auto& pos : tc_vecs[ idx ] ) pos.second = pos.second / sum;
         }
 
-        for( std::size_t idx = 0; idx < bed_samples.size(); ++idx )
+        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            if( idx != 0 )
+            if( smp != 0 )
             {
                 md_string += ",\n";
                 tc_string += ",\n";
             }
 
-            md_string += "                        [ 'MD-" + bed_samples[ idx ].first + "'";
-            tc_string += "                        [ 'TC-" + bed_samples[ idx ].first + "'";
+            md_string += "                        [ 'MD-" + bed_samples[ smp ].first + "'";
+            tc_string += "                        [ 'TC-" + bed_samples[ smp ].first + "'";
 
             for( std::size_t pos = 1; pos <= max_len; ++pos )
             {
-                if( md_vecs[ idx ].find( pos ) != md_vecs[ idx ].end() )
-                    md_string += ", " + std::to_string( md_vecs[ idx ][ pos ] );
+                if( md_vecs[ smp ].find( pos ) != md_vecs[ smp ].end() )
+                    md_string += ", " + std::to_string( md_vecs[ smp ][ pos ] );
                 else
                     md_string += ", 0";
 
-                if( tc_vecs[ idx ].find( pos ) != tc_vecs[ idx ].end() )
-                    tc_string += ", " + std::to_string( tc_vecs[ idx ][ pos ] );
+                if( tc_vecs[ smp ].find( pos ) != tc_vecs[ smp ].end() )
+                    tc_string += ", " + std::to_string( tc_vecs[ smp ][ pos ] );
                 else
                     tc_string += ", 0";
             }

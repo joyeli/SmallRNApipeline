@@ -67,6 +67,7 @@ class ArchiveInput : public engine::NamedComponent
             archive.close();
 
             db.bed_samples[ smp ].second = std::move( md_rawbeds );
+
             monitor.log( "Component ArchiveInput", ( db.bed_samples[ smp ].first ).c_str() );
         }
 

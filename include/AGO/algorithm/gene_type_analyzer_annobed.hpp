@@ -14,16 +14,16 @@ class GeneTypeAnalyzerAnnobed
 
     void annobed_outputing( auto& output, auto& genome, auto& sample_beds )
     {
-        double ppm = GeneTypeAnalyzerCounting::get_ppm( sample_beds );
         output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tRawCounts\tReadCounts\tPPM\tRMSK\tLength\tTailLen\tSeq\tTail\tMM\tT2C\tType\tAnnoSeedMD\n";
     
         for( auto& anno : sample_beds )
         {
-            for( std::size_t i = 0; i < anno.annotation_info_.size(); ++i )
+            // for( std::size_t i = 0; i < anno.annotation_info_.size(); ++i )
             {
-                for( int j = 0; j < anno.annotation_info_[i].size(); j+=2 )
+                std::size_t i = 0; // do first priority
+                if( i < anno.annotation_info_.size() )
                 {
-                    if( anno.is_on_biotype_list_[i][j] )
+                    for( int j = 0; j < anno.annotation_info_[i].size(); j+=2 )
                     {
                         output
                             << anno.chromosome_ << "\t"
@@ -32,8 +32,8 @@ class GeneTypeAnalyzerAnnobed
                             << anno.strand_ << "\t"
                             << anno.multiple_alignment_site_count_ << "\t"
                             << anno.reads_count_ << "\t"
-                            << (double)(anno.reads_count_) / (double)(anno.multiple_alignment_site_count_) << "\t"
-                            << anno.reads_count_ * ppm / anno.multiple_alignment_site_count_ << "\t"
+                            << ((double)(anno.reads_count_) / (double)(anno.multiple_alignment_site_count_)) << "\t"
+                            << anno.ppm_ << "\t"
                             << ( anno.is_filtered_ == 0 ? "N\t" : "Y\t" )
                             << (int)anno.length_ - (int)anno.tail_length_ << "\t"
                             << (int)anno.tail_length_ << "\t"

@@ -18,6 +18,7 @@ struct SeqType
     std::string fullseq;
     std::string chr;
 
+    std::size_t refstart;
     std::size_t start;
     std::size_t end;
 
@@ -30,13 +31,13 @@ struct SeqType
     SeqType()
     {}
 
-    // void init( AnnotationRawBed<>& rawbed, auto& genome_table, const std::string& biotype_ )
-    void init( ago::format::MDRawBed& rawbed, auto& genome_table, const std::string& biotype_ )
+    // void init( AnnotationRawBed<>& raw_bed, auto& genome_table, const std::string& biotype_ )
+    void init( ago::format::MDRawBed& raw_bed, auto& genome_table, const std::string& biotype_ )
     {
-        this->chr     = rawbed.chromosome_;
-        this->start   = rawbed.start_;
-        this->end     = rawbed.end_;
-        this->strand  = rawbed.strand_;
+        this->chr     = raw_bed.chromosome_;
+        this->start   = raw_bed.start_;
+        this->end     = raw_bed.end_;
+        this->strand  = raw_bed.strand_;
         this->genome  = &genome_table;
         this->fullseq = "";
         this->biotype = biotype_;
@@ -45,18 +46,25 @@ struct SeqType
         this->reads_vec.clear();
     }
 
-    // std::string get_arm( AnnotationRawBed<>& rawbed )
-    std::string get_arm( ago::format::MDRawBed& rawbed )
+    // std::string get_arm( AnnotationRawBed<>& raw_bed )
+    std::string get_arm( ago::format::MDRawBed& raw_bed )
     {
         std::string arm;
-        for( auto& info : rawbed.annotation_info_ )
+        // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
         {
-            for( std::size_t i = 0; i < info.size(); i+=2 )
+            std::size_t i = 0; // do first priority
+            if( i < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[i].empty() )
             {
-                if( info[i] != biotype ) continue;
-                arm = biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron"
-                    ? info[ i+1 ].substr( info[ i+1 ].length() -2, 2 )
-                    : "." ;
+                if(( raw_bed.annotation_info_[i][0] == biotype ) ||
+                   ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" ))) 
+                {
+                    for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
+                    {
+                        arm = biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron"
+                            ? raw_bed.annotation_info_[i][ j+1 ].substr( raw_bed.annotation_info_[i][ j+1 ].length() -2, 2 )
+                            : "." ;
+                    }
+                }
             }
         }
         return arm;
@@ -74,7 +82,7 @@ struct SeqType
     }
 
     // void insert( AnnotationRawBed<>& rawbed, const double& ppm )
-    void insert( ago::format::MDRawBed& rawbed, const double& ppm )
+    void insert( ago::format::MDRawBed& rawbed )
     {
         if( rawbed.end_   > this->end   ) this->end   = rawbed.end_;
         if( rawbed.start_ < this->start ) this->start = rawbed.start_;
@@ -84,7 +92,7 @@ struct SeqType
         ReadType readtemp = {
             ( this->strand == '+' ? rawbed.start_ : rawbed.end_ ), 
             (int)rawbed.length_ - (int)rawbed.tail_length_,
-            rawbed.reads_count_ * ppm / rawbed.multiple_alignment_site_count_,
+            rawbed.ppm_,
             ( rawbed.is_filtered_ == 0 ? 'N' : 'Y' ),
             reads_vec.size(),
             rawbed.md_map,
@@ -142,7 +150,7 @@ struct SeqType
         this->fullseq = read_seq;
     }
 
-    void formation()
+    void formation( std::size_t& extend_refseq )
     {
         sorting_reads();
         std::map< std::size_t, SeedTailType > read2seed_idx_temp;
@@ -155,8 +163,13 @@ struct SeqType
             std::get<0>( reads_vec[i] ) = ( this->strand == '+'
                     ? std::get<0>( reads_vec[i] ) - this->start
                     : this->end - std::get<0>( reads_vec[i] )
-                    );
+                    ) + extend_refseq;
         }
+
+        this->start = this->start - extend_refseq;
+        this->end   = this->end   + extend_refseq;
+
+        this->refstart = ( this->strand == '+' ? this->start : this->end );
 
         read2seed_idx = read2seed_idx_temp;
         get_sequence();
@@ -164,7 +177,7 @@ struct SeqType
 
     friend std::ostream& operator<< ( std::ostream& out, SeqType& seqs )
     {
-        out << "\t" << seqs.fullseq << "\n";
+        out << "\t" << seqs.fullseq << "\t" << seqs.chr << "\t" << seqs.refstart << "\t" << seqs.strand << "\n";
         for( auto& seq : seqs.reads_vec )
         {
             std::string md_tag = "";
@@ -215,20 +228,21 @@ class GeneTypeAnalyzerSqalign
             const std::string& output_name,
             std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
-            auto& genome_table
+            auto& genome_table,
+            std::size_t& extend_refseq
             )
     {
         std::ofstream outidx, outtsv;
         std::map< std::string, SeqType > chr_mapping;
         std::size_t idx;
 
-        for( auto& smp : bed_samples )
+        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             idx = 0;
-            chr_mapping = get_chrmap_table( smp.second, biotype, genome_table );
+            chr_mapping = get_chrmap_table( bed_samples[ smp ].second, biotype, genome_table, extend_refseq );
 
-            outidx.open( output_name + smp.first + ".idx" );
-            outtsv.open( output_name + smp.first + ".tsv" );
+            outidx.open( output_name + bed_samples[ smp ].first + ".idx" );
+            outtsv.open( output_name + bed_samples[ smp ].first + ".tsv" );
 
             for( auto& mir : chr_mapping )
             {
@@ -246,41 +260,47 @@ class GeneTypeAnalyzerSqalign
             // std::vector< AnnotationRawBed<> >& smp_anno,
             std::vector< ago::format::MDRawBed >& smp_anno,
             const std::string& biotype,
-            auto& genome_table
+            auto& genome_table,
+            std::size_t& extend_refseq
             )
     {
         std::map< std::string, SeqType > chr_mappings;
-        double ppm = GeneTypeAnalyzerCounting::get_ppm( smp_anno );
         std::string anno;
 
         for( auto& raw_bed : smp_anno )
         {
-            for( auto& raw_bed_info : raw_bed.annotation_info_ )
+            // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
             {
-                for( std::size_t i = 0; i < raw_bed_info.size(); i+=2 )
+                std::size_t i = 0; // do first priority
+                if( i < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[i].empty() )
                 {
-                    if( raw_bed_info[i] != biotype ) continue;
-
-                    anno = biotype.substr( 0, 5 ) != "miRNA" && biotype != "mirtron"
-                         ? raw_bed_info[ i+1 ]
-                         : raw_bed_info[ i+1 ].substr( 0, raw_bed_info[ i+1 ].length() -3 );
-
-                    if( chr_mappings.find( anno ) == chr_mappings.end() )
+                    if(( raw_bed.annotation_info_[i][0] == biotype ) ||
+                       ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" ))) 
                     {
-                        chr_mappings[ anno ] = SeqType();
-                        chr_mappings[ anno ].init( raw_bed, genome_table, biotype );
-                    }
+                        for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
+                        {
+                            anno = biotype.substr( 0, 5 ) != "miRNA" && biotype != "mirtron"
+                                 ? raw_bed.annotation_info_[i][ j+1 ]
+                                 : raw_bed.annotation_info_[i][ j+1 ].substr( 0, raw_bed.annotation_info_[i][ j+1 ].length() -3 );
 
-                    chr_mappings[ anno ].insert( raw_bed, ppm );
+                            if( chr_mappings.find( anno ) == chr_mappings.end() )
+                            {
+                                chr_mappings[ anno ] = SeqType();
+                                chr_mappings[ anno ].init( raw_bed, genome_table, raw_bed.annotation_info_[i][0] );
+                            }
+
+                            chr_mappings[ anno ].insert( raw_bed );
+                        }
+                    }
                 }
             }
         }
 
-        for( auto& mir : chr_mappings ) mir.second.formation();
+        for( auto& mir : chr_mappings ) mir.second.formation( extend_refseq );
         return chr_mappings;
     }
 
-    static void output_sqalign_visualization( const std::string& output_name )
+    static void output_sqalign_visualization( const std::string& output_name, const std::size_t& extend_refseq )
     {
         std::ofstream output( output_name + "index.php" );
 
@@ -349,6 +369,9 @@ class GeneTypeAnalyzerSqalign
         output << "        $Anno_Array = Array();" << "\n";
         output << "        $Data_Array = Array();" << "\n";
         output << "" << "\n";
+        output << "        $Ref_Chr    = '';" << "\n";
+        output << "        $Ref_Start  = '';" << "\n";
+        output << "        $Ref_Strand = '';" << "\n";
         output << "        $Full_Sequc = '';" << "\n";
         output << "        $Data_Check = false;" << "\n";
         output << "" << "\n";
@@ -364,6 +387,9 @@ class GeneTypeAnalyzerSqalign
         output << "" << "\n";
         output << "                $annoSeq = Explode( \"\\t\", trim( $TSV->current(), \"\\n\" ));" << "\n";
         output << "                $Full_Sequc = $annoSeq[1];" << "\n";
+        output << "                $Ref_Chr    = $annoSeq[2];" << "\n";
+        output << "                $Ref_Start  = $annoSeq[3];" << "\n";
+        output << "                $Ref_Strand = $annoSeq[4];" << "\n";
         output << "" << "\n";
         output << "                while( true )" << "\n";
         output << "                {" << "\n";
@@ -426,7 +452,8 @@ class GeneTypeAnalyzerSqalign
         output << "                }" << "\n";
         output << "                else" << "\n";
         output << "                {" << "\n";
-        output << "                    Array_push( $Segm_Uniqs, $Segm_Range );" << "\n";
+        output << "                    if( $Segm_Range[0] != $Segm_Range[1] )" << "\n";
+        output << "                        Array_push( $Segm_Uniqs, $Segm_Range );" << "\n";
         output << "" << "\n";
         output << "                    for( $j = Count( $Segm_Array ); $j < $i; ++$j )" << "\n";
         output << "                        $Segm_Array[$j] = $Segm_Range;" << "\n";
@@ -454,7 +481,7 @@ class GeneTypeAnalyzerSqalign
         output << "" << "\n";
         output << "            for( $i = 0; $i < Count( $Segm_Uniqs ); ++$i )" << "\n";
         output << "            {" << "\n";
-        output << "                echo '<option value=\".$Segm_Uniqs[$i][0].'-'.$Segm_Uniqs[$i][1].' ('.Number_Format( (float)$Segm_Uniqs[$i][2], 2, '.', '' ).'ppm)\" ';" << "\n";
+        output << "                echo '<option value=\"'.$Segm_Uniqs[$i][0].'-'.$Segm_Uniqs[$i][1].' ('.Number_Format( (float)$Segm_Uniqs[$i][2], 2, '.', '' ).'ppm)\" ';" << "\n";
         output << "" << "\n";
         output << "                if( $Segment_Select == $Segm_Uniqs[$i][0].'-'.$Segm_Uniqs[$i][1].' ('.Number_Format( (float)$Segm_Uniqs[$i][2], 2, '.', '' ).'ppm)' )" << "\n";
         output << "                {" << "\n";
@@ -463,7 +490,12 @@ class GeneTypeAnalyzerSqalign
         output << "                    $Seg_End   = $Segm_Uniqs[$i][1];" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                echo '>Seg.'.( $i+1 ).':'.$Segm_Uniqs[$i][0].'-'.$Segm_Uniqs[$i][1].' ('.Number_Format( (float)$Segm_Uniqs[$i][2], 2, '.', '' ).'ppm)</option>';" << "\n";
+        output << "                echo '>'" << "\n";
+        output << "                    .$Ref_Chr.':'" << "\n";
+        output << "                    .( $Ref_Strand == '+'" << "\n";
+        output << "                        ? (( (int)$Ref_Start + (int)$Segm_Uniqs[$i][0] ).'-'.( (int)$Ref_Start + (int)$Segm_Uniqs[$i][1] ))" << "\n";
+        output << "                        : (( (int)$Ref_Start - (int)$Segm_Uniqs[$i][1] ).'-'.( (int)$Ref_Start - (int)$Segm_Uniqs[$i][0] ))" << "\n";
+        output << "                    ).' ('.Number_Format( (float)$Segm_Uniqs[$i][2], 2, '.', '' ).'ppm)</option>';" << "\n";
         output << "            }" << "\n";
         output << "" << "\n";
         output << "            echo \"</select>" << "\n";
@@ -532,11 +564,20 @@ class GeneTypeAnalyzerSqalign
         output << "            $Ftemp = Fopen( $Temp, 'w' );" << "\n";
         output << "" << "\n";
         output << "            Fwrite( $Ftemp, \"{\\n\" );" << "\n";
-        output << "            Fwrite( $Ftemp, \"  \\\"miRMA\\\"    : \\\"\".$Annotation_Select.\"\\\",\\n\" );" << "\n";
-        output << "            Fwrite( $Ftemp, \"  \\\"Sequence\\\" : \\\"\"." << "\n";
-        output << "                ( $Seg_End == 0 ? $Full_Sequc : Substr( $Full_Sequc, $Seg_Start, ( $Seg_End - $Seg_Start ))).\"\\\",\\n\" );" << "\n";
+        output << "            Fwrite( $Ftemp, \"  \\\"Annotation\\\" : \\\"\".$Annotation_Select.\"\\\",\\n\" );" << "\n";
+        output << "            Fwrite( $Ftemp, \"  \\\"Sequence\\\"   : \\\"\"." << "\n";
+        output << "                ( $Seg_End == 0 ? $Full_Sequc :" << "\n";
+        output << "                    ( $Data_Array[0][5] == '.'" << "\n";
+        output << "                        ? Substr( $Full_Sequc, $Seg_Start - " << extend_refseq << ", ( $Seg_End - $Seg_Start + " << ( extend_refseq * 2 ) << " ))" << "\n";
+        output << "                        : Substr( $Full_Sequc, $Seg_Start, ( $Seg_End - $Seg_Start ))" << "\n";
+        output << "                    )" << "\n";
+        output << "                ).\"\\\",\\n\" );" << "\n";
         output << "" << "\n";
-        output << "            Fwrite( $Ftemp, \"  \\\"Reads\\\"    : [\\n\" );" << "\n";
+        output << "            Fwrite( $Ftemp, \"  \\\"RefChr\\\"     : \\\"\".$Ref_Chr.\"\\\",\\n\" );" << "\n";
+        output << "            Fwrite( $Ftemp, \"  \\\"RefStart\\\"   : \".$Ref_Start.\",\\n\" );" << "\n";
+        output << "            Fwrite( $Ftemp, \"  \\\"RefStrand\\\"  : \\\"\".$Ref_Strand.\"\\\",\\n\" );" << "\n";
+        output << "" << "\n";
+        output << "            Fwrite( $Ftemp, \"  \\\"Reads\\\"      : [\\n\" );" << "\n";
         output << "" << "\n";
         output << "            $isFirst = true;" << "\n";
         output << "" << "\n";
@@ -548,7 +589,7 @@ class GeneTypeAnalyzerSqalign
         output << "                if( !$isFirst ) Fwrite( $Ftemp, \",\\n\" );" << "\n";
         output << "" << "\n";
         output << "                Fwrite( $Ftemp, \"    {\\n\" );" << "\n";
-        output << "                Fwrite( $Ftemp, \"      \\\"Index\\\"    : \"  .( $Data_Array[$i][1] - $Seg_Start ).  \",\\n\" );" << "\n";
+        output << "                Fwrite( $Ftemp, \"      \\\"Index\\\"    : \"  .( $Data_Array[$i][1] - $Seg_Start + ( $Data_Array[0][5] == '.' ? " << extend_refseq << " : 0 )).  \",\\n\" );" << "\n";
         output << "                Fwrite( $Ftemp, \"      \\\"Length\\\"   : \"  .$Data_Array[$i][2].  \",\\n\" );" << "\n";
         output << "                Fwrite( $Ftemp, \"      \\\"PPM\\\"      : \"  .$Data_Array[$i][3].  \",\\n\" );" << "\n";
         output << "                Fwrite( $Ftemp, \"      \\\"isRMSK\\\"   : \\\"\".$Data_Array[$i][4].\"\\\",\\n\" );" << "\n";
@@ -605,8 +646,8 @@ class GeneTypeAnalyzerSqalign
         output << "" << "\n";
         output << "                $.getJSON( '$Temp', function( json )" << "\n";
         output << "                {" << "\n";
-        output << "                    anno = json[ 'miRMA' ];" << "\n";
-        output << "                    sequ = json[ 'Sequence' ];" << "\n";
+        output << "                    anno = json[ 'Annotation' ];" << "\n";
+        output << "                    sequ = json[ 'Sequence'   ];" << "\n";
         output << "" << "\n";
         output << "                    var expr_array = Array();" << "\n";
         output << "                    var heat_array = Array();" << "\n";

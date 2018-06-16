@@ -14,6 +14,8 @@ struct MDRawBed : public RawBedBase
     uint64_t end_;
     size_t is_filtered_;
 
+    double ppm_;
+
     std::string chromosome_;
     std::vector< std::vector< std::string >> annotation_info_;
     std::vector< std::vector< bool >> is_on_biotype_list_;
@@ -33,6 +35,7 @@ struct MDRawBed : public RawBedBase
         , end_( get_end( samin ))
         , chromosome_( get_chromosome( samin ))
         , is_filtered_(0)
+        , ppm_(0)
         , annotation_info_(0)
         , is_on_biotype_list_(0)
         , md_map( samin.md_map )
@@ -182,6 +185,7 @@ struct MDRawBed : public RawBedBase
 		ar & strand_;
 		ar & end_;
 		ar & is_filtered_;
+		ar & ppm_;
 		ar & chromosome_;
 		ar & annotation_info_;
 		ar & is_on_biotype_list_;

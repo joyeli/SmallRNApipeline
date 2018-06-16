@@ -13,10 +13,11 @@ namespace component {
 
 void output_annobed( auto& output, auto& genome, auto& sample_beds )
 {
-    output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tReadCounts\tLength\tTailLen\tSeq\tTail\tMM\tT2C\tType\tAnnoSeedMD\n";
+    output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tRawCounts\tReadCounts\tPPM\tLength\tTailLen\tSeq\tTail\tMM\tT2C\tType\tAnnoSeedMD\n";
 
     for( auto& anno : sample_beds )
     {
+
         for( auto& info : anno.annotation_info_ )
         {
             if( info.size() == 0 )
@@ -28,6 +29,8 @@ void output_annobed( auto& output, auto& genome, auto& sample_beds )
                     << anno.strand_ << "\t"
                     << anno.multiple_alignment_site_count_ << "\t"
                     << anno.reads_count_ << "\t"
+                    << ((double)(anno.reads_count_) / (double)(anno.multiple_alignment_site_count_)) << "\t"
+                    << anno.ppm_ << "\t"
                     << (int)anno.length_ - (int)anno.tail_length_ << "\t"
                     << (int)anno.tail_length_ << "\t"
                     << anno.getReadSeq( genome ) << "\t"
@@ -49,6 +52,8 @@ void output_annobed( auto& output, auto& genome, auto& sample_beds )
                         << anno.strand_ << "\t"
                         << anno.multiple_alignment_site_count_ << "\t"
                         << anno.reads_count_ << "\t"
+                        << ((double)(anno.reads_count_) / (double)(anno.multiple_alignment_site_count_)) << "\t"
+                        << anno.ppm_ << "\t"
                         << (int)anno.length_ - (int)anno.tail_length_ << "\t"
                         << (int)anno.tail_length_ << "\t"
                         << anno.getReadSeq( genome ) << "\t"
@@ -224,9 +229,20 @@ class Annotator : public engine::NamedComponent
                 sample_bed_pair{ std::make_pair( smp, std::move( db.bed_samples[ smp ].second ))},
                 &db, &archive_outputs, &annobed_outputs, &annotator, &monitor, &smp_mutex, this ] () mutable
             {
+                double sum = 0.0;
+
                 for( auto& anno_rawbed : sample_bed_pair.second )
                 {
                     annotator.AnnotateAll( anno_rawbed );
+                    anno_rawbed.ppm_ = (double)(anno_rawbed.reads_count_) / (double)(anno_rawbed.multiple_alignment_site_count_);
+                    sum += anno_rawbed.ppm_;
+                }
+
+                double ppm_rate = 1000000.0 / sum;
+
+                for( auto& anno_rawbed : sample_bed_pair.second )
+                {
+                    anno_rawbed.ppm_ = anno_rawbed.ppm_ * ppm_rate;
                 }
 
                 {
