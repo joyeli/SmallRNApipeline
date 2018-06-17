@@ -103,9 +103,10 @@ class GeneTypeAnalyzer
         for( std::size_t i = 0; i < biotype_list.size(); ++i )
         {
             auto& biotype = biotype_list[i];
-            boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
-
             monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
+
+            if( biotype == "rmsk" ) continue;
+            boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
                     bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
