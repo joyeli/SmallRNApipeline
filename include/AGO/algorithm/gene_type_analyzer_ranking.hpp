@@ -96,9 +96,9 @@ class GeneTypeAnalyzerRanking
             std::sort( pairs.begin(), pairs.end(), [] ( const std::pair< std::size_t, double >& a, const std::pair< std::size_t, double >& b )
             { 
                 if( a.second == b.second )
-                    return a.first > b.first;
+                    return a.first < b.first;
                 else
-                    return a.second > b.second;
+                    return a.second < b.second;
             });
         }
     }
@@ -144,9 +144,9 @@ class GeneTypeAnalyzerRanking
         std::sort( sum_rank.begin(), sum_rank.end(), [] ( const std::pair< std::size_t, double >& a, const std::pair< std::size_t, double >& b )
         { 
             if( a.second == b.second )
-                return a.first < b.first;
+                return a.first > b.first;
             else
-                return a.second < b.second;
+                return a.second > b.second;
         });
 
         for( auto& rank : sum_rank )

@@ -2,6 +2,7 @@
 #include <AGO/algorithm/gene_type_analyzer_declare.hpp>
 #include <AGO/algorithm/gene_type_analyzer_counting.hpp>
 #include <AGO/algorithm/gene_type_analyzer_dotplot.hpp>
+#include <AGO/algorithm/gene_type_analyzer_taildot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_lendist.hpp>
 #include <AGO/algorithm/gene_type_analyzer_barplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_bubplot.hpp>
@@ -21,6 +22,7 @@ class GeneTypeAnalyzerEachtype
     ParaThreadPool parallel_pool;
 
     std::string dotplot;
+    std::string taildot;
     std::string lendist;
     std::string barplot;
     std::string bubplot;
@@ -35,6 +37,7 @@ class GeneTypeAnalyzerEachtype
         : output_path( "" )
         , parallel_pool( 0 )
         , dotplot( "DotPlot/" )
+        , taildot( "TailDot/" )
         , lendist( "LenDist/" )
         , barplot( "BarPlot/" )
         , bubplot( "BubPlot/" )
@@ -66,6 +69,7 @@ class GeneTypeAnalyzerEachtype
                 + "/" )
         , parallel_pool( thread_number )
         , dotplot( "DotPlot/" )
+        , taildot( "TailDot/" )
         , lendist( "LenDist/" )
         , barplot( "BarPlot/" )
         , bubplot( "BubPlot/" )
@@ -75,6 +79,7 @@ class GeneTypeAnalyzerEachtype
         , difference( "Difference/" )
     {
         boost::filesystem::create_directory( boost::filesystem::path( output_path + dotplot ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + taildot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + lendist ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + barplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + sqalign ));
@@ -82,13 +87,30 @@ class GeneTypeAnalyzerEachtype
         boost::filesystem::create_directory( boost::filesystem::path( output_path + ranking ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + difference ));
 
+        GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table );
+
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             const auto& sample_name = bed_samples[ smp ].first;
 
             parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
             {
+                GeneTypeAnalyzerDotplot::output_dotplot_isomirs( output_path + dotplot, ano_len_idx, anno_table_tail[ smp ], anno_mark[ smp ], sample_name );
+            });
+
+            parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+            {
                 GeneTypeAnalyzerDotplot::output_dotplot( output_path + dotplot, ano_len_idx, anno_table_tail[ smp ], anno_mark[ smp ], sample_name );
+            });
+
+            parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_mark, this ] ()
+            {
+                GeneTypeAnalyzerTaildot::output_taildot_isomirs( output_path + taildot, ano_len_idx, anno_mark[ smp ], sample_name, smp );
+            });
+
+            parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_mark, this ] ()
+            {
+                GeneTypeAnalyzerTaildot::output_taildot( output_path + taildot, ano_len_idx, anno_mark[ smp ], sample_name, smp );
             });
 
             parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
@@ -176,10 +198,14 @@ class GeneTypeAnalyzerEachtype
         });
 
 
-
         parallel_pool.job_post([ this ] ()
         {
             GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot );
+        });
+
+        parallel_pool.job_post([ this ] ()
+        {
+            GeneTypeAnalyzerTaildot::output_taildot_visualization( output_path + taildot );
         });
 
         parallel_pool.job_post([ this ] ()
@@ -269,7 +295,8 @@ class GeneTypeAnalyzerEachtype
 
             parallel_pool.job_post([ &bed_samples, &biotype, &thread_number, &extend_merge, &genome_table, this ] ()
             {
-                algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, extend_merge, genome_table );
+                double ppm_filter = 1;
+                algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, extend_merge, ppm_filter, genome_table );
             });
 
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()

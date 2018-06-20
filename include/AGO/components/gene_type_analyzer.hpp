@@ -105,8 +105,11 @@ class GeneTypeAnalyzer
             auto& biotype = biotype_list[i];
             monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
 
-            if( biotype == "rmsk" ) continue;
-            boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
+            if( biotype == "rmsk" )
+                continue;
+
+            if( biotype != "miRNA_mirtron" )
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
                     bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));

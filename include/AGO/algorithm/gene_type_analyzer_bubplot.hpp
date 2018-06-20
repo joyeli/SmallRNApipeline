@@ -20,13 +20,14 @@ class GeneTypeAnalyzerBubplot
             const std::string& biotype,
             const std::size_t& thread_number,
             const std::size_t& extend_merge,
+            const double& ppm_filter,
             auto& genome_table
             )
     {
         for( auto& smp : bed_samples ) if( !boost::filesystem::exists( output_name + smp.first + ".tsv" ))
             boost::filesystem::create_symlink(( "../LenDist/" + smp.first + ".tsv" ).c_str(), ( output_name + smp.first + ".tsv" ).c_str() );
 
-        std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extend_merge );
+        std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extend_merge, ppm_filter );
         std::vector< std::string > out_vec = sequence_formating( chr_mapping, genome_table );
 
         std::ofstream output( output_name + "AnnoSeq.tsv" );
@@ -43,7 +44,8 @@ class GeneTypeAnalyzerBubplot
             std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
             const std::size_t& thread_number,
-            const std::size_t& extend_merge
+            const std::size_t& extend_merge,
+            const double& ppm_filter
             )
     {
         ChrRangeType range_temp;
@@ -61,6 +63,7 @@ class GeneTypeAnalyzerBubplot
                         if(( raw_bed.annotation_info_[i][0] == biotype ) ||
                            ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" ))) 
                         {
+                            if( raw_bed.ppm_ < ppm_filter ) continue;
                             for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                             {
                                 range_temp = std::make_tuple(

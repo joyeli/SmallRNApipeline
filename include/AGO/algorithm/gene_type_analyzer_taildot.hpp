@@ -4,96 +4,186 @@
 namespace ago {
 namespace algorithm {
 
-class GeneTypeAnalyzerDotplot
+class GeneTypeAnalyzerTaildot
 {
 
   public:
 
-    GeneTypeAnalyzerDotplot()
+    static std::vector< std::map< std::string, std::vector< double >>> anno_tail_table;
+    static std::vector< std::map< std::string, std::vector< double >>> isom_tail_table;
+
+    GeneTypeAnalyzerTaildot()
     {}
 
-    static void output_dotplot_isomirs(
-            const std::string& output_name,
+    static void make_taildot_table(
+            const std::string& biotype,
             const AnnoLengthIndexType& ano_len_idx,
-            std::vector< CountingTableType >& anno_table_tail, // 0-A / 1-C / 2-G / 3-T / 4-O / 5-GM
-            std::map< std::string, std::string >& anno_mark,
-            const std::string& sample_name
+            std::vector< BedSampleType >& bed_samples,
+            auto& genome_table
             )
     {
-        std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
-        output << sample_name << "\tGMPM\tGM\tPM\tTailing％\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\n";
+        anno_tail_table.clear();
+        isom_tail_table.clear();
 
-        double gm = 0.0;
-        double pm = 0.0;
-        double tail_a = 0.0;
-        double tail_c = 0.0;
-        double tail_g = 0.0;
-        double tail_t = 0.0;
-        double tail_o = 0.0;
+        std::vector< std::string > split;
+        std::map< std::string, std::vector< double >> anno_map, isom_map;
 
         for( auto& anno : ano_len_idx.first )
         {
-            gm = 0.0;
-            pm = 0.0;
-            tail_a = 0.0;
-            tail_c = 0.0;
-            tail_g = 0.0;
-            tail_t = 0.0;
-            tail_o = 0.0;
+            boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
+            anno_map.emplace( split[0], std::vector< double >( 8, 0.0 ));
+            isom_map.emplace( anno    , std::vector< double >( 8, 0.0 ));
+            // GMPM TailLens    Tailing％   A_Tail％    C_Tail％    G_Tail％    T_Tail％    Other_Tail％
+            // 0    1           2           3           4           5           6           7
+        }
 
-            if( anno_table_tail[5].find( anno ) != anno_table_tail[5].end() )
-                for( auto& len : anno_table_tail[5][ anno ] ) gm += len.second;
+        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+        {
+            anno_tail_table.emplace_back( anno_map );
+            make_tail_counting_table( biotype, bed_samples[ smp ], anno_tail_table[ smp ], genome_table );
 
-            for( std::size_t i = 0; i < 5; i++ )
+            isom_tail_table.emplace_back( isom_map );
+            make_tail_counting_table( biotype, bed_samples[ smp ], isom_tail_table[ smp ], genome_table, true );
+        }
+    }
+
+    static void make_tail_counting_table(
+            const std::string& biotype,
+            BedSampleType& bed_sample,
+            std::map< std::string, std::vector< double >>& tail_table,
+            auto& genome_table,
+            bool is_isomir = false
+            )
+    {
+        std::string annotation;
+        double length, sum;
+        std::size_t tail;
+
+        std::vector< double > anno_tailing_vec;
+        std::map< double, double > lens_p;
+
+        std::map< std::string, std::pair< double, double >> anno_gmpm;
+        std::map< std::string, std::map< std::size_t, std::map< double, double >>> anno_temp;
+        //          annotation              tail                length  ppm
+
+        for( auto& raw_bed : bed_sample.second )
+        {
+            // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
             {
-                if( anno_table_tail[i].find( anno ) == anno_table_tail[i].end() ) continue;
-                for( auto& len : anno_table_tail[i][ anno ] ){ pm += len.second;
-                switch(i)
+                std::size_t i = 0; // do first priority
+                if( i < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[i].empty() )
                 {
-                    case 0 : tail_a += len.second; break;
-                    case 1 : tail_c += len.second; break;
-                    case 2 : tail_g += len.second; break;
-                    case 3 : tail_t += len.second; break;
-                    case 4 : tail_o += len.second; break;
-                }}
+                    if( raw_bed.annotation_info_[i][0] == biotype || ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" )))
+                    {
+                        tail = GeneTypeAnalyzerCounting::which_tail( raw_bed.getTail() );
+                        length = ( double )( raw_bed.length_ );
+
+                        for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
+                        {
+                            annotation = raw_bed.annotation_info_[i][ j+1 ] + ( !is_isomir ? ""
+                                : ( "_" + raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                                + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" )
+                                ));
+
+
+                            if( anno_gmpm.find( annotation ) == anno_gmpm.end() )
+                                anno_gmpm[ annotation ] = std::make_pair( 0.0, 0.0 );
+
+                            if( tail == 5 )
+                            {
+                                anno_gmpm[ annotation ].first += raw_bed.ppm_;
+                                continue;
+                            }
+
+                            if( anno_temp[ annotation ][ tail ].find( length ) == anno_temp[ annotation ][ tail ].end() )
+                                anno_temp[ annotation ][ tail ][ length ] = 0.0;
+
+                            anno_temp[ annotation ][ tail ][ length ] += raw_bed.ppm_;
+                            anno_gmpm[ annotation ].second += raw_bed.ppm_;
+                        }
+                    }
+                }
+            }
+        }
+
+        for( auto& anno : anno_gmpm )
+        {
+            sum = 0.0;
+            length = 0.0;
+
+            lens_p.clear();
+            anno_tailing_vec = std::vector< double >( 8, 0.0 );
+
+            for( auto& tail : anno_temp[ anno.first ] ) for( auto& len : tail.second )
+            {
+                if( lens_p.find( len.first ) == lens_p.end() )
+                    lens_p[ len.first ] = 0;
+
+                lens_p[ len.first ] += 1;
+                sum += 1;
             }
 
-            output
-                << std::setprecision( 0 )
-                << std::fixed
-                << anno << ( anno_mark.find( anno ) != anno_mark.end() ? anno_mark[ anno ] : "" ) << "\t"
-                << gm + pm << "\t"
-                << gm << "\t"
-                << pm << "\t"
-                << (( gm + pm ) < 1 ? 0 :( pm * 100 /( gm + pm ))) << "\t"
-                << tail_a << "\t"
-                << tail_c << "\t"
-                << tail_g << "\t"
-                << tail_t << "\t"
-                << tail_o << "\n"
-                ;
+            for( auto& tail : anno_temp[ anno.first ] ) for( auto& len : tail.second )
+            {
+                anno_tailing_vec[ tail.first + 3 ] += len.second * ( lens_p[ len.first ] / sum ); 
+                len.second = len.second / anno.second.second;
+                length += len.first * len.second;
+            }
+
+            anno_tailing_vec[0] = anno.second.first + anno.second.second;                                   // GMPM
+            anno_tailing_vec[1] = length;                                                                   // TailLens
+            anno_tailing_vec[2] = anno.second.second    / ( anno.second.first   + anno.second.second );     // Tailing％
+            anno_tailing_vec[3] = ( length == 0.0 ? 0.0 : ( anno_tailing_vec[3] / anno.second.second ));    // A_Tail％
+            anno_tailing_vec[4] = ( length == 0.0 ? 0.0 : ( anno_tailing_vec[4] / anno.second.second ));    // C_Tail％
+            anno_tailing_vec[5] = ( length == 0.0 ? 0.0 : ( anno_tailing_vec[5] / anno.second.second ));    // G_Tail％
+            anno_tailing_vec[6] = ( length == 0.0 ? 0.0 : ( anno_tailing_vec[6] / anno.second.second ));    // T_Tail％
+            anno_tailing_vec[7] = ( length == 0.0 ? 0.0 : ( anno_tailing_vec[7] / anno.second.second ));    // Other_Tail％
+
+            tail_table[ anno.first ] = anno_tailing_vec;
+        }
+    }
+
+    static void output_taildot_isomirs(
+            const std::string& output_name,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::map< std::string, std::string >& anno_mark,
+            const std::string& sample_name,
+            const std::size_t& smp
+            )
+    {
+        std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
+        output << sample_name << "\tGMPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tT_Tail％\tOther_Tail％\n";
+
+        for( auto& anno : ano_len_idx.first )
+        {
+            output << anno << ( anno_mark.find( anno ) != anno_mark.end() ? anno_mark[ anno ] : "" );
+
+            for( auto& ratio : isom_tail_table[ smp ][ anno ] )
+                output << "\t" << std::setprecision( 2 ) << std::fixed << ratio;
+
+            output << "\n";
         }
 
         output.close();
     }
 
-    static void output_dotplot(
+    static void output_taildot(
             const std::string& output_name,
             const AnnoLengthIndexType& ano_len_idx,
-            std::vector< CountingTableType >& anno_table_tail, // 0-A / 1-C / 2-G / 3-T / 4-O / 5-GM
             std::map< std::string, std::string >& anno_mark,
-            const std::string& sample_name
+            const std::string& sample_name,
+            const std::size_t& smp
             )
     {
-        std::string anno_temp;
         std::vector< std::string > split;
 
+        std::set< std::string > anno_idx_set;
         std::set< std::string > anno_mark_set;
-        std::map< std::string, std::vector< double >> anno_map;
 
         for( auto& anno : ano_len_idx.first )
         {
             boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
+            anno_idx_set.emplace( split[0] );
 
             if( anno_mark.find( anno ) != anno_mark.end() )
             {
@@ -103,88 +193,22 @@ class GeneTypeAnalyzerDotplot
         }
 
         std::ofstream output( output_name + sample_name + ".tsv" );
-        output << sample_name << "\tGMPM\tGM\tPM\tTailing％\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\n";
+        output << sample_name << "\tGMPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tT_Tail％\tOther_Tail％\n";
 
-        double gm = 0.0;
-        double pm = 0.0;
-        double tail_a = 0.0;
-        double tail_c = 0.0;
-        double tail_g = 0.0;
-        double tail_t = 0.0;
-        double tail_o = 0.0;
-
-        for( auto& anno : ano_len_idx.first )
+        for( auto& anno : anno_idx_set )
         {
-            gm = 0.0;
-            pm = 0.0;
-            tail_a = 0.0;
-            tail_c = 0.0;
-            tail_g = 0.0;
-            tail_t = 0.0;
-            tail_o = 0.0;
+            output << anno << ( anno_mark_set.find( anno ) != anno_mark_set.end() ? "!" : "" );
 
-            if( anno_table_tail[5].find( anno ) != anno_table_tail[5].end() )
-                for( auto& len : anno_table_tail[5][ anno ] ) gm += len.second;
+            for( auto& ratio : anno_tail_table[ smp ][ anno ] )
+                output << "\t" << std::setprecision( 2 ) << std::fixed << ratio;
 
-            for( std::size_t i = 0; i < 5; i++ )
-            {
-                if( anno_table_tail[i].find( anno ) == anno_table_tail[i].end() ) continue;
-                for( auto& len : anno_table_tail[i][ anno ] ){ pm += len.second;
-                switch(i)
-                {
-                    case 0 : tail_a += len.second; break;
-                    case 1 : tail_c += len.second; break;
-                    case 2 : tail_g += len.second; break;
-                    case 3 : tail_t += len.second; break;
-                    case 4 : tail_o += len.second; break;
-                }}
-            }
-
-            boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
-            anno_temp = split[0] + ( anno_mark_set.find( anno ) == anno_mark_set.end() ? "" : "!" );
-
-            if( anno_map.find( anno_temp ) == anno_map.end() )
-                anno_map[ anno_temp ] = std::vector< double >( 7, 0.0 );
-
-            anno_map[ anno_temp ][0] += gm;
-            anno_map[ anno_temp ][1] += pm;
-            anno_map[ anno_temp ][2] += tail_a;
-            anno_map[ anno_temp ][3] += tail_c;
-            anno_map[ anno_temp ][4] += tail_g;
-            anno_map[ anno_temp ][5] += tail_t;
-            anno_map[ anno_temp ][6] += tail_o;
-        }
-
-        for( auto& anno : anno_map )
-        {
-            gm     = anno.second[0];
-            pm     = anno.second[1];
-            tail_a = anno.second[2];
-            tail_c = anno.second[3];
-            tail_g = anno.second[4];
-            tail_t = anno.second[5];
-            tail_o = anno.second[6];
-
-            output
-                << std::setprecision( 0 )
-                << std::fixed
-                << anno.first << "\t"
-                << gm + pm << "\t"
-                << gm << "\t"
-                << pm << "\t"
-                << (( gm + pm ) < 1 ? 0 :( pm * 100 /( gm + pm ))) << "\t"
-                << tail_a << "\t"
-                << tail_c << "\t"
-                << tail_g << "\t"
-                << tail_t << "\t"
-                << tail_o << "\n"
-                ;
+            output << "\n";
         }
 
         output.close();
     }
 
-    static void output_dotplot_visualization( const std::string& output_name )
+    static void output_taildot_visualization( const std::string& output_name )
     {
         std::ofstream output( output_name + "index.php" );
 
@@ -789,6 +813,9 @@ class GeneTypeAnalyzerDotplot
         output.close();
     }
 };
+
+std::vector< std::map< std::string, std::vector< double >>> GeneTypeAnalyzerTaildot::anno_tail_table;
+std::vector< std::map< std::string, std::vector< double >>> GeneTypeAnalyzerTaildot::isom_tail_table;
 
 } // end of namespace algorithm
 } // end of namespace ago
