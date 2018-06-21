@@ -119,8 +119,8 @@ class GeneTypeAnalyzerTaildot
                 if( lens_p.find( len.first ) == lens_p.end() )
                     lens_p[ len.first ] = 0;
 
-                lens_p[ len.first ] += 1;
-                sum += 1;
+                lens_p[ len.first ] += len.second;
+                sum += len.second;
             }
 
             for( auto& tail : anno_temp[ anno.first ] ) for( auto& len : tail.second )
