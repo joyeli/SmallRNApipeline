@@ -170,6 +170,33 @@ struct MDRawBed : public RawBedBase
         return tc;
     }
 
+	bool operator< (const MDRawBed& input) const
+	{
+        if( strand_ != input.strand_ )
+            return strand_ < input.strand_;
+
+        else if( chromosome_ != input.chromosome_ )
+			return chromosome_ < input.chromosome_;
+
+		else if( start_ != input.start_ )
+            return start_ < input.start_;
+
+        else if( end_ != input.end_ )
+            return end_ < input.end_;
+
+        else if( md_map != input.md_map )
+            return md_map < input.md_map;
+
+        else if( tc_set != input.tc_set )
+            return tc_set < input.tc_set;
+
+        else if( tail_length_ != input.tail_length_ )
+            return tail_length_ < input.tail_length_;
+
+        else
+            return tail < input.tail;
+	}
+
 	friend class boost::serialization::access;
 	template< class Archive >
 	void serialize( Archive &ar, const unsigned int version )
