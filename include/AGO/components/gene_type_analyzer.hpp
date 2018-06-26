@@ -93,7 +93,7 @@ class GeneTypeAnalyzer
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
 
         monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotpyes" );
-        algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, min_len, max_len, sudo_count );
+        algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, sudo_count );
         algorithm::AnnoLengthIndexType ano_len_idx;
 
         monitor.log( "Component GeneTypeAnalyzer", "Making ... Counting Table" );
