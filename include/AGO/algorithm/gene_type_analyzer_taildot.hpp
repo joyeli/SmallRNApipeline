@@ -76,7 +76,7 @@ class GeneTypeAnalyzerTaildot
                     if( raw_bed.annotation_info_[i][0] == biotype || ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" )))
                     {
                         tail = GeneTypeAnalyzerCounting::which_tail( raw_bed.getTail() );
-                        length = ( double )( raw_bed.length_ );
+                        length = ( double )( raw_bed.tail_length_ );
 
                         for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                         {
