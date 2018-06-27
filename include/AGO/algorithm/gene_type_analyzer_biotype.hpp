@@ -16,6 +16,7 @@ class GeneTypeAnalyzerBiotype
     AnnoLengthIndexType ano_len_idx;
 
     std::vector< std::vector< CountingTableType >> anno_table_tail;
+    std::vector< std::vector< CountingTableType >> anno_table_trim;
     std::vector< std::map< std::string, std::string >> anno_mark;
 
     std::string biotype;
@@ -30,6 +31,7 @@ class GeneTypeAnalyzerBiotype
         , smp_parallel_pool( 0 )
         , ano_len_idx( std::make_pair( std::set< std::string >(), std::set< std::size_t >() ))
         , anno_table_tail( 0, std::vector< CountingTableType >( 6, CountingTableType() ))
+        , anno_table_trim( 0, std::vector< CountingTableType >( 6, CountingTableType() ))
         , anno_mark( 1, std::map< std::string, std::string >() )
         , biotype( "BioType/" )
         , dotplot( "DotPlot/" )
@@ -50,6 +52,7 @@ class GeneTypeAnalyzerBiotype
         , smp_parallel_pool( bed_samples.size() )
         , ano_len_idx( GeneTypeAnalyzerCounting::get_ano_len_idx( genome_table, bed_samples ))
         , anno_table_tail( bed_samples.size(), std::vector< CountingTableType >( 6, CountingTableType() ))
+        , anno_table_trim( bed_samples.size(), std::vector< CountingTableType >( 6, CountingTableType() ))
         , anno_mark( 1, std::map< std::string, std::string >() )
         , biotype( "BioType/" )
         , dotplot( "DotPlot/" )
@@ -65,7 +68,10 @@ class GeneTypeAnalyzerBiotype
         {
             smp_parallel_pool.job_post([ smp, &bed_samples, &genome_table, this ] ()
             {
+                std::string biotype = "";
+                bool trimming = true; // trimming about top 15% and last 15%
                 GeneTypeAnalyzerCounting::make_anno_table( bed_samples[ smp ].second, anno_table_tail[ smp ], anno_mark[0], genome_table );
+                GeneTypeAnalyzerCounting::make_anno_table( bed_samples[ smp ].second, anno_table_trim[ smp ], anno_mark[0], genome_table, biotype, trimming );
             });
         }
 
@@ -111,11 +117,17 @@ class GeneTypeAnalyzerBiotype
             {
                 GeneTypeAnalyzerLendist::output_lendist( output_path + lendist, ano_len_idx, anno_table_tail[ smp ], anno_mark[0], sample_name );
             });
+
+            smp_parallel_pool.job_post([ smp, &sample_name, this ] ()
+            {
+                bool trimming = true; // trimming about top 15% and last 15%
+                GeneTypeAnalyzerLendist::output_lendist( output_path + lendist, ano_len_idx, anno_table_trim[ smp ], anno_mark[0], sample_name, trimming );
+            });
         }
 
         output_biotype_visualization( output_path + biotype );
         GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot );
-        GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist );
+        GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist, true );
 
         output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM" );
         output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"   );

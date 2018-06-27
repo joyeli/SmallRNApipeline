@@ -7,6 +7,7 @@ namespace algorithm {
 
 class GeneTypeAnalyzerLendist
 {
+    static bool is_trimmed;
 
   public:
 
@@ -18,10 +19,13 @@ class GeneTypeAnalyzerLendist
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< CountingTableType >& anno_table_tail, // 0-A / 1-C / 2-G / 3-T / 4-O / 5-GM
             std::map< std::string, std::string >& anno_mark,
-            const std::string& sample_name
+            const std::string& sample_name,
+            const bool trimming = false
             )
     {
-        std::ofstream output( output_name + sample_name + ".tsv" );
+        is_trimmed = trimming;
+
+        std::ofstream output( output_name + sample_name + ( trimming ? "-trimmed" : "" ) + ".tsv" );
         output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\tGM";
 
         for( auto& anno : ano_len_idx.first )
@@ -48,9 +52,16 @@ class GeneTypeAnalyzerLendist
         output.close();
     }
 
-    static void output_lendist_visualization( const std::string& output_name )
+    static void output_lendist_visualization( const std::string& output_name, const bool is_biotype = false )
     {
         std::ofstream output( output_name + "index.php" );
+        bool trimming = false;
+
+        if( is_trimmed )
+        {
+            trimming = true;
+            is_trimmed = false;
+        }
 
         output << "<!DOCTYPE html>" << "\n";
         output << "<html>" << "\n";
@@ -61,6 +72,7 @@ class GeneTypeAnalyzerLendist
         output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
         output << "" << "\n";
         output << "        $ForceY = $_POST['ForceY'];" << "\n";
+        output << "        $Trimmed = $_POST['Trimmed'];" << "\n";
         output << "        $PPMFilter = $_POST['PPMFilter'];" << "\n";
         output << "" << "\n";
         output << "        $TSV_File = $_GET['TSV_File'];" << "\n";
@@ -75,6 +87,43 @@ class GeneTypeAnalyzerLendist
         output << "        echo '<script src=https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.min.js></script>';" << "\n";
         output << "        echo '<link href=https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.css rel=stylesheet type=text/css>';" << "\n";
         output << "" << "\n";
+
+        if( is_biotype )
+        {
+            output << "#<--================== IsTrimmed ====================-->" << "\n";
+            output << "" << "\n";
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+            output << "" << "\n";
+            output << "        echo '<select name=Trimmed onchange=this.form.submit();>';" << "\n";
+            output << "        echo '<option '; if($Trimmed=='') echo 'selected'; echo '>Is Trimming?</option>';" << "\n";
+            output << "" << "\n";
+            output << "        $miR_List = array('Yes', 'No');" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 0; $i < Count( $miR_List ); ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            echo '<option value='.$miR_List[$i].' ';" << "\n";
+            output << "" << "\n";
+            output << "            if( $Trimmed == $miR_List[$i] )" << "\n";
+            output << "                echo 'selected ';" << "\n";
+            output << "" << "\n";
+            output << "            echo '>' . $miR_List[$i] . '</option>';" << "\n";
+            output << "        }" << "\n";
+            output << "" << "\n";
+            output << "        echo \"</select>" << "\n";
+            output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+            output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+            output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
+            output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
+            output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+            output << "            </form>\";" << "\n";
+            output << "" << "\n";
+        }
+        else
+        {
+            output << "        $Trimmed = 'No';" << "\n";
+            output << "" << "\n";
+        }
+
         output << "#<!--================== TSV File ====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
@@ -85,8 +134,28 @@ class GeneTypeAnalyzerLendist
         output << "        $TSV = Shell_Exec( 'ls | grep .tsv' );" << "\n";
         output << "        $TSV_List = Explode( \"\\n\", $TSV );" << "\n";
         output << "        $List_Size = Count( $TSV_List );" << "\n";
+        output << "        $TSV_List_Temp = array();" << "\n";
         output << "" << "\n";
         output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            $TSV_Temp = Explode( '-trimmed', $TSV_List[$i] );" << "\n";
+        output << "" << "\n";
+        output << "            if( $Trimmed == 'Yes' )" << "\n";
+        output << "            {" << "\n";
+        output << "                if( Count( $TSV_Temp ) > 1 )" << "\n";
+        output << "                    Array_Push( $TSV_List_Temp, $TSV_Temp[0] );" << "\n";
+        output << "            }" << "\n";
+        output << "            else" << "\n";
+        output << "            {" << "\n";
+        output << "                if( Count( $TSV_Temp ) == 1 )" << "\n";
+        output << "                    Array_Push( $TSV_List_Temp, Substr( $TSV_Temp[0], 0, Strlen( $TSV_Temp[0] ) - 4 ));" << "\n";
+        output << "            }" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        $TSV_List = $TSV_List_Temp;" << "\n";
+        output << "        $List_Size = Count( $TSV_List );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < $List_Size; ++$i )" << "\n";
         output << "        {" << "\n";
         output << "            echo '<option value='.$TSV_List[$i].' ';" << "\n";
         output << "" << "\n";
@@ -96,40 +165,54 @@ class GeneTypeAnalyzerLendist
         output << "            echo '>'.$TSV_List[$i].'</option>';" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
+        output << "        $TSV_File_Temp = $TSV_File.( $Trimmed == 'Yes' ? '-trimmed.tsv' : '.tsv' );" << "\n";
+        output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
         output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
-        output << "#<!--================== is_Abundant ====================-->" << "\n";
-        output << "                " << "\n";
-        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
-        output << "        echo '<select name=isAbundant onchange=this.form.submit();>';" << "\n";
-        output << "        " << "\n";
-        output << "        $isAbundant_List = array('MostAbundant', 'AllAnnotations');" << "\n";
-        output << "        $isAbundant_Size = Count( $isAbundant_List );" << "\n";
-        output << "        if( $isAbundant == '' )" << "\n";
-        output << "            $isAbundant = 'MostAbundant';" << "\n";
-        output << "        " << "\n";
-        output << "        For( $i = 0; $i < $isAbundant_Size; ++$i )" << "\n";
-        output << "        {" << "\n";
-        output << "            echo '<option value='.$isAbundant_List[$i].' ';" << "\n";
-        output << "        " << "\n";
-        output << "            if( $isAbundant == $isAbundant_List[$i] )" << "\n";
-        output << "                echo 'selected ';" << "\n";
-        output << "        " << "\n";
-        output << "            echo '>' . $isAbundant_List[$i] . '</option>';" << "\n";
-        output << "        }" << "\n";
-        output << "" << "\n";
-        output << "        echo \"</select>" << "\n";
-        output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
-        output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
-        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
-        output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
-        output << "            </form>\";" << "\n";
-        output << "" << "\n";
+
+        if( !is_biotype )
+        {
+            output << "#<!--================== is_Abundant ====================-->" << "\n";
+            output << "                " << "\n";
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+            output << "        echo '<select name=isAbundant onchange=this.form.submit();>';" << "\n";
+            output << "        " << "\n";
+            output << "        $isAbundant_List = array('MostAbundant', 'AllAnnotations');" << "\n";
+            output << "        $isAbundant_Size = Count( $isAbundant_List );" << "\n";
+            output << "        if( $isAbundant == '' )" << "\n";
+            output << "            $isAbundant = 'MostAbundant';" << "\n";
+            output << "        " << "\n";
+            output << "        For( $i = 0; $i < $isAbundant_Size; ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            echo '<option value='.$isAbundant_List[$i].' ';" << "\n";
+            output << "        " << "\n";
+            output << "            if( $isAbundant == $isAbundant_List[$i] )" << "\n";
+            output << "                echo 'selected ';" << "\n";
+            output << "        " << "\n";
+            output << "            echo '>' . $isAbundant_List[$i] . '</option>';" << "\n";
+            output << "        }" << "\n";
+            output << "" << "\n";
+            output << "        echo \"</select>" << "\n";
+            output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+            output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
+            output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
+            output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+            output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
+            output << "            </form>\";" << "\n";
+            output << "" << "\n";
+        }
+        else
+        {
+            output << "        $isAbundant = 'AllAnnotations';" << "\n";
+            output << "" << "\n";
+        }
+
         output << "#<!--================== PPMFilter ====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
@@ -144,6 +227,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
@@ -151,7 +235,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "#<!--================== Annotation Select ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $inFile = File_get_contents( $TSV_File );" << "\n";
+        output << "        $inFile = File_get_contents( $TSV_File_Temp );" << "\n";
         output << "        $inFile_Lines = Explode( \"\\n\", $inFile );" << "\n";
         output << "        $Anno_Array = Array();" << "\n";
         output << "        $Annotation_Array = Array();" << "\n";
@@ -221,8 +305,9 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
-        output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
+        output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+        output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
@@ -238,6 +323,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
         output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
         output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
@@ -245,18 +331,23 @@ class GeneTypeAnalyzerLendist
         output << "            <input type='submit' value='Submit' /> " << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
-        output << "#<!--================== GoBack ====================-->" << "\n";
-        output << "" << "\n";
-        output << "        $annos = Explode( '-', $annotation_select );" << "\n";
-        output << "        $anno  = $annos[0];" << "\n";
-        output << "" << "\n";
-        output << "        For( $i = 1; $i < Count( $annos ) -1; $i++ ) $anno = $anno.'-'.$annos[ $i ];" << "\n";
-        output << "" << "\n";
-        output << "        if( $TSV_File != '' && $annotation_select != '' )" << "\n";
-        output << "            echo \"<a href='../SqAlign/index.php?TSV_File=$TSV_File&Annotation_Select=$anno' >" << "\n";
-        output << "                <input type='submit' value='Goto $anno' />" << "\n";
-        output << "                </a>\";" << "\n";
-        output << "" << "\n";
+        
+        if( !is_biotype )
+        {
+            output << "#<!--================== GoBack ====================-->" << "\n";
+            output << "" << "\n";
+            output << "        $annos = Explode( '-', $annotation_select );" << "\n";
+            output << "        $anno  = $annos[0];" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 1; $i < Count( $annos ) -1; $i++ ) $anno = $anno.'-'.$annos[ $i ];" << "\n";
+            output << "" << "\n";
+            output << "        if( $TSV_File != '' && $annotation_select != '' )" << "\n";
+            output << "            echo \"<a target='_blank' href='../SqAlign/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=$anno' >" << "\n";
+            output << "                <input type='submit' value='Goto $anno' />" << "\n";
+            output << "                </a>\";" << "\n";
+            output << "" << "\n";
+        }
+
         output << "#<!--================== Annotations Tail Bar Chart ====================-->" << "\n";
         output << "" << "\n";
         output << "        $index = Explode( \"\\t\", $inFile_Lines[0] );" << "\n";
@@ -357,6 +448,8 @@ class GeneTypeAnalyzerLendist
         output.close();
     }
 };
+
+bool GeneTypeAnalyzerLendist::is_trimmed( false );
 
 } // end of namespace algorithm
 } // end of namespace ago

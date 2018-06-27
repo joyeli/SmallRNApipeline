@@ -131,13 +131,80 @@ class GeneTypeAnalyzerCounting
         return abundance;
     }
 
+    static std::set< std::pair< std::string, std::string >> make_anno_trimming(
+            std::vector< ago::format::MDRawBed >& annotations,
+            std::map< std::string, std::string >& genome_table,
+            const std::string biotype
+            )
+    {
+        std::set< std::pair< std::string, std::string >> anno_trimmed;
+        std::pair< std::string, std::string > anno_pair;
+
+        std::map< std::pair< std::string, std::string >, double > anno_map;
+        std::vector< std::pair< std::pair< std::string, std::string >, double >> anno_vec;
+
+        std::string anno_first;
+        std::string anno_second;
+        bool isbiotype = false;
+
+        std::size_t trim_top;
+        std::size_t trim_last;
+
+        for( auto& raw_bed : annotations )
+        {
+            isbiotype = ( biotype == "" ? true : false );
+            if( 0 < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[0].empty() )
+            {
+                if( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[0][0] == "miRNA" || raw_bed.annotation_info_[0][0] == "mirtron" ))
+                    isbiotype = true;
+
+                if( biotype != "" && raw_bed.annotation_info_[0][0] == biotype )
+                    isbiotype = true;
+
+                if( !isbiotype ) continue;
+
+                for( std::size_t j = 0; j < raw_bed.annotation_info_[0].size(); j+=2 )
+                {
+                    anno_first  = raw_bed.annotation_info_[0][ j+1 ];
+                    anno_second = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                                + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                    anno_pair   = std::make_pair( anno_first, anno_second );
+
+                    if( anno_map.find( anno_pair ) == anno_map.end() ) anno_map[ anno_pair ] = 0.0;
+                    anno_map[ anno_pair ] += raw_bed.ppm_;
+                }
+            }
+        }
+
+        for( auto& anno : anno_map ) anno_vec.emplace_back( anno );
+
+        std::sort( anno_vec.begin(), anno_vec.end(),
+            []( const std::pair< std::pair< std::string, std::string >, double >& a,
+                const std::pair< std::pair< std::string, std::string >, double >& b )
+            {
+                if( a.second == b.second )
+                    return a.first > b.first;
+                else
+                    return a.second > b.second;
+            });
+
+        trim_top  = anno_vec.size() * 15 / 100;
+        trim_last = anno_vec.size() * 85 / 100;
+
+        for( std::size_t i = trim_top -1; i < trim_last; ++i )
+            anno_trimmed.emplace( anno_vec[i].first );
+
+        return anno_trimmed;
+    }
+
     static void make_anno_table(
             // std::vector< AnnotationRawBed<> >& annotations,
             std::vector< ago::format::MDRawBed >& annotations,
             std::vector< CountingTableType >& anno_table,
             std::map< std::string, std::string >& anno_mark,
             std::map< std::string, std::string >& genome_table,
-            const std::string& biotype = "" // default annotation type
+            const std::string biotype = "", // default annotation type
+            const bool trimming = false
             )
     {
         //                  annotation      seed          count
@@ -150,13 +217,19 @@ class GeneTypeAnalyzerCounting
         std::string anno_idx;
         std::string anno_first;
         std::string anno_second;
-        std::string abundance;
 
-        std::size_t tail;
+        std::string gene_name;
+        std::string gene_seed;
+
+        std::string abundance;
         std::size_t read_len;
+        std::size_t tail;
 
         double anno_counts;
         bool isbiotype = false;
+
+        std::set< std::pair< std::string, std::string >> anno_trimmed;
+        if( trimming ) anno_trimmed = make_anno_trimming( annotations, genome_table, biotype );
 
         for( auto& raw_bed : annotations )
         {
@@ -179,10 +252,16 @@ class GeneTypeAnalyzerCounting
 
                     for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                     {
-                        anno_first  = biotype == "" ? raw_bed.annotation_info_[i][j] : raw_bed.annotation_info_[i][ j+1 ];
-                        anno_second = biotype == "" ? ""
-                                    :   raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                                    + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                        gene_name = raw_bed.annotation_info_[i][ j+1 ];
+                        gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                                  + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+
+                        if( trimming && anno_trimmed.find( std::make_pair( gene_name, gene_seed )) == anno_trimmed.end() )
+                            continue;
+
+                        anno_first  = biotype == "" ? raw_bed.annotation_info_[i][j] : gene_name;
+                        anno_second = biotype == "" ? "" : gene_seed;
+
                         anno_pair   = std::make_pair( anno_first, anno_second );
 
                         if( biotype != "" && raw_bed.is_filtered_ != 0 ) anno_mark[ anno_first + "_" + anno_second ] = "!";
