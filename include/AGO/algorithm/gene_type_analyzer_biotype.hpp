@@ -41,7 +41,7 @@ class GeneTypeAnalyzerBiotype
             const std::string output_path_,
             std::map< std::string, std::string >& genome_table,
             std::vector< BedSampleType >& bed_samples,
-            const std::vector< std::string >& biotype_list,
+            std::vector< std::string >& biotype_list,
             const std::size_t& min_len,
             const std::size_t& max_len,
             const double& sudo_count
@@ -72,7 +72,14 @@ class GeneTypeAnalyzerBiotype
         smp_parallel_pool.flush_pool();
 
         for( auto& biotype : biotype_list )
-            ano_len_idx.first.emplace( biotype );
+        {
+            if( biotype == "miRNA_mirtron" )
+            {
+                ano_len_idx.first.emplace( "miRNA" );
+                ano_len_idx.first.emplace( "mirtron" );
+            }
+            else ano_len_idx.first.emplace( biotype );
+        }
 
         GeneTypeAnalyzerCounting::table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 

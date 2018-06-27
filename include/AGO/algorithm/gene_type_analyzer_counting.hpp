@@ -160,7 +160,7 @@ class GeneTypeAnalyzerCounting
 
         for( auto& raw_bed : annotations )
         {
-            isbiotype = biotype == "" ? true : false;
+            isbiotype = ( biotype == "" ? true : false );
             read_len = raw_bed.length_ - raw_bed.tail_length_;
             tail = which_tail( raw_bed.getTail() );
 

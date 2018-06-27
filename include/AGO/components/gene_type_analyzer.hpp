@@ -29,8 +29,8 @@ class GeneTypeAnalyzer
 
     double sudo_count;
 
-    bool is_filter_drop;
     bool output_annobed;
+    bool is_keep_other_biotype;
 
     std::size_t thread_number;
     std::size_t extend_refseq;
@@ -44,8 +44,8 @@ class GeneTypeAnalyzer
     virtual void config_parameters( const bpt::ptree& p ) override
     {
         sudo_count = p.get_optional< double   >( "sudo_count"     ).value_or( 0.000001 );
-        is_filter_drop = p.get_optional< bool >( "is_filter_drop" ).value_or( true     );
         output_annobed = p.get_optional< bool >( "output_annobed" ).value_or( true     );
+        is_keep_other_biotype = p.get_optional< bool >( "is_keep_other_biotype" ).value_or( false );
         thread_number  = p.get_optional< std::size_t >( "thread_number" ).value_or( 8  );
         extend_refseq  = p.get_optional< std::size_t >( "extend_refseq" ).value_or( 10 );
         extend_merge   = p.get_optional< std::size_t >( "extend_merge"  ).value_or( 2  );
@@ -56,9 +56,47 @@ class GeneTypeAnalyzer
 
         if(  p.get_child_optional( "biotype_list" ))
         {
+            std::size_t i = 0;
+            std::size_t miRNA_idx = 0;
+            std::size_t mirtron_idx = 0;
+            std::size_t miRNA_mirtron_idx = 0;
+
             for( auto& biotype : p.get_child( "biotype_list" ))
             {
+                i++;
+                if( biotype.second.data() == "miRNA" ) miRNA_idx = i; 
+                if( biotype.second.data() == "mirtron" ) mirtron_idx = i; 
+                if( biotype.second.data() == "miRNA_mirtron" ) miRNA_mirtron_idx = i; 
                 biotype_list.emplace_back( biotype.second.data() );
+            }
+
+            if(( miRNA_mirtron_idx != 0 && ( miRNA_idx == 0 || mirtron_idx == 0 ))
+            || ( miRNA_idx != 0 && mirtron_idx != 0 && miRNA_idx < mirtron_idx  ))
+            {
+                std::vector< std::string > biotype_list_temp;
+
+                for( std::size_t i = 0; i < biotype_list.size(); ++i )
+                {
+                    if( biotype_list[i] == "mirtron" ) continue;
+                    if( miRNA_mirtron_idx != 0 )
+                    {
+                        if( biotype_list[i] == "miRNA" ) continue;
+                        if( biotype_list[i] == "miRNA_mirtron" )
+                        {
+                            biotype_list_temp.emplace_back( "mirtron" );
+                            biotype_list_temp.emplace_back( "miRNA" );
+                        }
+                    }
+                    else if( biotype_list[i] == "miRNA" )
+                    {
+                        biotype_list_temp.emplace_back( "mirtron" );
+                        biotype_list_temp.emplace_back( "miRNA" );
+                    }
+
+                    biotype_list_temp.emplace_back( biotype_list[i] );
+                }
+
+                biotype_list = biotype_list_temp;
             }
         }
     }
@@ -84,7 +122,7 @@ class GeneTypeAnalyzer
 
 
         monitor.log( "Component GeneTypeAnalyzer", "Filtering ... " );
-        filtering( bed_samples, biotype_list, is_filter_drop );
+        filtering( bed_samples, biotype_list, is_keep_other_biotype );
         ParaThreadPool smp_parallel_pool( bed_samples.size() );
 
         std::string output_path = db.output_dir().string() + ( db.output_dir().string().at( db.output_dir().string().length() -1 ) != '/' ? "/" : "" ) ;
@@ -92,7 +130,7 @@ class GeneTypeAnalyzer
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other" ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
 
-        monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotpyes" );
+        monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotypes" );
         algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, sudo_count );
         algorithm::AnnoLengthIndexType ano_len_idx;
 
