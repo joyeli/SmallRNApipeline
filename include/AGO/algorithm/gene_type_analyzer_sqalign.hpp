@@ -140,6 +140,7 @@ struct SeqType
                     case 'T': c = 'A'; break;
                     case 'C': c = 'G'; break;
                     case 'G': c = 'C'; break;
+                    case 'N': c = 'N'; break;
                 }
                 return c;
             });
@@ -150,7 +151,7 @@ struct SeqType
         this->fullseq = read_seq;
     }
 
-    void formation( std::size_t& extend_refseq )
+    void formation( std::size_t extend_refseq )
     {
         sorting_reads();
         std::map< std::size_t, SeedTailType > read2seed_idx_temp;
@@ -274,6 +275,7 @@ class GeneTypeAnalyzerSqalign
                 std::size_t i = 0; // do first priority
                 if( i < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[i].empty() )
                 {
+                    if(  raw_bed.start_ < extend_refseq ) continue;
                     if(( raw_bed.annotation_info_[i][0] == biotype ) ||
                        ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" ))) 
                     {

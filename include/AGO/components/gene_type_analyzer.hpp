@@ -98,6 +98,8 @@ class GeneTypeAnalyzer
 
                 biotype_list = biotype_list_temp;
             }
+
+            biotype_list.emplace_back( "un_annotated" );
         }
     }
 
