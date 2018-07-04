@@ -560,6 +560,8 @@ class GeneTypeAnalyzerSqalign
         output << "" << "\n";
         output << "#<!--==================== Make TempFile ======================-->" << "\n";
         output << "" << "\n";
+        output << "        $TSV_File_Name = Substr( $TSV_File, 0, ( Strlen( $TSV_File ) -4 ));" << "\n";
+        output << "" << "\n";
         output << "        if( $Full_Sequc != '' && ( $Seg_End != 0 || $Data_Array[0][5] != '.' ))" << "\n";
         output << "        {" << "\n";
         output << "            $Temp = Tempnam( '/tmp', $TSV_File.'_'.$Annotation_Select.'_len'.$Length.'_ppm'.$Filter.'_JSON_' );" << "\n";
@@ -895,7 +897,7 @@ class GeneTypeAnalyzerSqalign
         output << "                    {" << "\n";
         output << "                        if( i in seeds )" << "\n";
         output << "                        {" << "\n";
-        output << "                            $( '#seqs' ).append( \\\"<a id='seq\\\" + i + \\\"linked' target='_blank' href='../LenDist/index.php?TSV_File=$TSV_File&annotation_select=\\\" + seeds[i][ 'Name' ] + \\\"'></a>\\\" );" << "\n";
+        output << "                            $( '#seqs' ).append( \\\"<a id='seq\\\" + i + \\\"linked' target='_blank' href='../LenDist/index.php?TSV_File=$TSV_File_Name&annotation_select=\\\" + seeds[i][ 'Name' ] + \\\"'></a>\\\" );" << "\n";
         output << "                            $( '#seq' + i + 'linked' ).css({" << "\n";
         output << "                                'text-decoration': 'none'," << "\n";
         output << "                                'color': 'black'" << "\n";
@@ -1044,9 +1046,10 @@ class GeneTypeAnalyzerSqalign
         output << "                                'width': seeds[ last_idx + 4 ][ 'Length' ] * spc_num + 'px'," << "\n";
         output << "                                });" << "\n";
         output << "" << "\n";
-        output << "                            $( '#selectedseed' + last_idx ).append( \\\"<a id='read\\\" + last_idx + \\\"linked' target='_blank' href='../LenDist/index.php?TSV_File=$TSV_File&annotation_select=\\\"" << "\n";
+        output << "                            $( '#selectedseed' + last_idx ).append( \\\"<a id='read\\\" + last_idx + \\\"linked' target='_blank' href='../LenDist/index.php?TSV_File=$TSV_File_Name&annotation_select=\\\"" << "\n";
         output << "                                + seeds[ last_idx + 4 ][ 'Name' ]" << "\n";
         output << "                                + ( MDseed == '' ? '' : ( '|' + MDseed ))" << "\n";
+        output << "                                + ( read[ 'isRMSK' ] == 'N' ? '' : '!' )" << "\n";
         output << "                                + \\\"'></a>\\\" );" << "\n";
         output << "" << "\n";
         output << "                            $( '#read' + last_idx + 'linked' ).css({ 'text-decoration': 'none' });" << "\n";

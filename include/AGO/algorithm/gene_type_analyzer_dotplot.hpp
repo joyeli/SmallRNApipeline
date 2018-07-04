@@ -184,7 +184,7 @@ class GeneTypeAnalyzerDotplot
         output.close();
     }
 
-    static void output_dotplot_visualization( const std::string& output_name )
+    static void output_dotplot_visualization( const std::string& output_name, const std::string& biotype )
     {
         std::ofstream output( output_name + "index.php" );
 
@@ -662,7 +662,7 @@ class GeneTypeAnalyzerDotplot
         output << "" << "\n";
         output << "#<!--================== DotPlot ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $miR_End = ( $IsomiRs == 'Yes' ? 11 : 3 );" << "\n";
+        output << "        $miR_End = ( $IsomiRs == 'Yes' ? 11 : 3 ) - " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? 0 : 3 ) << " );" << "\n";
         output << "" << "\n";
         output << "        echo \"<script>" << "\n";
         output << "            var svg_width  = window.innerWidth;" << "\n";

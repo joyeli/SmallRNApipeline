@@ -198,14 +198,14 @@ class GeneTypeAnalyzerEachtype
         });
 
 
-        parallel_pool.job_post([ this ] ()
+        parallel_pool.job_post([ &biotype, this ] ()
         {
-            GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot );
+            GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot, biotype );
         });
 
-        parallel_pool.job_post([ this ] ()
+        parallel_pool.job_post([ &biotype, this ] ()
         {
-            GeneTypeAnalyzerTaildot::output_taildot_visualization( output_path + taildot );
+            GeneTypeAnalyzerTaildot::output_taildot_visualization( output_path + taildot, biotype );
         });
 
         parallel_pool.job_post([ this ] ()
