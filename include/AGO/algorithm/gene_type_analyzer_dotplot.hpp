@@ -749,7 +749,7 @@ class GeneTypeAnalyzerDotplot
         output << "                    .data(data)" << "\n";
         output << "                    .enter()" << "\n";
         output << "                    .append('a')" << "\n";
-        output << "                    .attr('xlink:href', function(d){ return '../SqAlign/index.php?TSV_File=$TSV_File1.tsv&Annotation_Select=' + d.miRNA.substring( 0, d.miRNA.length - $miR_End )})" << "\n";
+        output << "                    .attr('xlink:href', function(d){ return '../SqAlign/index.php?TSV_File=$TSV_File1.tsv&Annotation_Select=' + d.miRNA.substring( 0, d.miRNA.length - ( d.miRNA.substring( d.miRNA.length -1 ) != '!' ? $miR_End : ( $miR_End + 1 )))})" << "\n";
         output << "                    .attr('target', '_blank')" << "\n";
         output << "                    .append('circle')" << "\n";
         output << "                    .attr('class', 'dot')" << "\n";

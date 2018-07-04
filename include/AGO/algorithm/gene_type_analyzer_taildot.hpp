@@ -555,12 +555,8 @@ class GeneTypeAnalyzerTaildot
         output << "" << "\n";
         output << "#<!--================== Filter NU ====================-->" << "\n";
         output << "" << "\n";
-        output << "        echo '<input type=text name=Filter size=7 value=';" << "\n";
-        output << "" << "\n";
-        output << "        if( $Filter=='' )" << "\n";
-        output << "            echo 'FilterGMPM';" << "\n";
-        output << "        else" << "\n";
-        output << "            echo $Filter;" << "\n";
+        output << "        if( $Filter == '' ) $Filter = 'FilterGMPM';" << "\n";
+        output << "        echo '<input type=text name=Filter size=7 value='.$Filter;" << "\n";
         output << "" << "\n";
         output << "        echo \" onfocus=\\\"{this.value='';}\\\">" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
@@ -759,7 +755,7 @@ class GeneTypeAnalyzerTaildot
         output << "                    .data(data)" << "\n";
         output << "                    .enter()" << "\n";
         output << "                    .append('a')" << "\n";
-        output << "                    .attr('xlink:href', function(d){ return '../SqAlign/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=' + d.miRNA.substring( 0, d.miRNA.length - $miR_End )})" << "\n";
+        output << "                    .attr('xlink:href', function(d){ return '../SqAlign/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=' + d.miRNA.substring( 0, d.miRNA.length - ( d.miRNA.substring( d.miRNA.length -1 ) != '!' ? $miR_End : ( $miR_End + 1 )))})" << "\n";
         output << "                    .attr('target', '_blank')" << "\n";
         output << "                    .append('circle')" << "\n";
         output << "                    .attr('class', 'dot')" << "\n";
