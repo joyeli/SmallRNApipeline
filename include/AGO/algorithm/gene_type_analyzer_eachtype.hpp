@@ -11,6 +11,7 @@
 #include <AGO/algorithm/gene_type_analyzer_ranking.hpp>
 #include <AGO/algorithm/gene_type_analyzer_mdtcpos.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
+#include <AGO/algorithm/gene_type_analyzer_differential.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
 
 namespace ago {
@@ -30,6 +31,7 @@ class GeneTypeAnalyzerEachtype
     std::string valplot;
     std::string ranking;
     std::string difference;
+    std::string differential;
 
   public:
 
@@ -45,6 +47,7 @@ class GeneTypeAnalyzerEachtype
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
         , difference( "Difference/" )
+        , differential( "Differential/" )
     {}
 
     GeneTypeAnalyzerEachtype(
@@ -77,6 +80,7 @@ class GeneTypeAnalyzerEachtype
         , valplot( "ValPlot/" )
         , ranking( "Ranking/" )
         , difference( "Difference/" )
+        , differential( "Differential/" )
     {
         boost::filesystem::create_directory( boost::filesystem::path( output_path + dotplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + taildot ));
@@ -86,6 +90,7 @@ class GeneTypeAnalyzerEachtype
         boost::filesystem::create_directory( boost::filesystem::path( output_path + valplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + ranking ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + difference ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + differential ));
 
         GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table );
 
@@ -284,6 +289,18 @@ class GeneTypeAnalyzerEachtype
 
 
 
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        {
+            GeneTypeAnalyzerDifferential::output_loading_differential( output_path + differential, bed_samples, ano_len_idx, anno_table_tail );
+        });
+
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        {
+            GeneTypeAnalyzerDifferential::output_length_differential( output_path + differential, bed_samples, ano_len_idx, anno_table_tail );
+        });
+
+
+
         if( biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron" )
         {
             boost::filesystem::create_directory( boost::filesystem::path( output_path + bubplot ));
@@ -298,6 +315,8 @@ class GeneTypeAnalyzerEachtype
                 double ppm_filter = 1;
                 algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, extend_merge, ppm_filter, genome_table );
             });
+
+
 
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {
@@ -317,6 +336,13 @@ class GeneTypeAnalyzerEachtype
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
+            });
+
+
+
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+            {
+                GeneTypeAnalyzerDifferential::output_arms_differential( output_path + differential, bed_samples, ano_len_idx, anno_table_tail );
             });
         }
 

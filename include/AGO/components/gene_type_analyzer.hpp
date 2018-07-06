@@ -20,7 +20,6 @@ class GeneTypeAnalyzer
       , algorithm::GeneTypeAnalyzerBiotype
       , algorithm::GeneTypeAnalyzerQuantile
       , algorithm::GeneTypeAnalyzerEachtype
-      , algorithm::GeneTypeAnalyzerDifference
       , algorithm::GeneTypeAnalyzerAnnobed
 {
     using Base = engine::NamedComponent;
