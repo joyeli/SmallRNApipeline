@@ -49,9 +49,19 @@ class GeneTypeAnalyzerDifferential
             + s1 + ":" + s2 + ":GMPM\t"
             + s1 + ":" + s2 + ":GM\t"
             + s1 + ":" + s2 + ":PM\t"
+            + s1 + ":" + s2 + ":Atail\t"
+            + s1 + ":" + s2 + ":Ctail\t"
+            + s1 + ":" + s2 + ":Gtail\t"
+            + s1 + ":" + s2 + ":Ttail\t"
+            + s1 + ":" + s2 + ":Other\t"
             + s2 + ":" + s1 + ":GMPM\t"
             + s2 + ":" + s1 + ":GM\t"
-            + s2 + ":" + s1 + ":PM";
+            + s2 + ":" + s1 + ":PM\t"
+            + s2 + ":" + s1 + ":Atail\t"
+            + s2 + ":" + s1 + ":Ctail\t"
+            + s2 + ":" + s1 + ":Gtail\t"
+            + s2 + ":" + s1 + ":Ttail\t"
+            + s2 + ":" + s1 + ":Other";
     }
 
     static double get_value( auto& anno_table_tail, auto& idx, auto& anno, auto& lens, const auto& token )
@@ -60,11 +70,22 @@ class GeneTypeAnalyzerDifferential
 
         for( std::size_t i = 0; i < 5; i++ )
         {
-            if( token == "GM" ) i = 5;
+            switch( token )
+            {
+                case 'A' : i = 0; break;
+                case 'C' : i = 1; break;
+                case 'T' : i = 2; break;
+                case 'G' : i = 3; break;
+                case 'O' : i = 4; break;
+                case 'M' : i = 5; break;
+            }
+
             if( anno_table_tail[ idx ][i].find( anno ) != anno_table_tail[ idx ][i].end() )
                 for( auto& len : lens )
                     if( anno_table_tail[ idx ][i][ anno ].find( len ) != anno_table_tail[ idx ][i][ anno ].end() )
                         res += anno_table_tail[ idx ][i][ anno ][ len ];
+
+            if( token != 'P' ) break;
         }
 
         return res;
@@ -135,25 +156,45 @@ class GeneTypeAnalyzerDifferential
             output.open( output_path + "LoadingDifferential_" + s1.second + "_" + s2.second + ".text" );
             output << output_header( s1.second, s2.second );
 
-            double gm1, gm2, pm1, pm2;
+            double gm1, gm2, pm1, pm2, at1, at2, ct1, ct2, gt1, gt2, tt1, tt2, ot1, ot2;
             std::vector< std::pair< double, double >> diff_vec;
             std::vector< std::tuple< double, double, std::string >> out_temp;
             //                       total  smallestPvalue
 
             for( auto& anno : ano_len_idx.first )
             {
-                gm1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, "GM" );
-                gm2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, "GM" );
-                pm1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, "PM" );
-                pm2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, "PM" );
+                gm1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'M' );
+                gm2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'M' );
+                pm1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'P' );
+                pm2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'P' );
+                at1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'A' );
+                at2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'A' );
+                ct1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'C' );
+                ct2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'C' );
+                gt1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'G' );
+                gt2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'G' );
+                tt1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'T' );
+                tt2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'T' );
+                ot1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'O' );
+                ot2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'O' );
 
                 diff_vec.emplace_back( get_differential( gm1 + pm1 + 1, gm2 + pm2  + 1 ));
                 diff_vec.emplace_back( get_differential( gm1       + 1, gm2        + 1 ));
                 diff_vec.emplace_back( get_differential(       pm1 + 1,       pm2  + 1 ));
+                diff_vec.emplace_back( get_differential(    at1    + 1,    at2     + 1 ));
+                diff_vec.emplace_back( get_differential(    ct1    + 1,    ct2     + 1 ));
+                diff_vec.emplace_back( get_differential(    gt1    + 1,    gt2     + 1 ));
+                diff_vec.emplace_back( get_differential(    tt1    + 1,    tt2     + 1 ));
+                diff_vec.emplace_back( get_differential(    ot1    + 1,    ot2     + 1 ));
 
                 diff_vec.emplace_back( get_differential( gm2 + pm2 + 1, gm1 + pm1  + 1 ));
                 diff_vec.emplace_back( get_differential( gm2       + 1, gm1        + 1 ));
                 diff_vec.emplace_back( get_differential(       pm2 + 1,       pm1  + 1 ));
+                diff_vec.emplace_back( get_differential(    at2    + 1,    at1     + 1 ));
+                diff_vec.emplace_back( get_differential(    ct2    + 1,    ct1     + 1 ));
+                diff_vec.emplace_back( get_differential(    gt2    + 1,    gt1     + 1 ));
+                diff_vec.emplace_back( get_differential(    tt2    + 1,    tt1     + 1 ));
+                diff_vec.emplace_back( get_differential(    ot2    + 1,    ot1     + 1 ));
 
                 out_temp.emplace_back( std::make_tuple(
                         gm1 + pm1 + gm2 + pm2,

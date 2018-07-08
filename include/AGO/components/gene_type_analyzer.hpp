@@ -29,6 +29,7 @@ class GeneTypeAnalyzer
     double sudo_count;
 
     bool output_annobed;
+    bool is_skip_un_annotated;
     bool is_keep_other_biotype;
 
     std::size_t thread_number;
@@ -44,6 +45,7 @@ class GeneTypeAnalyzer
     {
         sudo_count = p.get_optional< double   >( "sudo_count"     ).value_or( 0.000001 );
         output_annobed = p.get_optional< bool >( "output_annobed" ).value_or( true     );
+        is_skip_un_annotated  = p.get_optional< bool >( "is_skip_un_annotated"  ).value_or( false );
         is_keep_other_biotype = p.get_optional< bool >( "is_keep_other_biotype" ).value_or( false );
         thread_number  = p.get_optional< std::size_t >( "thread_number" ).value_or( 8  );
         extend_refseq  = p.get_optional< std::size_t >( "extend_refseq" ).value_or( 10 );
@@ -98,7 +100,8 @@ class GeneTypeAnalyzer
                 biotype_list = biotype_list_temp;
             }
 
-            biotype_list.emplace_back( "un_annotated" );
+            if( !is_skip_un_annotated )
+                biotype_list.emplace_back( "un_annotated" );
         }
     }
 
@@ -129,7 +132,6 @@ class GeneTypeAnalyzer
         std::string output_path = db.output_dir().string() + ( db.output_dir().string().at( db.output_dir().string().length() -1 ) != '/' ? "/" : "" ) ;
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "Biotypes" ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other" ));
-        boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
 
         monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotypes" );
         algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, sudo_count );
@@ -149,6 +151,8 @@ class GeneTypeAnalyzer
 
             if( biotype != "miRNA_mirtron" )
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
+            else
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
                     bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));

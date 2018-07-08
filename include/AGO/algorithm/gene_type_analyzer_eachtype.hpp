@@ -3,6 +3,7 @@
 #include <AGO/algorithm/gene_type_analyzer_counting.hpp>
 #include <AGO/algorithm/gene_type_analyzer_dotplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_taildot.hpp>
+#include <AGO/algorithm/gene_type_analyzer_volcano.hpp>
 #include <AGO/algorithm/gene_type_analyzer_lendist.hpp>
 #include <AGO/algorithm/gene_type_analyzer_barplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_bubplot.hpp>
@@ -24,6 +25,7 @@ class GeneTypeAnalyzerEachtype
 
     std::string dotplot;
     std::string taildot;
+    std::string volcano;
     std::string lendist;
     std::string barplot;
     std::string bubplot;
@@ -40,6 +42,7 @@ class GeneTypeAnalyzerEachtype
         , parallel_pool( 0 )
         , dotplot( "DotPlot/" )
         , taildot( "TailDot/" )
+        , volcano( "Volcano/" )
         , lendist( "LenDist/" )
         , barplot( "BarPlot/" )
         , bubplot( "BubPlot/" )
@@ -73,6 +76,7 @@ class GeneTypeAnalyzerEachtype
         , parallel_pool( thread_number )
         , dotplot( "DotPlot/" )
         , taildot( "TailDot/" )
+        , volcano( "Volcano/" )
         , lendist( "LenDist/" )
         , barplot( "BarPlot/" )
         , bubplot( "BubPlot/" )
@@ -84,6 +88,7 @@ class GeneTypeAnalyzerEachtype
     {
         boost::filesystem::create_directory( boost::filesystem::path( output_path + dotplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + taildot ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + volcano ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + lendist ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + barplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + sqalign ));
@@ -294,10 +299,11 @@ class GeneTypeAnalyzerEachtype
             GeneTypeAnalyzerDifferential::output_loading_differential( output_path + differential, bed_samples, ano_len_idx, anno_table_tail );
         });
 
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
+        parallel_pool.job_post([ &biotype, this ] ()
         {
-            GeneTypeAnalyzerDifferential::output_length_differential( output_path + differential, bed_samples, ano_len_idx, anno_table_tail );
+            GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, biotype );
         });
+
 
 
 
@@ -336,13 +342,6 @@ class GeneTypeAnalyzerEachtype
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             {
                 GeneTypeAnalyzerDifference::output_arms_difference( output_path + difference, bed_samples, ano_len_idx, anno_table_tail, "Tailing" );
-            });
-
-
-
-            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
-            {
-                GeneTypeAnalyzerDifferential::output_arms_differential( output_path + differential, bed_samples, ano_len_idx, anno_table_tail );
             });
         }
 
