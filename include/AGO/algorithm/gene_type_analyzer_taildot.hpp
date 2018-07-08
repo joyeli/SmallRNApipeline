@@ -664,7 +664,7 @@ class GeneTypeAnalyzerTaildot
         output << "" << "\n";
         output << "#<!--================== DotPlot ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $miR_End = ( $IsomiRs == 'Yes' ? 11 : 3 ) - " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? 0 : 3 ) << " );" << "\n";
+        output << "        $miR_End = ( $IsomiRs == 'Yes' ? 11 : 3 ) - " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? 0 : 3 ) << ";" << "\n";
         output << "" << "\n";
         output << "        echo \"<script>" << "\n";
         output << "            var svg_width  = window.innerWidth;" << "\n";
