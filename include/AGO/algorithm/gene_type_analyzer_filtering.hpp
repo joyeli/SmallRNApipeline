@@ -89,6 +89,7 @@ class GeneTypeAnalyzerFiltering
                         if( is_keep_other_biotype )
                             anno_rawbed.annotation_info_ = anno_info_temp;
                     }
+                    else anno_info_temp.emplace_back( biotype_map.begin()->second );
 
                     // this will drop the annotation who is not in the biotype_list
                     if( !is_keep_other_biotype )
