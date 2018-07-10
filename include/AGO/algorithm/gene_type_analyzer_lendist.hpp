@@ -52,7 +52,7 @@ class GeneTypeAnalyzerLendist
         output.close();
     }
 
-    static void output_lendist_visualization( const std::string& output_name, const bool is_biotype = false )
+    static void output_lendist_visualization( const std::string& output_name, const bool& isSeed, const bool is_biotype = false )
     {
         std::ofstream output( output_name + "index.php" );
         bool trimming = false;
@@ -176,7 +176,7 @@ class GeneTypeAnalyzerLendist
         output << "            </form>\";" << "\n";
         output << "" << "\n";
 
-        if( !is_biotype )
+        if( !is_biotype && !isSeed )
         {
             output << "#<!--================== is_Abundant ====================-->" << "\n";
             output << "                " << "\n";
@@ -332,7 +332,7 @@ class GeneTypeAnalyzerLendist
         output << "            </form>\";" << "\n";
         output << "" << "\n";
         
-        if( !is_biotype )
+        if( !is_biotype && !isSeed )
         {
             output << "#<!--================== GoBack ====================-->" << "\n";
             output << "" << "\n";

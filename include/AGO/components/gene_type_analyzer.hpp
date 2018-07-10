@@ -131,6 +131,7 @@ class GeneTypeAnalyzer
 
         std::string output_path = db.output_dir().string() + ( db.output_dir().string().at( db.output_dir().string().length() -1 ) != '/' ? "/" : "" ) ;
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "Biotypes" ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other_Seed" ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other" ));
 
         monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotypes" );
@@ -140,6 +141,7 @@ class GeneTypeAnalyzer
         monitor.log( "Component GeneTypeAnalyzer", "Making ... Counting Table" );
         std::vector< std::vector< algorithm::CountingTableType >> anno_table_tail;
         std::vector< std::map< std::string, std::string >> anno_mark;
+        std::vector< std::map< std::string, std::map< std::string, double >>> seed_match_table;
 
         for( std::size_t i = 0; i < biotype_list.size(); ++i )
         {
@@ -150,13 +152,20 @@ class GeneTypeAnalyzer
                 continue;
 
             if( biotype != "miRNA_mirtron" )
+            {
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other_Seed/" + biotype ));
+            }
             else
+            {
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR_Seed" ));
+            }
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
                     bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
 
+            seed_match_table = std::vector< std::map< std::string, std::map< std::string, double >>>( bed_samples.size(), std::map< std::string, std::map< std::string, double >>());
             anno_mark = std::vector< std::map< std::string, std::string >>( bed_samples.size(), std::map< std::string, std::string >());
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
@@ -181,6 +190,7 @@ class GeneTypeAnalyzer
                     , bed_samples
                     , ano_len_idx
                     , anno_table_tail
+                    , seed_match_table
                     , anno_mark
                     , thread_number
                     , genome_table
@@ -190,6 +200,48 @@ class GeneTypeAnalyzer
                     , max_len
                     , extend_merge
                     , extend_refseq
+                    , false
+                    );
+
+            anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
+                    bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
+
+            anno_mark = std::vector< std::map< std::string, std::string >>( bed_samples.size(), std::map< std::string, std::string >());
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                smp_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &seed_match_table, &genome_table, &biotype, this ] ()
+                {
+                    make_seed_table( bed_samples[ smp ].second, anno_table_tail[ smp ], seed_match_table[ smp ], genome_table, biotype );
+                });
+            }
+
+            smp_parallel_pool.flush_pool();
+
+            ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype, true );
+            table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
+            seed_refinding( ano_len_idx, anno_table_tail, seed_match_table );
+
+            if( biotype == "miRNA_mirtron" )
+                algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+
+            algorithm::GeneTypeAnalyzerEachtype(
+                      biotype
+                    , output_path + ( biotype == "miRNA_mirtron" ? "miR_Seed/" : "Other_Seed/" )
+                    , bed_samples
+                    , ano_len_idx
+                    , anno_table_tail
+                    , seed_match_table
+                    , anno_mark
+                    , thread_number
+                    , genome_table
+                    , node_path
+                    , heatbub_js
+                    , min_len
+                    , max_len
+                    , extend_merge
+                    , extend_refseq
+                    , true
                     );
         }
 

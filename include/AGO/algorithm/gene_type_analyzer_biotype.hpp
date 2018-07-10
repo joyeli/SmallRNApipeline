@@ -126,8 +126,8 @@ class GeneTypeAnalyzerBiotype
         }
 
         output_biotype_visualization( output_path + biotype );
-        GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot, biotype );
-        GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist, true );
+        GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot, biotype, false );
+        GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist, false, true );
 
         output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM" );
         output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"   );

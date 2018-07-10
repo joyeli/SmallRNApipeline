@@ -210,7 +210,7 @@ class GeneTypeAnalyzerTaildot
         output.close();
     }
 
-    static void output_taildot_visualization( const std::string& output_name, const std::string& biotype )
+    static void output_taildot_visualization( const std::string& output_name, const std::string& biotype, const bool& isSeed )
     {
         std::ofstream output( output_name + "index.php" );
 
@@ -345,38 +345,47 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
-        output << "#<!--================== IsomiRs =====================-->" << "\n";
-        output << "                " << "\n";
-        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
-        output << "" << "\n";
-        output << "        echo '<select name=IsomiRs onchange=this.form.submit();>';" << "\n";
-        output << "        echo '<option '; if($IsomiRs=='') echo 'selected'; echo '>Show IsomiRs?</option>';" << "\n";
-        output << "" << "\n";
-        output << "        $miR_List = array('Yes', 'No');" << "\n";
-        output << "" << "\n";
-        output << "        For( $i = 0; $i < Count( $miR_List ); ++$i )" << "\n";
-        output << "        {" << "\n";
-        output << "            echo '<option value='.$miR_List[$i].' ';" << "\n";
-        output << "" << "\n";
-        output << "            if( $IsomiRs == $miR_List[$i] )" << "\n";
-        output << "                echo 'selected ';" << "\n";
-        output << "" << "\n";
-        output << "            echo '>' . $miR_List[$i] . '</option>';" << "\n";
-        output << "        }" << "\n";
-        output << "" << "\n";
-        output << "        echo \"</select>" << "\n";
-        output << "            <input type='hidden' name='xMin' value='$xMin' />" << "\n";
-        output << "            <input type='hidden' name='xMax' value='$xMax' />" << "\n";
-        output << "            <input type='hidden' name='yMin' value='$yMin' />" << "\n";
-        output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
-        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
-        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
-        output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
-        output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
-        output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
-        output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
-        output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
-        output << "            </form>\";" << "\n";
+
+        if( !isSeed )
+        {
+            output << "#<!--================== IsomiRs =====================-->" << "\n";
+            output << "                " << "\n";
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+            output << "" << "\n";
+            output << "        echo '<select name=IsomiRs onchange=this.form.submit();>';" << "\n";
+            output << "        echo '<option '; if($IsomiRs=='') echo 'selected'; echo '>Show IsomiRs?</option>';" << "\n";
+            output << "" << "\n";
+            output << "        $miR_List = array('Yes', 'No');" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 0; $i < Count( $miR_List ); ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            echo '<option value='.$miR_List[$i].' ';" << "\n";
+            output << "" << "\n";
+            output << "            if( $IsomiRs == $miR_List[$i] )" << "\n";
+            output << "                echo 'selected ';" << "\n";
+            output << "" << "\n";
+            output << "            echo '>' . $miR_List[$i] . '</option>';" << "\n";
+            output << "        }" << "\n";
+            output << "" << "\n";
+            output << "        echo \"</select>" << "\n";
+            output << "            <input type='hidden' name='xMin' value='$xMin' />" << "\n";
+            output << "            <input type='hidden' name='xMax' value='$xMax' />" << "\n";
+            output << "            <input type='hidden' name='yMin' value='$yMin' />" << "\n";
+            output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
+            output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+            output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+            output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
+            output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
+            output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
+            output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+            output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+            output << "            </form>\";" << "\n";
+        }
+        else
+        {
+            output << "        $IsomiRs == 'No';" << "\n";
+        }
+
         output << "" << "\n";
         output << "#<!--================== TSV File ====================-->" << "\n";
         output << "" << "\n";
@@ -437,41 +446,50 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
-        output << "#<!--================== is_Abundant ====================-->" << "\n";
-        output << "" << "\n";
-        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
-        output << "        echo '<select name=isAbundant onchange=this.form.submit();>';" << "\n";
-        output << "" << "\n";
-        output << "        $isAbundant_List = array('MostAbundant', 'AllmiRNA');" << "\n";
-        output << "        $isAbundant_Size = Count( $isAbundant_List );" << "\n";
-        output << "" << "\n";
-        output << "        if( $isAbundant == '' )" << "\n";
-        output << "            $isAbundant = 'MostAbundant';" << "\n";
-        output << "" << "\n";
-        output << "        For( $i = 0; $i < $isAbundant_Size; ++$i )" << "\n";
-        output << "        {" << "\n";
-        output << "            echo '<option value='.$isAbundant_List[$i].' ';" << "\n";
-        output << "" << "\n";
-        output << "            if( $isAbundant == $isAbundant_List[$i] )" << "\n";
-        output << "                echo 'selected ';" << "\n";
-        output << "" << "\n";
-        output << "            echo '>' . $isAbundant_List[$i] . '</option>';" << "\n";
-        output << "        }" << "\n";
-        output << "" << "\n";
-        output << "        echo \"</select>" << "\n";
-        output << "            <input type='hidden' name='xMin' value='$xMin' />" << "\n";
-        output << "            <input type='hidden' name='xMax' value='$xMax' />" << "\n";
-        output << "            <input type='hidden' name='yMin' value='$yMin' />" << "\n";
-        output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
-        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
-        output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
-        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
-        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
-        output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
-        output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
-        output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
-        output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
-        output << "            </form>\";" << "\n";
+
+        if( !isSeed )
+        {
+            output << "#<!--================== is_Abundant ====================-->" << "\n";
+            output << "" << "\n";
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+            output << "        echo '<select name=isAbundant onchange=this.form.submit();>';" << "\n";
+            output << "" << "\n";
+            output << "        $isAbundant_List = array('MostAbundant', 'AllmiRNA');" << "\n";
+            output << "        $isAbundant_Size = Count( $isAbundant_List );" << "\n";
+            output << "" << "\n";
+            output << "        if( $isAbundant == '' )" << "\n";
+            output << "            $isAbundant = 'MostAbundant';" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 0; $i < $isAbundant_Size; ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            echo '<option value='.$isAbundant_List[$i].' ';" << "\n";
+            output << "" << "\n";
+            output << "            if( $isAbundant == $isAbundant_List[$i] )" << "\n";
+            output << "                echo 'selected ';" << "\n";
+            output << "" << "\n";
+            output << "            echo '>' . $isAbundant_List[$i] . '</option>';" << "\n";
+            output << "        }" << "\n";
+            output << "" << "\n";
+            output << "        echo \"</select>" << "\n";
+            output << "            <input type='hidden' name='xMin' value='$xMin' />" << "\n";
+            output << "            <input type='hidden' name='xMax' value='$xMax' />" << "\n";
+            output << "            <input type='hidden' name='yMin' value='$yMin' />" << "\n";
+            output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
+            output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+            output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+            output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+            output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+            output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
+            output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
+            output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
+            output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+            output << "            </form>\";" << "\n";
+        }
+        else
+        {
+            output << "        $isAbundant = 'AllmiRNA';" << "\n";
+        }
+
         output << "" << "\n";
         output << "#<!--================== isLog ====================-->" << "\n";
         output << "" << "\n";
@@ -754,9 +772,14 @@ class GeneTypeAnalyzerTaildot
         output << "                svg.selectAll('.dot')" << "\n";
         output << "                    .data(data)" << "\n";
         output << "                    .enter()" << "\n";
-        output << "                    .append('a')" << "\n";
-        output << "                    .attr('xlink:href', function(d){ return '../SqAlign/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=' + d.miRNA.substring( 0, d.miRNA.length - ( d.miRNA.substring( d.miRNA.length -1 ) != '!' ? $miR_End : ( $miR_End + 1 )))})" << "\n";
-        output << "                    .attr('target', '_blank')" << "\n";
+
+        if( !isSeed )
+        {
+        	output << "                    .append('a')" << "\n";
+        	output << "                    .attr('xlink:href', function(d){ return '../SqAlign/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=' + d.miRNA.substring( 0, d.miRNA.length - ( d.miRNA.substring( d.miRNA.length -1 ) != '!' ? $miR_End : ( $miR_End + 1 )))})" << "\n";
+        	output << "                    .attr('target', '_blank')" << "\n";
+        }
+
         output << "                    .append('circle')" << "\n";
         output << "                    .attr('class', 'dot')" << "\n";
         output << "                    .attr('r', 5)" << "\n";

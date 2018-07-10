@@ -15,19 +15,25 @@ class GeneTypeAnalyzerCounting
     static AnnoLengthIndexType get_ano_len_idx(
             std::map< std::string, std::string >& genome_table,
             std::vector< BedSampleType >& bed_samples,
-            const std::string& biotype = "" // default annotation type
+            const std::string& biotype = "", // default annotation type
+            const bool isSeed = false        // for seed analysis
             )
     {
         std::vector< std::set< std::string >> smp_ano_idx( bed_samples.size(), std::set< std::string >() );
         std::vector< std::set< std::size_t >> smp_len_idx( bed_samples.size(), std::set< std::size_t >() );
+        std::vector< std::map< std::string, double >> anno_ppm_check( bed_samples.size(), std::map< std::string, double >() );
 
         ParaThreadPool smp_parallel_pool( bed_samples.size() );
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            smp_parallel_pool.job_post( [ smp, &genome_table, &biotype, &bed_samples, &smp_ano_idx, &smp_len_idx ] () mutable
+            smp_parallel_pool.job_post( [ smp, &genome_table, &biotype, &bed_samples, &smp_ano_idx, &anno_ppm_check, &smp_len_idx, &isSeed ] () mutable
             {
+                std::string gene_name;
+                std::string gene_seed;
+                
                 bool isbiotype = false;
+
                 for( auto& raw_bed : bed_samples[ smp ].second )
                 {
                     isbiotype = biotype == "" ? true : false;
@@ -48,12 +54,23 @@ class GeneTypeAnalyzerCounting
 
                             for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                             {
-                                smp_ano_idx[ smp ].emplace( raw_bed.annotation_info_[i][ j + ( biotype == "" ? 0 : 1 )]
-                                    + ( biotype == "" ? "" :
-                                    (
-                                        "_" + raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                                        + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" )
-                                    ) ));
+                                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                                        + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+
+                                gene_name = isSeed ? gene_seed : ( biotype == ""
+                                    ?   raw_bed.annotation_info_[i][j]
+                                    : ( raw_bed.annotation_info_[i][ j+1 ] + "_" + gene_seed )
+                                );
+
+                                smp_ano_idx[ smp ].emplace( gene_name );
+
+                                if( biotype != "" )
+                                {
+                                    if( anno_ppm_check[ smp ].find( gene_name ) == anno_ppm_check[ smp ].end() )
+                                        anno_ppm_check[ smp ][ gene_name ] = 0.0;
+
+                                    anno_ppm_check[ smp ][ gene_name ] += raw_bed.ppm_;
+                                }
                             }
                         }
                     }
@@ -65,29 +82,47 @@ class GeneTypeAnalyzerCounting
 
         std::set< std::string > ano_idx;
         std::set< std::size_t > len_idx;
+
+        std::set< std::string > ano_temp;
         std::set< std::size_t > len_temp;
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            ano_idx.insert( smp_ano_idx[ smp ].begin(), smp_ano_idx[ smp ].end() );
-            len_idx.insert( smp_len_idx[ smp ].begin(), smp_len_idx[ smp ].end() );
+            ano_temp.insert( smp_ano_idx[ smp ].begin(), smp_ano_idx[ smp ].end() );
+            len_temp.insert( smp_len_idx[ smp ].begin(), smp_len_idx[ smp ].end() );
+        }
+
+        double sum = 0.0;
+
+        if( biotype != "" )
+        {
+            for( auto& anno : ano_temp )
+            {
+                sum = 0.0;
+
+                for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+                {
+                    if( anno_ppm_check[ smp ].find( anno ) != anno_ppm_check[ smp ].end() )
+                        sum += anno_ppm_check[ smp ][ anno ];
+                }
+
+                if( sum >= 1 ) ano_idx.emplace( anno );
+            }
         }
 
         std::size_t count = 0;
         std::size_t last_len;
 
-        for( auto& len : len_idx )
+        for( auto& len : len_temp )
         {
             if( count == 0 ) last_len = len -1;
             if( len - last_len > 1 )
                 for( std::size_t i = last_len + 1; i < len; ++i )
-                    len_temp.emplace( i ); 
+                    len_idx.emplace( i ); 
             count++;
         }
 
-        len_idx.insert( len_temp.begin(), len_temp.end() );
-
-        return std::make_pair( ano_idx, len_idx );
+        return std::make_pair( ( biotype != "" ? ano_idx : ano_temp ), len_idx );
     }
 
     static std::size_t which_tail( const std::string& tail )
@@ -308,6 +343,49 @@ class GeneTypeAnalyzerCounting
         }
     }
 
+    static void make_seed_table(
+            std::vector< ago::format::MDRawBed >& annotations,
+            std::vector< CountingTableType >& anno_table,
+            std::map< std::string, std::map< std::string, double >>& seed_match_table,
+            std::map< std::string, std::string >& genome_table,
+            const std::string& biotype
+            )
+    {
+        std::string gene_name;
+        std::string gene_seed;
+
+        std::size_t read_len;
+        std::size_t tail;
+
+        for( auto& raw_bed : annotations )
+        {
+            if( raw_bed.annotation_info_.empty() ) continue;
+            if( raw_bed.annotation_info_[0].empty() ) continue;
+            if( biotype == "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != "miRNA" && raw_bed.annotation_info_[0][0] != "mirtron" ) continue;
+            if( biotype != "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != biotype ) continue;
+
+            tail = which_tail( raw_bed.getTail() );
+            read_len = raw_bed.length_ - raw_bed.tail_length_;
+
+            for( std::size_t i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
+            {
+                gene_name = raw_bed.annotation_info_[0][ i+1 ];
+                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                          + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+
+                if( anno_table[ tail ][ gene_seed ].find( read_len ) == anno_table[ tail ][ gene_seed ].end() )
+                    anno_table[ tail ][ gene_seed ][ read_len ] = 0.0;
+
+                anno_table[ tail ][ gene_seed ][ read_len ] += raw_bed.ppm_;
+
+                if( seed_match_table[ gene_seed ].find( gene_name ) == seed_match_table[ gene_seed ].end() )
+                    seed_match_table[ gene_seed ][ gene_name ] = 0.0;
+
+                seed_match_table[ gene_seed ][ gene_name ] += raw_bed.ppm_;
+            }
+        }
+    }
+
     static void table_refinding(
             AnnoLengthIndexType& ano_len_idx,
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
@@ -362,6 +440,35 @@ class GeneTypeAnalyzerCounting
         }
 
         if( min_len != 0 || max_len != 0 ) anno_table_tail = anno_table_tail_temp;
+    }
+
+    static void seed_refinding(
+            AnnoLengthIndexType& ano_len_idx,
+            std::vector< std::vector< CountingTableType >>& anno_table_tail,
+            std::vector< std::map< std::string, std::map< std::string, double >>>& seed_match_table
+            )
+    {
+        std::set< std::string > anno_list;
+        std::vector< std::map< std::string, std::map< std::string, double >>> seed_match_temp
+            ( anno_table_tail.size(), std::map< std::string, std::map< std::string, double >>() );
+
+        for( auto& seed : ano_len_idx.first )
+            for( std::size_t smp = 0; smp < anno_table_tail.size(); ++smp )
+                if( seed_match_table[ smp ].find( seed ) != seed_match_table[ smp ].end() )
+                    for( auto& anno : seed_match_table[ smp ][ seed ] )
+                        anno_list.emplace( anno.first );
+
+        for( auto& seed : ano_len_idx.first )
+        {
+            for( std::size_t smp = 0; smp < anno_table_tail.size(); ++smp ) for( auto& anno : anno_list )
+            {
+                seed_match_temp[ smp ][ seed ][ anno ] = 
+                    seed_match_table[ smp ][ seed ].find( anno ) == seed_match_table[ smp ][ seed ].end()
+                    ? 0.0 : seed_match_table[ smp ][ seed ][ anno ];
+            }
+        }
+
+        seed_match_table = std::move( seed_match_temp );
     }
 };
 
