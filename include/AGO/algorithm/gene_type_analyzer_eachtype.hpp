@@ -113,7 +113,7 @@ class GeneTypeAnalyzerEachtype
         }
         else boost::filesystem::create_directory( boost::filesystem::path( output_path + sqalign ));
 
-        GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table );
+        GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table, isSeed );
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {

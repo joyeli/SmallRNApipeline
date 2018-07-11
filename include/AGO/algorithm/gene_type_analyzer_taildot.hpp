@@ -19,7 +19,8 @@ class GeneTypeAnalyzerTaildot
             const std::string& biotype,
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< BedSampleType >& bed_samples,
-            auto& genome_table
+            auto& genome_table,
+            const bool& isSeed = false
             )
     {
         anno_tail_table.clear();
@@ -31,8 +32,8 @@ class GeneTypeAnalyzerTaildot
         for( auto& anno : ano_len_idx.first )
         {
             boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
-            anno_map.emplace( split[0], std::vector< double >( 8, 0.0 ));
-            isom_map.emplace( anno    , std::vector< double >( 8, 0.0 ));
+            anno_map.emplace(( !isSeed ? split[0] : anno ), std::vector< double >( 8, 0.0 ));
+            isom_map.emplace( anno, std::vector< double >( 8, 0.0 ));
             // GMPM TailLens    Tailing％   A_Tail％    C_Tail％    G_Tail％    T_Tail％    Other_Tail％
             // 0    1           2           3           4           5           6           7
         }
@@ -40,10 +41,10 @@ class GeneTypeAnalyzerTaildot
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             anno_tail_table.emplace_back( anno_map );
-            make_tail_counting_table( biotype, bed_samples[ smp ], anno_tail_table[ smp ], genome_table );
+            make_tail_counting_table( biotype, bed_samples[ smp ], anno_tail_table[ smp ], genome_table, false, isSeed );
 
             isom_tail_table.emplace_back( isom_map );
-            make_tail_counting_table( biotype, bed_samples[ smp ], isom_tail_table[ smp ], genome_table, true );
+            make_tail_counting_table( biotype, bed_samples[ smp ], isom_tail_table[ smp ], genome_table, true, isSeed );
         }
     }
 
@@ -52,10 +53,13 @@ class GeneTypeAnalyzerTaildot
             BedSampleType& bed_sample,
             std::map< std::string, std::vector< double >>& tail_table,
             auto& genome_table,
-            bool is_isomir = false
+            bool is_isomir = false,
+            const bool& isSeed = false
             )
     {
-        std::string annotation;
+        std::string gene_name;
+        std::string gene_seed;
+
         double length, sum;
         std::size_t tail;
 
@@ -80,26 +84,27 @@ class GeneTypeAnalyzerTaildot
 
                         for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                         {
-                            annotation = raw_bed.annotation_info_[i][ j+1 ] + ( !is_isomir ? ""
-                                : ( "_" + raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                                + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" )
-                                ));
+                            gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                                    + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
 
+                            gene_name = isSeed ? gene_seed
+                                : ( raw_bed.annotation_info_[i][ j+1 ] + ( !is_isomir ? ""
+                                : ( "_" + gene_seed )));
 
-                            if( anno_gmpm.find( annotation ) == anno_gmpm.end() )
-                                anno_gmpm[ annotation ] = std::make_pair( 0.0, 0.0 );
+                            if( anno_gmpm.find( gene_name ) == anno_gmpm.end() )
+                                anno_gmpm[ gene_name ] = std::make_pair( 0.0, 0.0 );
 
                             if( tail == 5 )
                             {
-                                anno_gmpm[ annotation ].first += raw_bed.ppm_;
+                                anno_gmpm[ gene_name ].first += raw_bed.ppm_;
                                 continue;
                             }
 
-                            if( anno_temp[ annotation ][ tail ].find( length ) == anno_temp[ annotation ][ tail ].end() )
-                                anno_temp[ annotation ][ tail ][ length ] = 0.0;
+                            if( anno_temp[ gene_name ][ tail ].find( length ) == anno_temp[ gene_name ][ tail ].end() )
+                                anno_temp[ gene_name ][ tail ][ length ] = 0.0;
 
-                            anno_temp[ annotation ][ tail ][ length ] += raw_bed.ppm_;
-                            anno_gmpm[ annotation ].second += raw_bed.ppm_;
+                            anno_temp[ gene_name ][ tail ][ length ] += raw_bed.ppm_;
+                            anno_gmpm[ gene_name ].second += raw_bed.ppm_;
                         }
                     }
                 }
