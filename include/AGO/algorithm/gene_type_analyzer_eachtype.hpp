@@ -3,6 +3,7 @@
 #include <AGO/algorithm/gene_type_analyzer_counting.hpp>
 #include <AGO/algorithm/gene_type_analyzer_dotplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_taildot.hpp>
+#include <AGO/algorithm/gene_type_analyzer_sa_plot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_volcano.hpp>
 #include <AGO/algorithm/gene_type_analyzer_lendist.hpp>
 #include <AGO/algorithm/gene_type_analyzer_barplot.hpp>
@@ -27,6 +28,7 @@ class GeneTypeAnalyzerEachtype
 
     std::string dotplot;
     std::string taildot;
+    std::string sa_plot;
     std::string volcano;
     std::string lendist;
     std::string barplot;
@@ -46,6 +48,7 @@ class GeneTypeAnalyzerEachtype
         , parallel_pool( 0 )
         , dotplot( "DotPlot/" )
         , taildot( "TailDot/" )
+        , sa_plot( "SA_Plot/" )
         , volcano( "Volcano/" )
         , lendist( "LenDist/" )
         , barplot( "BarPlot/" )
@@ -84,6 +87,7 @@ class GeneTypeAnalyzerEachtype
         , parallel_pool( thread_number )
         , dotplot( "DotPlot/" )
         , taildot( "TailDot/" )
+        , sa_plot( "SA_Plot/" )
         , volcano( "Volcano/" )
         , lendist( "LenDist/" )
         , barplot( "BarPlot/" )
@@ -98,6 +102,7 @@ class GeneTypeAnalyzerEachtype
     {
         boost::filesystem::create_directory( boost::filesystem::path( output_path + dotplot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + taildot ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + sa_plot ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + volcano ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + lendist ));
         boost::filesystem::create_directory( boost::filesystem::path( output_path + barplot ));
@@ -114,6 +119,7 @@ class GeneTypeAnalyzerEachtype
         else boost::filesystem::create_directory( boost::filesystem::path( output_path + sqalign ));
 
         GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table, isSeed );
+        GeneTypeAnalyzerSA_Plot::make_sa_plot_table( biotype, ano_len_idx, bed_samples, genome_table, isSeed );
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
@@ -140,6 +146,11 @@ class GeneTypeAnalyzerEachtype
             parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_mark, this ] ()
             {
                 GeneTypeAnalyzerTaildot::output_taildot( output_path + taildot, ano_len_idx, anno_mark[ smp ], sample_name, smp );
+            });
+
+            parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_mark, this ] ()
+            {
+                GeneTypeAnalyzerSA_Plot::output_sa_plot( output_path + sa_plot, ano_len_idx, sample_name, smp );
             });
 
             parallel_pool.job_post([ smp, &sample_name, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
@@ -223,6 +234,11 @@ class GeneTypeAnalyzerEachtype
         parallel_pool.job_post([ &biotype, &isSeed, this ] ()
         {
             GeneTypeAnalyzerTaildot::output_taildot_visualization( output_path + taildot, biotype, isSeed );
+        });
+
+        parallel_pool.job_post([ &biotype, &isSeed, this ] ()
+        {
+            GeneTypeAnalyzerSA_Plot::output_sa_plot_visualization( output_path + sa_plot, biotype, isSeed );
         });
 
         parallel_pool.job_post([ &isSeed, this ] ()
