@@ -35,7 +35,7 @@ class GeneTypeAnalyzer
     std::size_t thread_number;
     std::size_t extend_refseq;
     std::size_t extend_merge;
-    std::size_t max_un_annotated_merge_size;
+    std::size_t max_anno_merge_size;
     std::size_t min_len;
     std::size_t max_len;
 
@@ -51,7 +51,7 @@ class GeneTypeAnalyzer
         thread_number  = p.get_optional< std::size_t >( "thread_number" ).value_or( 8  );
         extend_refseq  = p.get_optional< std::size_t >( "extend_refseq" ).value_or( 10 );
         extend_merge   = p.get_optional< std::size_t >( "extend_merge"  ).value_or( 2  );
-        max_un_annotated_merge_size = p.get_optional< std::size_t >( "max_un_annotated_merge_size" ).value_or( 2500000 );
+        max_anno_merge_size = p.get_optional< std::size_t >( "max_anno_merge_size" ).value_or( 2500000 );
         min_len    = p.get_optional< std::size_t >( "min_len"    ).value_or( 0 );
         max_len    = p.get_optional< std::size_t >( "max_len"    ).value_or( 0 );
         node_path  = p.get_optional< std::string >( "node_path"  ).value_or( "/home/joyel/bin/node" );
@@ -128,7 +128,7 @@ class GeneTypeAnalyzer
 
 
         monitor.log( "Component GeneTypeAnalyzer", "Filtering ... " );
-        filtering( bed_samples, biotype_list, is_keep_other_biotype, max_un_annotated_merge_size );
+        filtering( bed_samples, biotype_list, is_keep_other_biotype, max_anno_merge_size );
         ParaThreadPool smp_parallel_pool( bed_samples.size() );
 
         std::string output_path = db.output_dir().string() + ( db.output_dir().string().at( db.output_dir().string().length() -1 ) != '/' ? "/" : "" ) ;
@@ -194,14 +194,15 @@ class GeneTypeAnalyzer
                     , anno_table_tail
                     , seed_match_table
                     , anno_mark
-                    , thread_number
                     , genome_table
+                    , thread_number
                     , node_path
                     , heatbub_js
                     , min_len
                     , max_len
                     , extend_merge
                     , extend_refseq
+                    , max_anno_merge_size
                     , false
                     );
 
@@ -235,14 +236,15 @@ class GeneTypeAnalyzer
                     , anno_table_tail
                     , seed_match_table
                     , anno_mark
-                    , thread_number
                     , genome_table
+                    , thread_number
                     , node_path
                     , heatbub_js
                     , min_len
                     , max_len
                     , extend_merge
                     , extend_refseq
+                    , max_anno_merge_size
                     , true
                     );
         }

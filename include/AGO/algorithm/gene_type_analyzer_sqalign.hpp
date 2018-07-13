@@ -230,7 +230,8 @@ class GeneTypeAnalyzerSqalign
             std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
             auto& genome_table,
-            std::size_t& extend_refseq
+            const std::size_t& extend_refseq,
+            const std::size_t& max_anno_merge_size
             )
     {
         std::ofstream outidx, outtsv;
@@ -240,7 +241,7 @@ class GeneTypeAnalyzerSqalign
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             idx = 0;
-            chr_mapping = get_chrmap_table( bed_samples[ smp ].second, biotype, genome_table, extend_refseq );
+            chr_mapping = get_chrmap_table( bed_samples[ smp ].second, biotype, genome_table, extend_refseq, max_anno_merge_size );
 
             outidx.open( output_name + bed_samples[ smp ].first + ".idx" );
             outtsv.open( output_name + bed_samples[ smp ].first + ".tsv" );
@@ -262,44 +263,143 @@ class GeneTypeAnalyzerSqalign
             std::vector< ago::format::MDRawBed >& smp_anno,
             const std::string& biotype,
             auto& genome_table,
-            std::size_t& extend_refseq
+            const std::size_t& extend_refseq,
+            const std::size_t& max_anno_merge_size
             )
     {
+        std::map< std::string, std::vector< ago::format::MDRawBed >> anno_beds;
         std::map< std::string, SeqType > chr_mappings;
         std::string anno;
 
         for( auto& raw_bed : smp_anno )
         {
-            // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
+            if( !raw_bed.annotation_info_.empty() && !raw_bed.annotation_info_[0].empty() && raw_bed.start_ > extend_refseq )
             {
-                std::size_t i = 0; // do first priority
-                if( i < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[i].empty() )
+                if( biotype != "miRNA" && biotype != "mirtron" && biotype != "miRNA_mirtron" && biotype == raw_bed.annotation_info_[0][0] )
                 {
-                    if(  raw_bed.start_ < extend_refseq ) continue;
-                    if(( raw_bed.annotation_info_[i][0] == biotype ) ||
-                       ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" ))) 
-                    {
-                        for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
+                    anno = raw_bed.annotation_info_[0][1];
+                    anno_beds[ anno ].emplace_back( raw_bed );
+                    continue;
+                }
+
+                if(( raw_bed.annotation_info_[0][0] == biotype ) ||
+                   ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[0][0] == "miRNA" || raw_bed.annotation_info_[0][0] == "mirtron" ))) 
+                {
+                        anno = raw_bed.annotation_info_[0][1].substr( 0, raw_bed.annotation_info_[0][1].length() -3 );
+                        if( chr_mappings.find( anno ) == chr_mappings.end() )
                         {
-                            anno = biotype.substr( 0, 5 ) != "miRNA" && biotype != "mirtron"
-                                 ? raw_bed.annotation_info_[i][ j+1 ]
-                                 : raw_bed.annotation_info_[i][ j+1 ].substr( 0, raw_bed.annotation_info_[i][ j+1 ].length() -3 );
-
-                            if( chr_mappings.find( anno ) == chr_mappings.end() )
-                            {
-                                chr_mappings[ anno ] = SeqType();
-                                chr_mappings[ anno ].init( raw_bed, genome_table, raw_bed.annotation_info_[i][0] );
-                            }
-
-                            chr_mappings[ anno ].insert( raw_bed );
+                            chr_mappings[ anno ] = SeqType();
+                            chr_mappings[ anno ].init( raw_bed, genome_table, raw_bed.annotation_info_[0][0] );
                         }
-                    }
+                        chr_mappings[ anno ].insert( raw_bed );
                 }
             }
         }
 
+        for( auto& annobed : anno_beds ) annotation_reformating( annobed.second, max_anno_merge_size );
+        for( auto& annobed : anno_beds ) for( auto& bed : annobed.second )
+        {
+            anno = bed.annotation_info_[0][1];
+            if( chr_mappings.find( anno ) == chr_mappings.end() )
+            {
+                chr_mappings[ anno ] = SeqType();
+                chr_mappings[ anno ].init( bed, genome_table, bed.annotation_info_[0][0] );
+            }
+            chr_mappings[ anno ].insert( bed );
+        }
+
         for( auto& mir : chr_mappings ) mir.second.formation( extend_refseq );
         return chr_mappings;
+    }
+
+    static void annotation_reformating( std::vector< ago::format::MDRawBed >& beds, const std::size_t& max_anno_merge_size )
+    {
+        std::string region = "";
+
+        //          regionID                    chr         start       end
+        std::map< std::string, std::tuple< std::string, std::size_t, std::size_t >> bed_list;
+        std::map< std::string, std::map< std::size_t, std::map< std::size_t, std::vector< std::string >>>> bed_map;
+        //          chr                     start                 end                       regionID
+    
+        for( auto& bed : beds )
+        {
+            region = bed.chromosome_ + ":" + std::to_string( bed.start_ ) + "-" + std::to_string( bed.end_ );
+
+            if( bed_list.find( region ) == bed_list.end() )
+            {
+                bed_list[ region ] = std::make_tuple( bed.chromosome_, bed.start_, bed.end_ );
+                bed_map[ bed.chromosome_ ][ bed.start_ ][ bed.end_ ].emplace_back( region );
+            }
+        }
+
+        for( auto& bed : bed_map ) formating_start_end( bed.second, bed_list, max_anno_merge_size );
+        for( auto& bed : beds )
+        {
+            region = bed.chromosome_ + ":" + std::to_string( bed.start_ ) + "-" + std::to_string( bed.end_ );
+
+            bed.annotation_info_[0][1] =
+                bed.annotation_info_[0][1] + "|" +
+                std::get<0>( bed_list[ region ]) + ":" +
+                std::to_string( std::get<1>( bed_list[ region ])) + "-" +
+                std::to_string( std::get<2>( bed_list[ region ])) ;
+        }
+    }
+
+    static void formating_start_end(
+            std::map< std::size_t, std::map< std::size_t, std::vector< std::string >>>& beds,
+            std::map< std::string, std::tuple< std::string, std::size_t, std::size_t >>& bed_list,
+            const std::size_t& max_anno_merge_size
+            )
+    {
+        std::size_t start = beds.begin()->first;
+        std::size_t end = beds.begin()->second.begin()->first;
+
+        for( auto sit = beds.begin(); sit != beds.end(); ++sit )
+            for( auto eit = sit->second.begin(); eit != sit->second.end(); ++eit )
+            {
+                if( eit->first - start > max_anno_merge_size && end < sit->first )
+                {
+                    rerange_start_end(
+                            beds,
+                            bed_list,
+                            max_anno_merge_size,
+                            start,
+                            end
+                            );
+                    
+                    start = sit->first;
+                }
+
+                end = eit->first;
+            }
+
+        rerange_start_end(
+                beds,
+                bed_list,
+                max_anno_merge_size,
+                start,
+                end
+                );
+    }
+
+    static void rerange_start_end(
+            std::map< std::size_t, std::map< std::size_t, std::vector< std::string >>>& beds,
+            std::map< std::string, std::tuple< std::string, std::size_t, std::size_t >>& bed_list,
+            const std::size_t& max_anno_merge_size,
+            const std::size_t& start,
+            const std::size_t& end
+            )
+    {
+        for( auto sit = beds.find( start ); sit != beds.end(); ++sit )
+            for( auto eit = sit->second.begin(); eit != sit->second.end(); ++eit )
+            {
+                if( end - start > max_anno_merge_size && end < sit->first ) return;
+                for( auto& region_id : eit->second )
+                {
+                    std::get<1>( bed_list[ region_id ] ) = start;
+                    std::get<2>( bed_list[ region_id ] ) = end;
+                }
+            }
     }
 
     static void output_sqalign_visualization( const std::string& output_name, const std::size_t& extend_refseq )

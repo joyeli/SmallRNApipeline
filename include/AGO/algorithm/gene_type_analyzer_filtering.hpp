@@ -21,7 +21,7 @@ class GeneTypeAnalyzerFiltering
     void rerange_un_annotated_start_end(
             std::map< std::size_t, std::map< std::size_t, std::vector< std::string >>>& unannos,
             std::map< std::string, std::tuple< std::string, std::size_t, std::size_t >>& un_annotated_map_list,
-            const std::size_t& max_un_annotated_merge_size,
+            const std::size_t& max_anno_merge_size,
             const std::size_t& start,
             const std::size_t& end
             )
@@ -29,7 +29,7 @@ class GeneTypeAnalyzerFiltering
         for( auto sit = unannos.find( start ); sit != unannos.end(); ++sit )
             for( auto eit = sit->second.begin(); eit != sit->second.end(); ++eit )
             {
-                if( end - start > max_un_annotated_merge_size && end < sit->first ) return;
+                if( end - start > max_anno_merge_size && end < sit->first ) return;
                 for( auto& region_id : eit->second )
                 {
                     std::get<1>( un_annotated_map_list[ region_id ] ) = start;
@@ -41,7 +41,7 @@ class GeneTypeAnalyzerFiltering
     void formating_un_annotated_start_end(
             std::map< std::size_t, std::map< std::size_t, std::vector< std::string >>>& unannos,
             std::map< std::string, std::tuple< std::string, std::size_t, std::size_t >>& un_annotated_map_list,
-            const std::size_t& max_un_annotated_merge_size
+            const std::size_t& max_anno_merge_size
             )
     {
         std::size_t start = unannos.begin()->first;
@@ -50,12 +50,12 @@ class GeneTypeAnalyzerFiltering
         for( auto sit = unannos.begin(); sit != unannos.end(); ++sit )
             for( auto eit = sit->second.begin(); eit != sit->second.end(); ++eit )
             {
-                if( end - start > max_un_annotated_merge_size && end < sit->first )
+                if( eit->first - start > max_anno_merge_size && end < sit->first )
                 {
                     rerange_un_annotated_start_end(
                             unannos,
                             un_annotated_map_list,
-                            max_un_annotated_merge_size,
+                            max_anno_merge_size,
                             start,
                             end
                             );
@@ -69,7 +69,7 @@ class GeneTypeAnalyzerFiltering
         rerange_un_annotated_start_end(
                 unannos,
                 un_annotated_map_list,
-                max_un_annotated_merge_size,
+                max_anno_merge_size,
                 start,
                 end
                 );
@@ -101,7 +101,7 @@ class GeneTypeAnalyzerFiltering
             std::vector< BedSampleType >& bed_samples,
             std::vector< std::string >& biotype_list,
             const bool& is_keep_other_biotype,
-            const std::size_t& max_un_annotated_merge_size
+            const std::size_t& max_anno_merge_size
             )
     {
 		Filters run_filter;
@@ -111,7 +111,7 @@ class GeneTypeAnalyzerFiltering
         for( auto& biotype : biotype_list ) biotype_set.emplace( biotype );
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            smp_parallel_pool.job_post( [ smp, &run_filter, &bed_samples, &biotype_list, &is_keep_other_biotype, &max_un_annotated_merge_size, &biotype_set, this ] () mutable
+            smp_parallel_pool.job_post( [ smp, &run_filter, &bed_samples, &biotype_list, &is_keep_other_biotype, &max_anno_merge_size, &biotype_set, this ] () mutable
             {
                 std::vector< bool > temp;
                 std::vector< std::vector< std::string >> anno_info_temp;
@@ -165,7 +165,7 @@ class GeneTypeAnalyzerFiltering
                 }
 
                 for( auto& unannos : un_annotated_checking_map )
-                    formating_un_annotated_start_end( unannos.second, un_annotated_map_list, max_un_annotated_merge_size );
+                    formating_un_annotated_start_end( unannos.second, un_annotated_map_list, max_anno_merge_size );
 
                 for( auto& anno_rawbed : bed_samples[ smp ].second )
                 {

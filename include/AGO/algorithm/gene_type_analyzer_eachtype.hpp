@@ -64,20 +64,21 @@ class GeneTypeAnalyzerEachtype
 
     GeneTypeAnalyzerEachtype(
             const std::string& biotype,
-            std::string output_path_,
+            const std::string output_path_,
             std::vector< BedSampleType >& bed_samples,
             AnnoLengthIndexType& ano_len_idx,
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
             std::vector< std::map< std::string, std::map< std::string, double >>>& seed_match_table,
             std::vector< std::map< std::string, std::string >>& anno_mark,
-            std::size_t& thread_number,
             std::map< std::string, std::string >& genome_table,
-            std::string& node_path,
-            std::string& heatbub_js,
-            std::size_t& min_len,
-            std::size_t& max_len,
-            std::size_t& extend_merge,
-            std::size_t& extend_refseq,
+            const std::size_t& thread_number,
+            const std::string& node_path,
+            const std::string& heatbub_js,
+            const std::size_t& min_len,
+            const std::size_t& max_len,
+            const std::size_t& extend_merge,
+            const std::size_t& extend_refseq,
+            const std::size_t& max_anno_merge_size,
             const bool& isSeed
             )
         : output_path( output_path_
@@ -263,9 +264,9 @@ class GeneTypeAnalyzerEachtype
 
         if( !isSeed )
         {
-            parallel_pool.job_post([ &bed_samples, &biotype, &genome_table, &extend_refseq, this ] ()
+            parallel_pool.job_post([ &bed_samples, &biotype, &genome_table, &extend_refseq, &max_anno_merge_size, this ] ()
             {
-                GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table, extend_refseq );
+                GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table, extend_refseq, max_anno_merge_size );
             });
 
             parallel_pool.job_post([ &bed_samples, &biotype, this ] ()
