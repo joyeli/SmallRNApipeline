@@ -239,7 +239,7 @@ class GeneTypeAnalyzerEachtype
 
         parallel_pool.job_post([ &biotype, &isSeed, this ] ()
         {
-            GeneTypeAnalyzerSA_Plot::output_sa_plot_visualization( output_path + sa_plot, biotype, isSeed );
+            GeneTypeAnalyzerSA_Plot::output_sa_plot_visualization( output_path + sa_plot );
         });
 
         parallel_pool.job_post([ &isSeed, this ] ()
