@@ -225,6 +225,14 @@ class GeneTypeAnalyzerSqalign
     GeneTypeAnalyzerSqalign()
     {}
 
+    static double get_region_ppm( SeqType& seqs )
+    {
+        double ppm = 0.0;
+        for( auto& seq : seqs.reads_vec )
+            ppm += std::get<2>( seq );
+        return ppm;
+    }
+
     static void output_sqalign(
             const std::string& output_name,
             std::vector< BedSampleType >& bed_samples,
@@ -236,7 +244,9 @@ class GeneTypeAnalyzerSqalign
     {
         std::ofstream outidx, outtsv;
         std::map< std::string, SeqType > chr_mapping;
+
         std::size_t idx;
+        double ppm = 0.0;
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
@@ -248,7 +258,8 @@ class GeneTypeAnalyzerSqalign
 
             for( auto& mir : chr_mapping )
             {
-                outidx << mir.first << "\t" << idx << "\n";;
+                ppm = get_region_ppm( mir.second );
+                outidx << mir.first << "\t" << idx << "\t" << ppm << "\n";;
                 outtsv << mir.first << mir.second;
                 idx += mir.second.line_counts();
             }
@@ -315,9 +326,11 @@ class GeneTypeAnalyzerSqalign
     static void annotation_reformating( std::vector< ago::format::MDRawBed >& beds, const std::size_t& max_anno_merge_size )
     {
         std::string region = "";
+        std::set< std::tuple< std::string, std::size_t, std::size_t, std::string >> gene_region_set;
+        std::map< std::string, std::size_t > gene_counts;
 
-        //          regionID                    chr         start       end
-        std::map< std::string, std::tuple< std::string, std::size_t, std::size_t >> bed_list;
+        //          regionID                    chr         start       end         anno
+        std::map< std::string, std::tuple< std::string, std::size_t, std::size_t, std::string >> bed_list;
         std::map< std::string, std::map< std::size_t, std::map< std::size_t, std::vector< std::string >>>> bed_map;
         //          chr                     start                 end                       regionID
     
@@ -327,27 +340,39 @@ class GeneTypeAnalyzerSqalign
 
             if( bed_list.find( region ) == bed_list.end() )
             {
-                bed_list[ region ] = std::make_tuple( bed.chromosome_, bed.start_, bed.end_ );
+                bed_list[ region ] = std::make_tuple( bed.chromosome_, bed.start_, bed.end_, bed.annotation_info_[0][1] );
                 bed_map[ bed.chromosome_ ][ bed.start_ ][ bed.end_ ].emplace_back( region );
             }
         }
 
-        for( auto& bed : bed_map ) formating_start_end( bed.second, bed_list, max_anno_merge_size );
+        for( auto& bed : bed_map  ) formating_start_end( bed.second, bed_list, max_anno_merge_size );
+        for( auto& bed : bed_list ) gene_region_set.emplace( bed.second );
+
+        for( auto& bed : gene_region_set )
+        {
+            if( gene_counts.find( std::get<3>( bed )) == gene_counts.end() )
+                gene_counts[ std::get<3>( bed ) ] = 0.0;
+            gene_counts[ std::get<3>( bed ) ]++;
+        }
+
         for( auto& bed : beds )
         {
             region = bed.chromosome_ + ":" + std::to_string( bed.start_ ) + "-" + std::to_string( bed.end_ );
 
-            bed.annotation_info_[0][1] =
-                bed.annotation_info_[0][1] + "|" +
-                std::get<0>( bed_list[ region ]) + ":" +
-                std::to_string( std::get<1>( bed_list[ region ])) + "-" +
-                std::to_string( std::get<2>( bed_list[ region ])) ;
+            if( gene_counts[ bed.annotation_info_[0][1] ] != 1 )
+            {
+                bed.annotation_info_[0][1] =
+                    bed.annotation_info_[0][1] + "|" +
+                    std::get<0>( bed_list[ region ]) + ":" +
+                    std::to_string( std::get<1>( bed_list[ region ])) + "-" +
+                    std::to_string( std::get<2>( bed_list[ region ])) ;
+            }
         }
     }
 
     static void formating_start_end(
             std::map< std::size_t, std::map< std::size_t, std::vector< std::string >>>& beds,
-            std::map< std::string, std::tuple< std::string, std::size_t, std::size_t >>& bed_list,
+            std::map< std::string, std::tuple< std::string, std::size_t, std::size_t, std::string >>& bed_list,
             const std::size_t& max_anno_merge_size
             )
     {
@@ -384,7 +409,7 @@ class GeneTypeAnalyzerSqalign
 
     static void rerange_start_end(
             std::map< std::size_t, std::map< std::size_t, std::vector< std::string >>>& beds,
-            std::map< std::string, std::tuple< std::string, std::size_t, std::size_t >>& bed_list,
+            std::map< std::string, std::tuple< std::string, std::size_t, std::size_t, std::string >>& bed_list,
             const std::size_t& max_anno_merge_size,
             const std::size_t& start,
             const std::size_t& end
@@ -468,6 +493,9 @@ class GeneTypeAnalyzerSqalign
         output << "        $inFile = File_get_contents( substr( $TSV_File, 0, strlen( $TSV_File ) -4 ).'.idx' );" << "\n";
         output << "        $inFile_Lines = Explode( \"\\n\", $inFile );" << "\n";
         output << "" << "\n";
+        output << "        $Total_PPM = 0;" << "\n";
+        output << "        $PPM_Array = Array();" << "\n";
+        output << "" << "\n";
         output << "        $Anno_Array = Array();" << "\n";
         output << "        $Data_Array = Array();" << "\n";
         output << "" << "\n";
@@ -481,6 +509,9 @@ class GeneTypeAnalyzerSqalign
         output << "        {" << "\n";
         output << "            $anno = Explode( \"\\t\", $inFile_Lines[$j] );" << "\n";
         output << "            $Anno_Array[ $anno[0] ] = $anno[1];" << "\n";
+        output << "" << "\n";
+        output << "            $PPM_Array [ $anno[0] ] = $anno[2];" << "\n";
+        output << "            $Total_PPM += $anno[2];" << "\n";
         output << "" << "\n";
         output << "            if( $Annotation_Select == $anno[0] && $Annotation_Select != '' )" << "\n";
         output << "            {" << "\n";
@@ -506,6 +537,7 @@ class GeneTypeAnalyzerSqalign
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        Ksort( $Anno_Array );" << "\n";
+        output << "        Ksort( $PPM_Array );" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
         output << "        echo '<select name=Annotation_Select onchange=this.form.submit();>';" << "\n";
@@ -515,7 +547,7 @@ class GeneTypeAnalyzerSqalign
         output << "        {" << "\n";
         output << "            echo '<option value='.$anno.' ';" << "\n";
         output << "            if( $Annotation_Select == $anno )  echo 'selected ';" << "\n";
-        output << "            echo '>'.$anno.'</option>';" << "\n";
+        output << "            echo '>'.$anno.' ('.Number_Format( (float)$PPM_Array[$anno], 2, '.', '' ).'ppm)</option>';" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
@@ -525,6 +557,20 @@ class GeneTypeAnalyzerSqalign
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "        $Total_PPM = 100 / $Total_PPM;" << "\n";
+        output << "        echo \"<script>var select_color_map = d3.scaleLinear().domain([ 0, 100 ]).range([ '$Color_Low', '$Color_Hight' ]);\";" << "\n";
+        output << "" << "\n";
+        output << "        Foreach( $Anno_Array as $anno => $idx )" << "\n";
+        output << "        {" << "\n";
+        output << "           echo \"$( 'option[value=\\\"$anno\\\"]' ).css(" << "\n";
+        output << "           {" << "\n";
+        output << "               'background-color': select_color_map( '\".($PPM_Array[$anno] * $Total_PPM ).\"' )," << "\n";
+        output << "               'color': '\".(( $PPM_Array[$anno] * $Total_PPM ) > 25 ? 'white' : 'black'  ).\"'" << "\n";
+        output << "           });\";" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo '</script>';" << "\n";
         output << "" << "\n";
         output << "#<!--=================== Select Segment ======================-->" << "\n";
         output << "" << "\n";
@@ -609,12 +655,12 @@ class GeneTypeAnalyzerSqalign
         output << "                <input type='hidden' name='Annotation_Select' value='$Annotation_Select' />" << "\n";
         output << "                </form>\";" << "\n";
         output << "" << "\n";
-        output << "            echo \"<script>var select_color_map = d3.scaleLinear().domain([ 0, 100 ]).range([ '$Color_Low', '$Color_Hight' ]);\";" << "\n";
+        output << "            echo \"<script>var select_color_map_seg = d3.scaleLinear().domain([ 0, 100 ]).range([ '$Color_Low', '$Color_Hight' ]);\";" << "\n";
         output << "" << "\n";
         output << "            for( $i = 0; $i < Count( $Segm_Uniqs ); ++$i )" << "\n";
         output << "                echo \"$( 'option[value=\\\"\".$Segm_Uniqs[$i][0].'-'.$Segm_Uniqs[$i][1].' ('.Number_Format( (float)$Segm_Uniqs[$i][2], 2, '.', '' ).\"ppm)\\\"]' ).css(" << "\n";
         output << "                {" << "\n";
-        output << "                    'background-color': select_color_map( '\".( $Segm_Uniqs[$i][2] * $Total_PPM ).\"' )," << "\n";
+        output << "                    'background-color': select_color_map_seg( '\".( $Segm_Uniqs[$i][2] * $Total_PPM ).\"' )," << "\n";
         output << "                    'color': '\".(( $Segm_Uniqs[$i][2] * $Total_PPM ) > 25 ? 'white' : 'black'  ).\"'" << "\n";
         output << "                });\";" << "\n";
         output << "" << "\n";
