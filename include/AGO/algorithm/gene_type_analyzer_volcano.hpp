@@ -431,7 +431,7 @@ class GeneTypeAnalyzerVolcano
         output << "                    .attr('target', '_blank')" << "\n";
         output << "                    .append('circle')" << "\n";
         output << "                    .attr('class', 'dot')" << "\n";
-        output << "                    .attr('r', 5)" << "\n";
+        output << "                    .attr('r', 3)" << "\n";
         output << "                    .attr('cx', function(d) { return x(d.Log2Fold); })" << "\n";
         output << "                    .attr('cy', function(d) { return y(d.LogPvalue); })" << "\n";
         output << "                    .style('fill', function(d) { return color_map( d.GMPM ); })" << "\n";
