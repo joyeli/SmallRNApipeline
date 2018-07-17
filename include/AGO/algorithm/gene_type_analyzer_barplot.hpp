@@ -264,8 +264,8 @@ class GeneTypeAnalyzerBarplot
         output << "        $Single_Anno = $_POST['Single_Anno'];" << "\n";
         output << "        $Filter_Option = $_POST['Filter_Option'];" << "\n";
         output << "" << "\n";
-        output << "        echo '<script src=http://192.168.1.11:6680/ness/www/ForAgoSorting/lib/d3.min.js></script>';" << "\n";
-        output << "        echo '<link href=http://192.168.1.11:6680/ness/www/ForAgoSorting/lib/svg0331.css rel=stylesheet type=text/css>';" << "\n";
+        output << "        echo '<script src=http://192.168.1.11:6680/WorkDir/AgoD3/ForAgoSorting/lib/d3.min.js></script>';" << "\n";
+        output << "        echo '<link href=http://192.168.1.11:6680/WorkDir/AgoD3/ForAgoSorting/lib/svg0331.css rel=stylesheet type=text/css>';" << "\n";
         output << "        echo '<style> .x.axis path { display: none; }</style>';" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
