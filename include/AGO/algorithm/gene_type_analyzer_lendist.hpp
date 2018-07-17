@@ -341,6 +341,11 @@ class GeneTypeAnalyzerLendist
             output << "" << "\n";
             output << "        For( $i = 1; $i < Count( $annos ) -1; $i++ ) $anno = $anno.'-'.$annos[ $i ];" << "\n";
             output << "" << "\n";
+            output << "        $annos = Explode( '_', $anno );" << "\n";
+            output << "        $anno  = $annos[0];" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 1; $i < Count( $annos ) -1; $i++ ) $anno = $anno.'_'.$annos[ $i ];" << "\n";
+            output << "" << "\n";
             output << "        if( $TSV_File != '' && $annotation_select != '' )" << "\n";
             output << "            echo \"<a target='_blank' href='../SqAlign/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=$anno' >" << "\n";
             output << "                <input type='submit' value='Goto $anno' />" << "\n";
