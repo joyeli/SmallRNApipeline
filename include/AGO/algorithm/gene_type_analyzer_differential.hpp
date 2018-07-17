@@ -101,12 +101,15 @@ class GeneTypeAnalyzerDifferential
      */
     static std::pair< double, double > get_differential( const auto& s1, const auto& s2 )
     {
-        double fold_change = s1 / s2;
+        double fold_change1 = s1 / s2;
+        double fold_change2 = s2 / s1;
         double count1 = std::log( s1 );
         double count2 = std::log( s2 );
-        double count_max = ( count1 >= count2 ? count1 : count2 );
-        double p_value = 1 - boost::math::ibeta(( 3.26 * ( count1 / count_max )), ( 1.63 * ( count2 / count_max )), ( fold_change / ( 1 + fold_change )));
-        return std::make_pair( fold_change, p_value );
+        double p_value = 1 - ( fold_change1 < 1
+                ? boost::math::ibeta(( 3.26 + count2 ), ( 1.63 + count1 ), ( fold_change2 / ( 1 + fold_change2 )))
+                : boost::math::ibeta(( 3.26 + count1 ), ( 1.63 + count2 ), ( fold_change1 / ( 1 + fold_change1 )))
+                );
+        return std::make_pair( fold_change1, p_value );
     }
 
     static double get_smallest_pvalue( auto& diff_vec )
@@ -124,7 +127,11 @@ class GeneTypeAnalyzerDifferential
         std::string out = "";
 
         for( auto& diff : diff_vec )
-            out += "\t" + std::to_string( diff.first ) + ":" + std::to_string( diff.second );
+        {
+            std::stringstream ss;
+            ss << diff.second;
+            out += "\t" + std::to_string( diff.first ) + ":" + ss.str();
+        }
 
         return out;
     }
