@@ -148,10 +148,12 @@ class GeneTypeAnalyzer
         for( std::size_t i = 0; i < biotype_list.size(); ++i )
         {
             auto& biotype = biotype_list[i];
-            monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
+            if( biotype == "rmsk" ) continue;
 
-            if( biotype == "rmsk" )
-                continue;
+            monitor.set_monitor( "\tBiotype Analysis - " + biotype, 6 );
+
+            monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
+            monitor.log( "\tBiotype Analysis - " + biotype, "Start" );
 
             if( biotype != "miRNA_mirtron" )
             {
@@ -170,6 +172,8 @@ class GeneTypeAnalyzer
             seed_match_table = std::vector< std::map< std::string, std::map< std::string, double >>>( bed_samples.size(), std::map< std::string, std::map< std::string, double >>());
             anno_mark = std::vector< std::map< std::string, std::string >>( bed_samples.size(), std::map< std::string, std::string >());
 
+            monitor.log( "\tBiotype Analysis - " + biotype, "Makeing Annotation Counting Table ..." );
+
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
                 smp_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &anno_mark, &genome_table, &biotype, this ] ()
@@ -183,8 +187,12 @@ class GeneTypeAnalyzer
             ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype );
             table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
 
+            std::size_t total_anno_counts = ano_len_idx.first.size();
+
             if( biotype == "miRNA_mirtron" )
                 algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+
+            monitor.log( "\tBiotype Analysis - " + biotype, "Doing Annotation Analysis ..." );
 
             algorithm::GeneTypeAnalyzerEachtype(
                       biotype
@@ -205,6 +213,8 @@ class GeneTypeAnalyzer
                     , max_anno_merge_size
                     , false
                     );
+
+            monitor.log( "\tBiotype Analysis - " + biotype, "Makeing Seed Counting Table ..." );
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
                     bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
@@ -228,6 +238,8 @@ class GeneTypeAnalyzer
             if( biotype == "miRNA_mirtron" )
                 algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
 
+            monitor.log( "\tBiotype Analysis - " + biotype, "Doing Seed Analysis ..." );
+
             algorithm::GeneTypeAnalyzerEachtype(
                       biotype
                     , output_path + ( biotype == "miRNA_mirtron" ? "miR_Seed/" : "Other_Seed/" )
@@ -247,6 +259,8 @@ class GeneTypeAnalyzer
                     , max_anno_merge_size
                     , true
                     );
+
+            monitor.log( "\tBiotype Analysis - " + biotype, "Complete with " + std::to_string( total_anno_counts ) + " annotations" );
         }
 
         if( output_annobed )
