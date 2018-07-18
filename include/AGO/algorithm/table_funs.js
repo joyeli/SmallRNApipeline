@@ -91,7 +91,7 @@ module.exports = {
 
                             count_arm++;
                             let seed = labelsSeed[ arm ][ j ];
-        
+
                             console.log(
                                     "<td style='text-align:center;font-family:Sans-serif;font-size:12px;"
                                     + ( count_type != 1 ? "" : "border-top:1px #666 solid;" )
@@ -102,11 +102,13 @@ module.exports = {
                                     + ( types[ type ] != "T_Tail" ? "" : "background-color:#cfc;" )
                                     + ( types[ type ] != "Other_Tail" ? "" : "background-color:#eee;" )
                                     + "'>"
-                                    + ( files[ file_name ][ arm ][ seed ][ types[ type ]][ i ] == 0
-                                        ? ""
-                                        : ( argv.log2
-                                            ? Math.log2( files[ file_name ][ arm ][ seed ][ types[ type ]][ i ] ).toPrecision(3)
-                                            : files[ file_name ][ arm ][ seed ][ types[ type ]][ i ] ))
+                                    + ( seed in files[ file_name ][ arm ]
+                                            ? ( files[ file_name ][ arm ][ seed ][ types[ type ]][ i ] == 0
+                                                ? ""
+                                                : ( argv.log2
+                                                    ? Math.log2( files[ file_name ][ arm ][ seed ][ types[ type ]][ i ] ).toPrecision(3)
+                                                    : files[ file_name ][ arm ][ seed ][ types[ type ]][ i ] ))
+                                            : "" )
                                     + "</td>"
                                     );
                         }
