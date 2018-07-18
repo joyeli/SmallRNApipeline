@@ -21,7 +21,7 @@ class GeneTypeAnalyzerDotplot
             )
     {
         std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
-        output << sample_name << "\tGMPM\tGM\tPM\tTailing％\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\n";
+        output << sample_name << "\tGMPM\tGM\tPM\tTailing_Ratio\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\n";
 
         double gm = 0.0;
         double pm = 0.0;
@@ -103,7 +103,7 @@ class GeneTypeAnalyzerDotplot
         }
 
         std::ofstream output( output_name + sample_name + ".tsv" );
-        output << sample_name << "\tGMPM\tGM\tPM\tTailing％\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\n";
+        output << sample_name << "\tGMPM\tGM\tPM\tTailing_Ratio\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\n";
 
         double gm = 0.0;
         double pm = 0.0;
@@ -204,9 +204,12 @@ class GeneTypeAnalyzerDotplot
         output << "        $ForceMax = $_POST['ForceMax'];" << "\n";
         output << "        $TSV_File1 = $_POST['TSV_File1'];" << "\n";
         output << "        $TSV_File2 = $_POST['TSV_File2'];" << "\n";
+        output << "        $Color_Low = $_POST['Color_Low'];" << "\n";
         output << "        $isAbundant = $_POST['isAbundant'];" << "\n";
+        output << "        $Color_Hight = $_POST['Color_Hight'];" << "\n";
         output << "" << "\n";
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
+        output << "        echo '<script src=https://code.jquery.com/jquery-3.3.1.min.js></script>';" << "\n";
         output << "" << "\n";
         output << "        echo '<style type=\"text/css\">" << "\n";
         output << "                div[id=\"Dot\"] {" << "\n";
@@ -252,7 +255,7 @@ class GeneTypeAnalyzerDotplot
         output << "        echo '<select name=GMPM onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '; if($GMPM=='') echo 'selected'; echo '>GM or PM</option>';" << "\n";
         output << "" << "\n";
-        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Tailing％', 'A_Tail', 'C_Tail', 'G_Tail', 'T_Tail', 'Other_Tail');" << "\n";
+        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Tailing_Ratio', 'A_Tail', 'C_Tail', 'G_Tail', 'T_Tail', 'Other_Tail');" << "\n";
         output << "" << "\n";
         output << "        $GMPM_Size = Count( $GMPM_List );" << "\n";
         output << "" << "\n";
@@ -274,7 +277,9 @@ class GeneTypeAnalyzerDotplot
         output << "            <input type='hidden' name='ForceMax' value='$ForceMax' />" << "\n";
         output << "            <input type='hidden' name='TSV_File1' value='$TSV_File1' />" << "\n";
         output << "            <input type='hidden' name='TSV_File2' value='$TSV_File2' />" << "\n";
+        output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+        output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
 
@@ -308,7 +313,9 @@ class GeneTypeAnalyzerDotplot
             output << "            <input type='hidden' name='ForceMax' value='$ForceMax' />" << "\n";
             output << "            <input type='hidden' name='TSV_File1' value='$TSV_File1' />" << "\n";
             output << "            <input type='hidden' name='TSV_File2' value='$TSV_File2' />" << "\n";
+            output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
             output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+            output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
             output << "            </form>\";" << "\n";
         }
         else
@@ -383,7 +390,9 @@ class GeneTypeAnalyzerDotplot
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='ForceMin' value='$ForceMin' />" << "\n";
         output << "            <input type='hidden' name='ForceMax' value='$ForceMax' />" << "\n";
+        output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+        output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
 
@@ -420,6 +429,8 @@ class GeneTypeAnalyzerDotplot
             output << "            <input type='hidden' name='ForceMax' value='$ForceMax' />" << "\n";
             output << "            <input type='hidden' name='TSV_File1' value='$TSV_File1' />" << "\n";
             output << "            <input type='hidden' name='TSV_File2' value='$TSV_File2' />" << "\n";
+            output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
+            output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
             output << "            </form>\";" << "\n";
         }
         else
@@ -457,7 +468,9 @@ class GeneTypeAnalyzerDotplot
         output << "            <input type='hidden' name='ForceMax' value='$ForceMax' />" << "\n";
         output << "            <input type='hidden' name='TSV_File1' value='$TSV_File1' />" << "\n";
         output << "            <input type='hidden' name='TSV_File2' value='$TSV_File2' />" << "\n";
+        output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+        output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--================== ForceMin&Max ====================-->" << "\n";
@@ -491,12 +504,21 @@ class GeneTypeAnalyzerDotplot
         output << "" << "\n";
         output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
         output << "" << "\n";
+        output << "#<!--==================== Colors =====================-->" << "\n";
+        output << "" << "\n";
+        output << "        if( $Color_Low == '' ) $Color_Low = 'WhiteSmoke';" << "\n";
+        output << "        if( $Color_Hight == '' ) $Color_Hight = 'Black';" << "\n";
+        output << "        " << "\n";
+        output << "        echo '<input type=text name=Color_Low size=8 value='.$Color_Low.' onfocus=\"{this.value=\\'\\';}\" />';" << "\n";
+        output << "        echo '<input type=text name=Color_Hight size=8 value='.$Color_Hight.' onfocus=\"{this.value=\\'\\';}\" />';" << "\n";
+        output << "        " << "\n";
+        output << "" << "\n";
         output << "#<!--================== Filter GMPM ====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<select name=FGMPM >';" << "\n";
         output << "        echo '<option '; if($FGMPM=='') echo 'selected'; echo ' value= >GM or PM</option>';" << "\n";
         output << "" << "\n";
-        output << "        $FGMPM_List = array('GMPM', 'GM', 'PM', 'Tailing％', 'A_Tail', 'C_Tail', 'G_Tail', 'T_Tail', 'Other_Tail');" << "\n";
+        output << "        $FGMPM_List = array('GMPM', 'GM', 'PM', 'Tailing_Ratio', 'A_Tail', 'C_Tail', 'G_Tail', 'T_Tail', 'Other_Tail');" << "\n";
         output << "        $FGMPM_Size = Count( $FGMPM_List );" << "\n";
         output << "" << "\n";
         output << "        For( $i = 0; $i < $FGMPM_Size; ++$i )" << "\n";
@@ -627,6 +649,9 @@ class GeneTypeAnalyzerDotplot
         output << "        $Ftemp = Fopen( $Temp, 'w' );" << "\n";
         output << "        $MaxAxis = 0;" << "\n";
         output << "" << "\n";
+        output << "        $minPPM = 1000000;" << "\n";
+        output << "        $maxPPM = 0;" << "\n";
+        output << "" << "\n";
         output << "        Fwrite( $Ftemp, 'miRNA'.\"\\t\"." << "\n";
         output << "                $Anno_Value1['miRNA'].\"\\t\"." << "\n";
         output << "                $Anno_Value2['miRNA'].\"\\t\"." << "\n";
@@ -659,11 +684,13 @@ class GeneTypeAnalyzerDotplot
         output << "                                $Filter_Array1[$uIndex[$i]].\"\\t\"." << "\n";
         output << "                                $Filter_Array2[$uIndex[$i]].\"\\n\" );" << "\n";
         output << "" << "\n";
-        output << "                if( $MaxAxis < $Anno_Value1[$uIndex[$i]] )" << "\n";
-        output << "                    $MaxAxis = $Anno_Value1[$uIndex[$i]];" << "\n";
+        output << "                if( $MaxAxis < $Anno_Value1[$uIndex[$i]] ) $MaxAxis = $Anno_Value1[$uIndex[$i]];" << "\n";
+        output << "                if( $MaxAxis < $Anno_Value2[$uIndex[$i]] ) $MaxAxis = $Anno_Value2[$uIndex[$i]];" << "\n";
         output << "" << "\n";
-        output << "                if( $MaxAxis < $Anno_Value2[$uIndex[$i]] )" << "\n";
-        output << "                    $MaxAxis = $Anno_Value2[$uIndex[$i]];" << "\n";
+        output << "                if( $maxPPM < $Filter_Array1[$uIndex[$i]] ) $maxPPM = $Filter_Array1[$uIndex[$i]];" << "\n";
+        output << "                if( $maxPPM < $Filter_Array2[$uIndex[$i]] ) $maxPPM = $Filter_Array2[$uIndex[$i]];" << "\n";
+        output << "                if( $minPPM > $Filter_Array1[$uIndex[$i]] ) $minPPM = $Filter_Array1[$uIndex[$i]];" << "\n";
+        output << "                if( $minPPM > $Filter_Array2[$uIndex[$i]] ) $minPPM = $Filter_Array2[$uIndex[$i]];" << "\n";
         output << "            }" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
@@ -689,6 +716,10 @@ class GeneTypeAnalyzerDotplot
         output << "            var margin = {top: 20, right: 60, bottom: 70, left: 60}" << "\n";
         output << "                width = svg_width - margin.left - margin.right," << "\n";
         output << "                height = svg_height - margin.top - margin.bottom;" << "\n";
+        output << "        " << "\n";
+        output << "            var color_map = d3.scale.linear()" << "\n";
+        output << "                .domain([ $minPPM, $maxPPM ])" << "\n";
+        output << "                .range([ '$Color_Low', '$Color_Hight' ]);" << "\n";
         output << "        " << "\n";
         output << "            var x = d3.scale.linear()" << "\n";
         output << "                .range([0, width]);" << "\n";
@@ -779,7 +810,7 @@ class GeneTypeAnalyzerDotplot
         output << "                    .attr('r', 5)" << "\n";
         output << "                    .attr('cx', function(d) { return x(d.$Sample_Name[1]); })" << "\n";
         output << "                    .attr('cy', function(d) { return y(d.$Sample_Name[0]); })" << "\n";
-        output << "                    .style('fill', function(d) { return color(d.species); })" << "\n";
+        output << "                    .style('fill', function(d) { return '$FGMPM' == 'Filter' ? color(d.species) : color_map( d.$Sample_Name[0]_F$FGMPM > d.$Sample_Name[1]_F$FGMPM ? d.$Sample_Name[0]_F$FGMPM : d.$Sample_Name[1]_F$FGMPM ); })" << "\n";
         output << "                    .on('mouseover', function(d) {" << "\n";
         output << "                        div.transition()" << "\n";
         output << "                            .duration(200)" << "\n";
