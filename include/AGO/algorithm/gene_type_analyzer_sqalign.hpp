@@ -523,7 +523,7 @@ class GeneTypeAnalyzerSqalign
         output << "            }" << "\n";
         output << "" << "\n";
         output << "            $PPM_Array [ $anno[0] ] = $anno[2];" << "\n";
-        output << "            $Total_PPM += $anno[2];" << "\n";
+        output << "            if( $Total_PPM < $anno[2] ) $Total_PPM = $anno[2];" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        Ksort( $Anno_Array );" << "\n";
