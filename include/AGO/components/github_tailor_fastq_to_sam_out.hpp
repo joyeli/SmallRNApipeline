@@ -79,7 +79,7 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
 
         // print_mem_usage( "Initialize Start" );
 
-        std::vector< std::string > genome_fastas( db.require_genome( db ));
+        db.require_genome( db );
         std::string tailor_index( db.require_tailor_index( db ));
 
         // print_mem_usage( "Genome Fasta Loading" );

@@ -146,7 +146,7 @@ class VcfMinAnnotationCohortsAnalysis : public engine::NamedComponent
     virtual void initialize() override
     {
         auto& db( this->mut_data_pool() );
-        std::vector< std::string > genome_fastas( db.require_genome( db ));
+        db.require_genome( db );
 
         if( db.exist_path_tag( "annotation_files" ))
         {

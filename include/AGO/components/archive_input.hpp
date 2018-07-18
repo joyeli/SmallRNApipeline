@@ -34,7 +34,7 @@ class ArchiveInput : public engine::NamedComponent
     virtual void initialize() override
     {
         auto& db( this->mut_data_pool() );
-        std::vector< std::string > genome_fastas( db.require_genome( db ));
+        db.require_genome( db );
     }
 
     virtual void start() override

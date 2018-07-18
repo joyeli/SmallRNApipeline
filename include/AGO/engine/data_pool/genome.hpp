@@ -34,9 +34,12 @@ class GenomeImpl
     }
 
     template< class DB >
-    void load_genome( std::vector< std::string >& genome_fastas, DB& db )
+    void load_genome_fasta( std::vector< std::string >& genome_fastas, std::string& genome_arc, DB& db )
     {
         auto& monitor = db.monitor();
+
+        std::ofstream archive_output( genome_arc );
+        boost::archive::binary_oarchive archive_out( archive_output );
 
         monitor.set_monitor( "Loading Genome", genome_fastas.size()+2 );
         monitor.log( "Loading Genome", "Start" );
@@ -60,12 +63,37 @@ class GenomeImpl
         }
 
         fa_parallel_pool.flush_pool();
+
+        archive_out & db.genome_table;
+        archive_output.close();
+
         monitor.log( "Loading Genome", "Complete" );
     }
 
     template< class DB >
-    std::vector< std::string > require_genome( DB& db )
+    void load_genome_arc( std::string& genome_arc, DB& db )
     {
+        auto& monitor = db.monitor();
+
+        monitor.set_monitor( "Loading Genome", 2 );
+        monitor.log( "Loading Genome", "Start" );
+
+        std::ifstream archive( genome_arc );
+        boost::archive::binary_iarchive archive_in( archive );
+
+        archive_in & db.genome_table;
+        archive.close();
+
+        monitor.log( "Loading Genome", "Complete" );
+    }
+
+    template< class DB >
+    void require_genome( DB& db )
+    {
+        bool is_archive = false;
+        std::string genome_arc = "";
+
+        std::vector< std::string > split;
         std::vector< std::string > genome_fastas;
 
         if( db.exist_path_tag( "genome_fasta" ))
@@ -74,19 +102,31 @@ class GenomeImpl
             {
                 genome_fastas.emplace_back( fasta.string() );
             }
+
+            boost::iter_split( split, genome_fastas[0], boost::algorithm::first_finder( "/" ));
+
+            for( std::size_t i = 0; i < split.size() -1; ++i )
+                genome_arc += split[i] + "/";
+
+            genome_arc += "genomes.arc";
+
+            if( boost::filesystem::exists( genome_arc ))
+                is_archive = true;
         }
         else
         {
-            throw std::runtime_error( "\"genome_fasta\" is not in the db pool" );
+            throw std::runtime_error( "\"genome_fasta\" or \"genome_arc\" are not in the db pool" );
         }
 
         if( !db.is_genome_load_ )
         {
-            db.load_genome( genome_fastas, db );
+            if( is_archive )
+                db.load_genome_arc( genome_arc, db );
+            else
+                db.load_genome_fasta( genome_fastas, genome_arc, db );
+
             db.is_genome_load_ = true;
         }
-        
-        return genome_fastas;
     }
 };
 
