@@ -15,14 +15,15 @@ class GeneTypeAnalyzerVolcano
     static void make_file_link( const std::string& p )
     {
         std::vector< std::string > list;
-        boost::filesystem::path path( p + "../Differential/" );
+        boost::filesystem::path path( p + "../DiffBar/" );
 
         for( auto& file : boost::filesystem::directory_iterator( path ))
-            list.emplace_back( file.path().filename().string() );
+            if( file.path().filename().string().substr( file.path().filename().string().length() -3, 3 ) != "php" )
+                list.emplace_back( file.path().filename().string() );
 
         for( auto& file : list )
             if( !boost::filesystem::exists( p + file ))
-                 boost::filesystem::create_symlink(( "../Differential/" + file ).c_str(), ( p + file ).c_str() );
+                 boost::filesystem::create_symlink(( "../DiffBar/" + file ).c_str(), ( p + file ).c_str() );
     }
 
     static void output_volcano_visualization( const std::string& output_name, const std::string& biotype )
