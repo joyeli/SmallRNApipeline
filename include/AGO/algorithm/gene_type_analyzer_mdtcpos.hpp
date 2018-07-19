@@ -113,7 +113,7 @@ class GeneTypeAnalyzerMDTCpos
 
     static void output_mdtcpos_visualization( const std::string& output_name )
     {
-        std::ofstream output( output_name + "MDTCpos.html" );
+        std::ofstream output( output_name + "index.html" );
 
         output << "<!DOCTYPE html>" << "\n";
         output << "<html>" << "\n";
