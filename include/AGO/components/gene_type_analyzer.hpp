@@ -123,7 +123,7 @@ class GeneTypeAnalyzer
         auto& bed_samples  = db.bed_samples;
         auto& genome_table = db.genome_table;
 
-        monitor.set_monitor( "Component GeneTypeAnalyzer", 5 + biotype_list.size() + ( output_annobed ? bed_samples.size() : 0 ));
+        monitor.set_monitor( "Component GeneTypeAnalyzer", 4 + biotype_list.size() + ( output_annobed ? bed_samples.size() : 0 ));
         monitor.log( "Component GeneTypeAnalyzer", "Start" );
 
 
@@ -140,7 +140,6 @@ class GeneTypeAnalyzer
         algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, sudo_count );
         algorithm::AnnoLengthIndexType ano_len_idx;
 
-        monitor.log( "Component GeneTypeAnalyzer", "Making ... Counting Table" );
         std::vector< std::vector< algorithm::CountingTableType >> anno_table_tail;
         std::vector< std::map< std::string, std::string >> anno_mark;
         std::vector< std::map< std::string, std::map< std::string, double >>> seed_match_table;

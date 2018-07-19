@@ -40,7 +40,8 @@ class GeneTypeAnalyzerLendist
                     if( anno_table.find( anno ) != anno_table.end() )
                     {
                         if( anno_table[ anno ].find( len ) != anno_table[ anno ].end() )
-                            output << "\t" << std::setprecision( 0 ) << std::fixed << anno_table[ anno ][ len ];
+                            // output << "\t" << std::setprecision( 0 ) << std::fixed << anno_table[ anno ][ len ];
+                            output << "\t" << anno_table[ anno ][ len ]; //XXX
                         else output << "\t0";
                     }
                     else output << "\t0";
