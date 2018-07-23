@@ -46,6 +46,15 @@ struct MDRawBed : public RawBedBase
         this->tail_length_ = (uint8_t)( tail.length() );
     }
 
+    void reducing_tail( const std::size_t& max_tail_len )
+    {
+        if( this->tail_length_ > max_tail_len )
+        {
+            tail = "";
+            this->tail_length_ = (uint8_t)( tail.length() );
+        }
+    }
+
     char get_strand( const MDSam<>& samin )
     {
         if( std::get<1>( samin.data ) == 0 )

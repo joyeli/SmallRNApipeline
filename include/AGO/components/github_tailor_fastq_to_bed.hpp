@@ -20,6 +20,7 @@ class GithubTailorFastqToBed : public engine::NamedComponent
 
     int align_min_length_;
     int align_min_multi_;
+    std::size_t max_tail_len;
 
     int task_number_;
     int thread_num_;
@@ -57,6 +58,7 @@ class GithubTailorFastqToBed : public engine::NamedComponent
         align_min_length_ = p.get_optional< int >( "align_min_length" ).value_or( 12 );
         align_min_multi_  = p.get_optional< int >( "align_min_multi"  ).value_or( 10 );
 
+        max_tail_len = p.get_optional< std::size_t >( "max_tail_len" ).value_or( 5 );
         task_number_ = p.get_optional< int >( "task_number" ).value_or( 50000 );
         thread_num_  = p.get_optional< int >( "thread_num" ).value_or( 16 );
 
@@ -272,6 +274,7 @@ class GithubTailorFastqToBed : public engine::NamedComponent
 
                 align_count.emplace( std::get< 0 >( sam_pair.second.data ));
                 md_rawbed = ago::format::MDRawBed( sam_pair.second );
+                md_rawbed.reducing_tail( max_tail_len );
 
                 if( md_rawbeds_map.find( md_rawbed ) == md_rawbeds_map.end() )
                     md_rawbeds_map[ md_rawbed ] = 0;

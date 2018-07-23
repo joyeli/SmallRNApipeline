@@ -11,9 +11,16 @@ class SamToBed : public engine::NamedComponent
 {
     using Base = engine::NamedComponent;
 
+    std::size_t max_tail_len;
+
   public:
 
     using Base::Base;
+
+    virtual void config_parameters( const bpt::ptree& p ) override
+    {
+        max_tail_len = p.get_optional< std::size_t >( "max_tail_len" ).value_or( 5 );
+    }
 
     virtual void initialize() override
     {
@@ -41,6 +48,7 @@ class SamToBed : public engine::NamedComponent
             for( auto& sam : sam_sample.second )
             {
                 md_rawbed = ago::format::MDRawBed( sam );
+                md_rawbed.reducing_tail( max_tail_len );
 
                 if( md_rawbeds_map.find( md_rawbed ) == md_rawbeds_map.end() )
                     md_rawbeds_map[ md_rawbed ] = 0;
