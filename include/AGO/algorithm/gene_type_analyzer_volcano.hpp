@@ -18,7 +18,7 @@ class GeneTypeAnalyzerVolcano
         boost::filesystem::path path( p + "../DiffBar/" );
 
         for( auto& file : boost::filesystem::directory_iterator( path ))
-            if( file.path().filename().string().substr( file.path().filename().string().length() -3, 3 ) != "php" )
+            if( file.path().filename().string().substr( 0, 20 ) == "LoadingDifferential_" )
                 list.emplace_back( file.path().filename().string() );
 
         for( auto& file : list )
@@ -428,7 +428,7 @@ class GeneTypeAnalyzerVolcano
         output << "                    .data(data)" << "\n";
         output << "                    .enter()" << "\n";
         output << "                    .append('a')" << "\n";
-        output << "                    .attr('xlink:href', function(d){ return '../SqAlign/index.php?TSV_File=$Sample1.tsv&Annotation_Select=' + d.miRNA.substring( 0, d.miRNA.length - " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? 11 : 8 ) << " )})" << "\n";
+        output << "                    .attr('xlink:href', function(d){ mirAnno = d.miRNA.split( '_' )[0]; return '../SqAlign/index.php?TSV_File=$Sample1.tsv&Annotation_Select=' + " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? "mirAnno.substring( 0, mirAnno.length -3 )" : "mirAnno" ) << "; })" << "\n";
         output << "                    .attr('target', '_blank')" << "\n";
         output << "                    .append('circle')" << "\n";
         output << "                    .attr('class', 'dot')" << "\n";
