@@ -1102,7 +1102,7 @@ class GeneTypeAnalyzerSqalign
         output << "                                annotation = annotation + '_' + anno_split[1]" << "\n";
         output << "                            }" << "\n";
         output << "" << "\n";
-        output << "                            annotation += annotation" << "\n";
+        output << "                            annotation = annotation" << "\n";
         output << "                                + ( MDseed == '' ? '' : ( '|' + MDseed ))" << "\n";
         output << "                                + ( RMSK == 'N' ? '' : '!' );" << "\n";
         output << "" << "\n";
