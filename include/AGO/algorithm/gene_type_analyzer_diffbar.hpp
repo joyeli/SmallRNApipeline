@@ -236,6 +236,7 @@ class GeneTypeAnalyzerDiffBar
         std::vector< std::pair< std::string, double >> total_vec;
         std::map< std::string, std::map< std::string, std::vector< double >>> mirlen_map;
         GeneTypeAnalyzerBarplot::make_table( bed_samples, ano_len_idx, anno_table_tail, token, total_vec, mirlen_map );
+        GeneTypeAnalyzerBarplot::sort_total_vec( total_vec );
 
         for( auto& len : ano_len_idx.second )
         {
@@ -247,6 +248,9 @@ class GeneTypeAnalyzerDiffBar
 
     static void output_diffbar_visualization( const std::string& output_name )
     {
+        if( !boost::filesystem::exists( output_name + "GMPM.tsv" ))
+             boost::filesystem::create_symlink( "../ValPlot/GMPM.tsv", ( output_name + "GMPM.tsv" ).c_str() );
+
         std::ofstream output( output_name + "index.php" );
 
         output << "<!DOCTYPE html>" << "\n";
@@ -449,29 +453,6 @@ class GeneTypeAnalyzerDiffBar
         output << "            <input type='hidden' name='Single_Anno' value='$Single_Anno' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
-        output << "#<!--================== Max NU ====================-->" << "\n";
-        output << "" << "\n";
-        output << "        if( $barPlotType != '100%' )" << "\n";
-        output << "        {" << "\n";
-        output << "            echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
-        output << "            echo '<input type=text onchange=this.form.submit(); name=MaxHight size=8 value=';" << "\n";
-        output << "            echo $MaxHight == '' ? 'MaxHight' : $MaxHight;" << "\n";
-        output << "            echo \" onfocus=\\\"{this.value='';}\\\">" << "\n";
-        output << "                <input type='hidden' name='Diff' value='$Diff' />" << "\n";
-        output << "                <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
-        output << "                <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
-        output << "                <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
-        output << "                <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
-        output << "                <input type='hidden' name='Top_miRNA' value='$Top_miRNA' />" << "\n";
-        output << "                <input type='hidden' name='Min_Length' value='$Min_Length' />" << "\n";
-        output << "                <input type='hidden' name='Max_Length' value='$Max_Length' />" << "\n";
-        output << "                <input type='hidden' name='Fold_Change' value='$Fold_Change' />" << "\n";
-        output << "                <input type='hidden' name='barPlotType' value='$barPlotType' />" << "\n";
-        output << "                <input type='hidden' name='Select_Type' value='$Select_Type' />" << "\n";
-        output << "                <input type='hidden' name='Single_Anno' value='$Single_Anno' />" << "\n";
-        output << "                </form>\";" << "\n";
-        output << "        }" << "\n";
-        output << "" << "\n";
         output << "#<!--================== Select Type ====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
@@ -576,7 +557,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        $Total_PPM = 100 / $Total_PPM;" << "\n";
         output << "" << "\n";
         output << "        $Single_Anno_List = Array();" << "\n";
-        output << "        $inFile = new SplFileObject( './'.$GMPM.'_20.tsv' );" << "\n";
+        output << "        $inFile = new SplFileObject( './GMPM.tsv' );" << "\n";
         output << "" << "\n";
         output << "        while( !$inFile->eof() )" << "\n";
         output << "        {" << "\n";
@@ -591,7 +572,7 @@ class GeneTypeAnalyzerDiffBar
         output << "" << "\n";
         output << "            $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
         output << "" << "\n";
-        output << "            if( Count( $Filtered_miRNAs ) != 0 && !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs ))" << "\n";
+        output << "            if( !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs ))" << "\n";
         output << "                continue;" << "\n";
         output << "" << "\n";
         output << "            Array_Push( $Single_Anno_List, $inFile_Line[0] );" << "\n";
@@ -624,7 +605,6 @@ class GeneTypeAnalyzerDiffBar
         output << "                <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "                <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
         output << "                <input type='hidden' name='MaxHight' value='$MaxHight' />" << "\n";
-        output << "                <input type='hidden' name='Top_miRNA' value='$Top_miRNA' />" << "\n";
         output << "                <input type='hidden' name='Min_Length' value='$Min_Length' />" << "\n";
         output << "                <input type='hidden' name='Max_Length' value='$Max_Length' />" << "\n";
         output << "                <input type='hidden' name='Fold_Change' value='$Fold_Change' />" << "\n";
@@ -647,25 +627,35 @@ class GeneTypeAnalyzerDiffBar
         output << "        }" << "\n";
         output << "        else $Single_Anno = '';" << "\n";
         output << "" << "\n";
+        output << "#<!--================== Max Hight ====================-->" << "\n";
+        output << "" << "\n";
+        output << "        if( $barPlotType != '100%' )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "            echo '<input type=text name=MaxHight size=8 value=';" << "\n";
+        output << "            echo $MaxHight == '' ? 'MaxHight' : $MaxHight;" << "\n";
+        output << "            echo ' onfocus=\"{this.value=\\'\\';}\" />';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
         output << "#<!--=================== MinMax Length =====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
         output << "" << "\n";
-        output << "        echo '<input type=text onchange=this.form.submit(); name=Min_Length size=3 value=';" << "\n";
+        output << "        echo '<input type=text name=Min_Length size=3 value=';" << "\n";
         output << "        echo $Min_Length == '' ? 'minLen' : $Min_Length;" << "\n";
         output << "        echo ' onfocus=\"{this.value=\\'\\';}\" />';" << "\n";
         output << "" << "\n";
-        output << "        echo '<input type=text onchange=this.form.submit(); name=Max_Length size=3 value=';" << "\n";
+        output << "        echo '<input type=text name=Max_Length size=3 value=';" << "\n";
         output << "        echo $Max_Length == '' ? 'maxLen' : $Max_Length;" << "\n";
         output << "        echo ' onfocus=\"{this.value=\\'\\';}\" />';" << "\n";
         output << "" << "\n";
         output << "#<!--=================== Filter Fold Pvalue =====================-->" << "\n";
         output << "        " << "\n";
-        output << "        echo '<input type=text onchange=this.form.submit(); name=Fold_Change size=10 value=';" << "\n";
+        output << "        echo '<input type=text name=Fold_Change size=10 value=';" << "\n";
         output << "        echo $Fold_Change == '' || $Fold_Change == '> |Log2( Fold )|'? '\"> |Log2( Fold )|\"' : $Fold_Change;" << "\n";
         output << "        echo ' onfocus=\"{this.value=\\'\\';}\" />';" << "\n";
         output << "" << "\n";
-        output << "        echo '<input type=text onchange=this.form.submit(); name=P_Value size=5 value=';" << "\n";
+        output << "        echo '<input type=text name=P_Value size=5 value=';" << "\n";
         output << "        echo $P_Value == '' || $P_Value == '< P-Value' ? '\"< P-Value\"' : $P_Value;" << "\n";
         output << "        echo ' onfocus=\"{this.value=\\'\\';}\" />';" << "\n";
         output << "" << "\n";
@@ -674,7 +664,6 @@ class GeneTypeAnalyzerDiffBar
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
-        output << "            <input type='hidden' name='MaxHight' value='$MaxHight' />" << "\n";
         output << "            <input type='hidden' name='Top_miRNA' value='$Top_miRNA' />" << "\n";
         output << "            <input type='hidden' name='barPlotType' value='$barPlotType' />" << "\n";
         output << "            <input type='hidden' name='Select_Type' value='$Select_Type' />" << "\n";
@@ -704,6 +693,9 @@ class GeneTypeAnalyzerDiffBar
         output << "" << "\n";
         output << "#<!--================== Read Multi TSV ====================-->" << "\n";
         output << "" << "\n";
+        output << "        if( Count( $Filtered_miRNAs ) == 0 )" << "\n";
+        output << "            echo '<h3>No Data</h3><br/>';" << "\n";
+        output << "" << "\n";
         output << "        $MaxValue = 0;" << "\n";
         output << "" << "\n";
         output << "        Foreach( $TSV_File as $idx => $tsv )" << "\n";
@@ -727,7 +719,7 @@ class GeneTypeAnalyzerDiffBar
         output << "                $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
         output << "" << "\n";
         output << "                if( $Single_Anno != '' && $inFile_Line[0] != $Single_Anno ) continue;" << "\n";
-        output << "                if( Count( $Filtered_miRNAs ) != 0 && !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs )) continue;" << "\n";
+        output << "                if( !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs )) continue;" << "\n";
         output << "" << "\n";
         output << "                For( $i = 1; $i < Count( $inFile_Line ); ++$i )" << "\n";
         output << "                    if( $inFile_Line[$i] >= $MaxValue ) $MaxValue = $inFile_Line[$i];" << "\n";
@@ -766,7 +758,7 @@ class GeneTypeAnalyzerDiffBar
         output << "                $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
         output << "" << "\n";
         output << "                if( $Single_Anno != '' && $inFile_Line[0] != $Single_Anno ) continue;" << "\n";
-        output << "                if( Count( $Filtered_miRNAs ) != 0 && !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs )) continue;" << "\n";
+        output << "                if( !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs )) continue;" << "\n";
         output << "" << "\n";
         output << "                if( $barPlotType != 'ppm' && $barPlotType != 'log2' )" << "\n";
         output << "                {" << "\n";
