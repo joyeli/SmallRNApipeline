@@ -7,25 +7,20 @@ namespace algorithm {
 
 class GeneTypeAnalyzerLendist
 {
-    static bool is_trimmed;
-
   public:
 
     GeneTypeAnalyzerLendist()
     {}
 
-    static void output_lendist(
+    static void output_lendist_isomirs(
             const std::string& output_name,
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< CountingTableType >& anno_table_tail, // 0-A / 1-C / 2-G / 3-T / 4-O / 5-GM
             std::map< std::string, std::string >& anno_mark,
-            const std::string& sample_name,
-            const bool trimming = false
+            const std::string& sample_name
             )
     {
-        is_trimmed = trimming;
-
-        std::ofstream output( output_name + sample_name + ( trimming ? "-trimmed" : "" ) + ".tsv" );
+        std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
         output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\tGM";
 
         for( auto& anno : ano_len_idx.first )
@@ -52,16 +47,108 @@ class GeneTypeAnalyzerLendist
         output.close();
     }
 
+    static void output_lendist_trimmed(
+            const std::string& output_name,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< CountingTableType >& anno_table_tail, // 0-A / 1-C / 2-G / 3-T / 4-O / 5-GM
+            std::map< std::string, std::string >& anno_mark,
+            const std::string& sample_name
+            )
+    {
+        std::ofstream output( output_name + sample_name + "-trimmed.tsv" );
+        output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\tGM";
+
+        for( auto& anno : ano_len_idx.first )
+        {
+            for( auto& len : ano_len_idx.second )
+            {
+                output << "\n" << anno << ( anno_mark.find( anno ) != anno_mark.end() ? anno_mark[ anno ] : "" );
+                output << ":" << len;
+
+                for( auto& anno_table : anno_table_tail )
+                {
+                    if( anno_table.find( anno ) != anno_table.end() )
+                    {
+                        if( anno_table[ anno ].find( len ) != anno_table[ anno ].end() )
+                            output << "\t" << std::setprecision( 0 ) << std::fixed << anno_table[ anno ][ len ];
+                        else output << "\t0";
+                    }
+                    else output << "\t0";
+                }
+            }
+        }
+
+        output << "\n";
+        output.close();
+    }
+
+    static void output_lendist(
+            const std::string& output_name,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< CountingTableType >& anno_table_tail, // 0-A / 1-C / 2-G / 3-T / 4-O / 5-GM
+            std::map< std::string, std::string >& anno_mark,
+            const std::string& sample_name
+            )
+    {
+        std::ofstream output( output_name + sample_name + ".tsv" );
+        output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\tGM";
+
+        std::vector< std::string > split;
+        std::set< std::string > anno_mark_set;
+        std::set< std::string > anno_names;
+
+        std::vector< CountingTableType > annos = std::vector< CountingTableType >( anno_table_tail.size(), CountingTableType() );
+
+        for( auto& anno : ano_len_idx.first )
+        {
+            boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
+            anno_names.emplace( split[0] );
+
+            if( anno_mark.find( anno ) != anno_mark.end() )
+                if( anno_mark[ anno ].at( anno_mark[ anno ].length() -1 ) == '!' )
+                    anno_mark_set.emplace( split[0] );
+
+            for( auto& len : ano_len_idx.second )
+            {
+                for( std::size_t i = 0; i < anno_table_tail.size(); ++i )
+                {
+                    if( annos[i][ split[0] ].find( len ) == annos[i][ split[0] ].end() )
+                        annos[i][ split[0] ][ len ] = 0.0;
+
+                    annos[i][ split[0] ][ len ] += anno_table_tail[i][ anno ][ len ];
+                }
+            }
+        }
+
+        for( auto& anno : anno_names )
+        {
+            for( auto& len : ano_len_idx.second )
+            {
+                output
+                    << "\n" << anno << ( anno_mark_set.find( anno ) != anno_mark_set.end() ? "!" : "" )
+                    << ":" << len;
+
+                for( auto& anno_table : annos )
+                {
+                    if( anno_table.find( anno ) != anno_table.end() )
+                    {
+                        if( anno_table[ anno ].find( len ) != anno_table[ anno ].end() )
+                            output << "\t" << std::setprecision( 0 ) << std::fixed << anno_table[ anno ][ len ];
+                        else output << "\t0";
+                    }
+                    else output << "\t0";
+                }
+            }
+        }
+
+        output << "\n";
+        output.close();
+    }
+
     static void output_lendist_visualization( const std::string& output_name, const bool& isSeed, const bool is_biotype = false )
     {
         std::ofstream output( output_name + "index.php" );
         bool trimming = false;
-
-        if( is_trimmed )
-        {
-            trimming = true;
-            is_trimmed = false;
-        }
 
         output << "<!DOCTYPE html>" << "\n";
         output << "<html>" << "\n";
@@ -72,6 +159,7 @@ class GeneTypeAnalyzerLendist
         output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
         output << "" << "\n";
         output << "        $ForceY = $_POST['ForceY'];" << "\n";
+        output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $Trimmed = $_POST['Trimmed'];" << "\n";
         output << "        $PPMFilter = $_POST['PPMFilter'];" << "\n";
         output << "" << "\n";
@@ -79,9 +167,14 @@ class GeneTypeAnalyzerLendist
         output << "        $annotation_select = $_GET['annotation_select'];" << "\n";
         output << "" << "\n";
         output << "        if( $_GET['TSV_File'] == '' ) $TSV_File = $_POST['TSV_File'];" << "\n";
-        output << "        if( $_GET['annotation_select'] == '' ) $annotation_select = $_POST['annotation_select'];" << "\n";
-        output << "        if( $_GET['annotation_select'] == '' ) $isAbundant = $_POST['isAbundant'];" << "\n";
-        output << "        else $isAbundant = 'AllAnnotations';" << "\n";
+        output << "        if( $_GET['annotation_select'] != '' )" << "\n";
+        output << "        {" << "\n";
+        output << "            $IsomiRs = 'Yes';" << "\n";
+        output << "            $isAbundant = 'AllAnnotations';" << "\n";
+        output << "        }" << "\n";
+        output << "        else $annotation_select = $_POST['annotation_select'];" << "\n";
+        output << "" << "\n";
+        output << "        $isAbundant = $IsomiRs == 'No' ? 'AllAnnotations' : $_POST['isAbundant'];" << "\n";
         output << "" << "\n";
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
         output << "        echo '<script src=https://code.jquery.com/jquery-3.3.1.min.js ></script>';" << "\n";
@@ -125,6 +218,41 @@ class GeneTypeAnalyzerLendist
             output << "" << "\n";
         }
 
+        if( !isSeed && !is_biotype )
+        {
+            output << "#<!--================== IsomiRs =====================-->" << "\n";
+            output << "                " << "\n";
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+            output << "" << "\n";
+            output << "        echo '<select name=IsomiRs onchange=this.form.submit();>';" << "\n";
+            output << "        echo '<option '; if($IsomiRs=='') echo 'selected'; echo '>Show IsomiRs?</option>';" << "\n";
+            output << "" << "\n";
+            output << "        $miR_List = array('Yes', 'No');" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 0; $i < Count( $miR_List ); ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            echo '<option value='.$miR_List[$i].' ';" << "\n";
+            output << "" << "\n";
+            output << "            if( $IsomiRs == $miR_List[$i] )" << "\n";
+            output << "                echo 'selected ';" << "\n";
+            output << "" << "\n";
+            output << "            echo '>' . $miR_List[$i] . '</option>';" << "\n";
+            output << "        }" << "\n";
+            output << "" << "\n";
+            output << "        echo \"</select>" << "\n";
+            output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+            output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
+            output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+            output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
+            output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
+            output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+            output << "            </form>\";" << "\n";
+        }
+        else
+        {
+            output << "        $IsomiRs == 'No';" << "\n";
+        }
+
         output << "#<!--================== TSV File ====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
@@ -137,21 +265,44 @@ class GeneTypeAnalyzerLendist
         output << "        $List_Size = Count( $TSV_List );" << "\n";
         output << "        $TSV_List_Temp = array();" << "\n";
         output << "" << "\n";
-        output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n";
-        output << "        {" << "\n";
-        output << "            $TSV_Temp = Explode( '-trimmed', $TSV_List[$i] );" << "\n";
-        output << "" << "\n";
-        output << "            if( $Trimmed == 'Yes' )" << "\n";
-        output << "            {" << "\n";
-        output << "                if( Count( $TSV_Temp ) > 1 )" << "\n";
-        output << "                    Array_Push( $TSV_List_Temp, $TSV_Temp[0] );" << "\n";
-        output << "            }" << "\n";
-        output << "            else" << "\n";
-        output << "            {" << "\n";
-        output << "                if( Count( $TSV_Temp ) == 1 )" << "\n";
-        output << "                    Array_Push( $TSV_List_Temp, Substr( $TSV_Temp[0], 0, Strlen( $TSV_Temp[0] ) - 4 ));" << "\n";
-        output << "            }" << "\n";
-        output << "        }" << "\n";
+
+        if( is_biotype )
+        {
+            output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            $TSV_Temp = Explode( '-trimmed', $TSV_List[$i] );" << "\n";
+            output << "" << "\n";
+            output << "            if( $Trimmed == 'Yes' )" << "\n";
+            output << "            {" << "\n";
+            output << "                if( Count( $TSV_Temp ) > 1 )" << "\n";
+            output << "                    Array_Push( $TSV_List_Temp, $TSV_Temp[0] );" << "\n";
+            output << "            }" << "\n";
+            output << "            else" << "\n";
+            output << "            {" << "\n";
+            output << "                if( Count( $TSV_Temp ) == 1 )" << "\n";
+            output << "                    Array_Push( $TSV_List_Temp, Substr( $TSV_Temp[0], 0, Strlen( $TSV_Temp[0] ) - 4 ));" << "\n";
+            output << "            }" << "\n";
+            output << "        }" << "\n";
+        }
+        else
+        {
+            output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            $TSV_Temp = Explode( '-isomiRs', $TSV_List[$i] );" << "\n";
+            output << "" << "\n";
+            output << "            if( $IsomiRs == 'Yes' )" << "\n";
+            output << "            {" << "\n";
+            output << "                if( Count( $TSV_Temp ) > 1 )" << "\n";
+            output << "                    Array_Push( $TSV_List_Temp, $TSV_Temp[0] );" << "\n";
+            output << "            }" << "\n";
+            output << "            else" << "\n";
+            output << "            {" << "\n";
+            output << "                if( Count( $TSV_Temp ) == 1 )" << "\n";
+            output << "                    Array_Push( $TSV_List_Temp, Substr( $TSV_Temp[0], 0, Strlen( $TSV_Temp[0] ) - 4 ));" << "\n";
+            output << "            }" << "\n";
+            output << "        }" << "\n";
+        }
+
         output << "" << "\n";
         output << "        $TSV_List = $TSV_List_Temp;" << "\n";
         output << "        $List_Size = Count( $TSV_List );" << "\n";
@@ -166,10 +317,20 @@ class GeneTypeAnalyzerLendist
         output << "            echo '>'.$TSV_List[$i].'</option>';" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
-        output << "        $TSV_File_Temp = $TSV_File.( $Trimmed == 'Yes' ? '-trimmed.tsv' : '.tsv' );" << "\n";
+
+        if( is_biotype )
+        {
+            output << "        $TSV_File_Temp = $TSV_File.( $Trimmed == 'Yes' ? '-trimmed.tsv' : '-isomiRs.tsv' );" << "\n";
+        }
+        else
+        {
+            output << "        $TSV_File_Temp = $TSV_File.( $IsomiRs == 'Yes' ? '-isomiRs.tsv' : '.tsv' );" << "\n";
+        }
+
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
         output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
@@ -201,6 +362,7 @@ class GeneTypeAnalyzerLendist
             output << "" << "\n";
             output << "        echo \"</select>" << "\n";
             output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+            output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
             output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
             output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -228,6 +390,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
@@ -300,6 +463,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
@@ -332,6 +496,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
         output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
@@ -462,8 +627,6 @@ class GeneTypeAnalyzerLendist
         output.close();
     }
 };
-
-bool GeneTypeAnalyzerLendist::is_trimmed( false );
 
 } // end of namespace algorithm
 } // end of namespace ago
