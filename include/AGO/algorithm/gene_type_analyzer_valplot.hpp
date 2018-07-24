@@ -228,9 +228,13 @@ class GeneTypeAnalyzerValplot
             output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n"; 
             output << "            </form>\";" << "\n";
         }
+        else if( is_biotype )
+        {
+            output << "        $IsomiRs = 'Yes';" << "\n";
+        }
         else
         {
-            output << "        $IsomiRs == 'No';" << "\n";
+            output << "        $IsomiRs = 'No';" << "\n";
         }
 
         output << "" << "\n"; 
@@ -278,7 +282,7 @@ class GeneTypeAnalyzerValplot
 
         if( is_biotype )
         {
-            output << "        $TSV_File_Temp = $TSV_File.( $Trimmed == 'Yes' ? '-trimmed.tsv' : '-isomiRs.tsv' );" << "\n";
+            output << "        $TSV_File_Temp = $TSV_File.'-isomiRs.tsv';" << "\n";
         }
         else
         {
