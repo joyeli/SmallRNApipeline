@@ -145,7 +145,7 @@ class GeneTypeAnalyzerValplot
         output.close();
     }
 
-    static void output_valplot_visualization( const std::string& output_name, const bool& isSeed )
+    static void output_valplot_visualization( const std::string& output_name, const bool& isSeed, const bool& is_biotype = false )
     {
         std::ofstream output( output_name + "index.php" );
 
@@ -163,7 +163,8 @@ class GeneTypeAnalyzerValplot
         output << "        $TSV_File = $_POST['TSV_File'];" << "\n"; 
         output << "        $FilterMin = $_POST['FilterMin'];" << "\n"; 
         output << "        $FilterMax = $_POST['FilterMax'];" << "\n"; 
-        output << "        $isAbundant = $_POST['isAbundant'];" << "\n"; 
+        output << "" << "\n";
+        output << "        $isAbundant = $IsomiRs == 'No' ? 'AllAnnotation' : $_POST['isAbundant'];" << "\n";
         output << "" << "\n"; 
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n"; 
         output << "        echo '<script src=http://code.jquery.com/jquery-1.7.min.js ></script>';" << "\n"; 
@@ -196,7 +197,7 @@ class GeneTypeAnalyzerValplot
         output << "            </style>';" << "\n"; 
         output << "" << "\n"; 
 
-        if( !isSeed )
+        if( !is_biotype && !isSeed )
         {
             output << "#<!--================== IsomiRs =====================-->" << "\n";
             output << "                " << "\n";
@@ -274,7 +275,16 @@ class GeneTypeAnalyzerValplot
         output << "            echo '>'.$TSV_List[$i].'</option>';" << "\n"; 
         output << "        }" << "\n"; 
         output << "" << "\n";
-        output << "        $TSV_File_Temp = $TSV_File.( $IsomiRs == 'Yes' ? '-isomiRs.tsv' : '.tsv' );" << "\n";
+
+        if( is_biotype )
+        {
+            output << "        $TSV_File_Temp = $TSV_File.( $Trimmed == 'Yes' ? '-trimmed.tsv' : '-isomiRs.tsv' );" << "\n";
+        }
+        else
+        {
+            output << "        $TSV_File_Temp = $TSV_File.( $IsomiRs == 'Yes' ? '-isomiRs.tsv' : '.tsv' );" << "\n";
+        }
+
         output << "" << "\n";
         output << "        echo \"</select>" << "\n"; 
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
@@ -286,37 +296,46 @@ class GeneTypeAnalyzerValplot
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n"; 
         output << "            </form>\";" << "\n"; 
         output << "" << "\n"; 
-        output << "#<!--================== is_Abundant ====================-->" << "\n"; 
-        output << "" << "\n"; 
-        output << "        if( $IsomiRs == 'No' ) $isAbundant = 'AllAnnotation';" << "\n"; 
-        output << "" << "\n"; 
-        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n"; 
-        output << "        echo '<select name=isAbundant onchange=this.form.submit();>';" << "\n"; 
-        output << "        " << "\n"; 
-        output << "        $isAbundant_List = array('MostAbundant', 'AllAnnotation');" << "\n"; 
-        output << "        $isAbundant_Size = Count( $isAbundant_List );" << "\n"; 
-        output << "        if( $isAbundant == '' )" << "\n"; 
-        output << "            $isAbundant = 'MostAbundant';" << "\n"; 
-        output << "        " << "\n"; 
-        output << "        For( $i = 0; $i < $isAbundant_Size; ++$i )" << "\n"; 
-        output << "        {" << "\n"; 
-        output << "            echo '<option value='.$isAbundant_List[$i].' ';" << "\n"; 
-        output << "        " << "\n"; 
-        output << "            if( $isAbundant == $isAbundant_List[$i] )" << "\n"; 
-        output << "                echo 'selected ';" << "\n"; 
-        output << "        " << "\n"; 
-        output << "            echo '>' . $isAbundant_List[$i] . '</option>';" << "\n"; 
-        output << "        }" << "\n"; 
-        output << "" << "\n"; 
-        output << "        echo \"</select>" << "\n"; 
-        output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
-        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
-        output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
-        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
-        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
-        output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
-        output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
-        output << "            </form>\";" << "\n"; 
+
+        if( !is_biotype && !isSeed )
+        {
+            output << "#<!--================== is_Abundant ====================-->" << "\n"; 
+            output << "" << "\n"; 
+            output << "        if( $IsomiRs == 'No' ) $isAbundant = 'AllAnnotation';" << "\n"; 
+            output << "" << "\n"; 
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n"; 
+            output << "        echo '<select name=isAbundant onchange=this.form.submit();>';" << "\n"; 
+            output << "        " << "\n"; 
+            output << "        $isAbundant_List = array('MostAbundant', 'AllAnnotation');" << "\n"; 
+            output << "        $isAbundant_Size = Count( $isAbundant_List );" << "\n"; 
+            output << "        if( $isAbundant == '' )" << "\n"; 
+            output << "            $isAbundant = 'MostAbundant';" << "\n"; 
+            output << "        " << "\n"; 
+            output << "        For( $i = 0; $i < $isAbundant_Size; ++$i )" << "\n"; 
+            output << "        {" << "\n"; 
+            output << "            echo '<option value='.$isAbundant_List[$i].' ';" << "\n"; 
+            output << "        " << "\n"; 
+            output << "            if( $isAbundant == $isAbundant_List[$i] )" << "\n"; 
+            output << "                echo 'selected ';" << "\n"; 
+            output << "        " << "\n"; 
+            output << "            echo '>' . $isAbundant_List[$i] . '</option>';" << "\n"; 
+            output << "        }" << "\n"; 
+            output << "" << "\n"; 
+            output << "        echo \"</select>" << "\n"; 
+            output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
+            output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
+            output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+            output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+            output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
+            output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
+            output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
+            output << "            </form>\";" << "\n"; 
+        }
+        else
+        {
+            output << "        $isAbundant == 'AllAnnotation';" << "\n";
+        }
+
         output << "" << "\n"; 
         output << "#<!--================== isLog ====================-->" << "\n"; 
         output << "" << "\n"; 
