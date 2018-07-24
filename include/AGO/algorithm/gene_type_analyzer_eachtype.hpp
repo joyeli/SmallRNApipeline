@@ -236,6 +236,19 @@ class GeneTypeAnalyzerEachtype
             if( is_time_log ) std::cerr << "ValPlot: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
         });
 
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+        {
+            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+
+            GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
+            GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
+            GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
+            GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
+
+            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+            if( is_time_log ) std::cerr << "Ranking : " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+        });
+
         if( !isSeed )
         {
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
@@ -250,21 +263,20 @@ class GeneTypeAnalyzerEachtype
                 std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                 if( is_time_log ) std::cerr << "ValPlot_isomirs: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
             });
+
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
+            {
+                std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+
+                GeneTypeAnalyzerRanking::output_ranking_isomirs( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
+                GeneTypeAnalyzerRanking::output_ranking_isomirs( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
+                GeneTypeAnalyzerRanking::output_ranking_isomirs( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
+                GeneTypeAnalyzerRanking::output_ranking_isomirs( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
+
+                std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+                if( is_time_log ) std::cerr << "Ranking_isomirs : " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+            });
         }
-
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
-        {
-            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-
-            GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
-            GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
-            GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
-            GeneTypeAnalyzerRanking::output_ranking( output_path + ranking, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
-
-            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-            if( is_time_log ) std::cerr << "Ranking : " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
-        });
-
 
         parallel_pool.job_post([ &biotype, &isSeed, this ] ()
         {

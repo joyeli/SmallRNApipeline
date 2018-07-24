@@ -11,7 +11,7 @@ class GeneTypeAnalyzerRanking
     GeneTypeAnalyzerRanking()
     {}
 
-    static void output_ranking(
+    static void output_ranking_isomirs(
             const std::string& output_name,
             const std::vector< BedSampleType >& bed_samples,
             const AnnoLengthIndexType& ano_len_idx,
@@ -20,7 +20,7 @@ class GeneTypeAnalyzerRanking
             const std::string& token
             )
     {
-        std::ofstream output( output_name + token + ".tsv" );
+        std::ofstream output( output_name + token + "-isomiRs.tsv" );
         output << "Annotation";
 
         std::string anno_name;
@@ -81,6 +81,103 @@ class GeneTypeAnalyzerRanking
         for( std::size_t idx = 0; idx < rank_temps[0].size(); ++idx )
         {
             output << "\n" << anno_names[ rank_temps[0][ idx ].first ] << std::setprecision( 0 ) << std::fixed;
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+                output << "\t" << rank_temps[ smp ][ idx ].second;
+        }
+
+        output << "\n";
+        output.close();
+    }
+
+    static void output_ranking(
+            const std::string& output_name,
+            const std::vector< BedSampleType >& bed_samples,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< std::vector< CountingTableType >>& anno_table_tail,
+            std::vector< std::map< std::string, std::string >>& anno_mark,
+            const std::string& token
+            )
+    {
+        std::ofstream output( output_name + token + ".tsv" );
+        output << "Annotation";
+
+        std::string anno_name;
+        std::size_t index = 0;
+
+        std::vector< std::string > split;
+        std::vector< std::string > anno_names;
+        std::set< std::string > anno_mark_set;
+
+        std::map< std::string, std::vector< std::pair< double, double >>> annos;
+        std::vector< std::vector< std::pair< std::size_t, double >>> rank_temps( anno_table_tail.size() );
+
+        double value;
+
+        for( auto& anno : ano_len_idx.first )
+        {
+            boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
+
+            if( annos.find( split[0] ) == annos.end() )
+                annos[ split[0] ] = std::vector< std::pair< double, double >>( bed_samples.size(), { 0.0, 0.0 });
+
+            if( anno_mark[0].find( anno ) != anno_mark[0].end() )
+                if( anno_mark[0][ anno ].at( anno_mark[0][ anno ].length() -1 ) == '!' )
+                    anno_mark_set.emplace( split[0] );
+
+            for( std::size_t smp = 0; smp < anno_table_tail.size(); ++smp )
+            {
+                if( token != "PM" )
+                {
+                    if( anno_table_tail[ smp ][5].find( anno ) != anno_table_tail[ smp ][5].end() )
+                        for( auto& len : ano_len_idx.second )
+                        {
+                            if( anno_table_tail[ smp ][5][ anno ].find( len ) != anno_table_tail[ smp ][5][ anno ].end() )
+                                annos[ split[0] ][ smp ].first += anno_table_tail[ smp ][5][ anno ][ len ];
+                        }
+                }
+
+                if( token != "GM" )
+                {
+                    for( std::size_t i = 0; i < 5; i++ )
+                    {
+                        if( anno_table_tail[ smp ][i].find( anno ) != anno_table_tail[ smp ][i].end() )
+                            for( auto& len : ano_len_idx.second )
+                            {
+                                if( anno_table_tail[ smp ][i][ anno ].find( len ) != anno_table_tail[ smp ][i][ anno ].end() )
+                                    annos[ split[0] ][ smp ].second += anno_table_tail[ smp ][i][ anno ][ len ];
+                            }
+                    }
+                }
+            }
+        }
+
+        for( auto& anno : annos )
+        {
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                value = ( token == "GMPM" ? ( anno.second[ smp ].first + anno.second[ smp ].second )
+                            : ( token == "GM" ? anno.second[ smp ].first
+                                : ( token == "PM" ? anno.second[ smp ].second
+                                    : (( anno.second[ smp ].first + anno.second[ smp ].second ) < 1 ? 0
+                                        : ( anno.second[ smp ].second * 100 / ( anno.second[ smp ].first + anno.second[ smp ].second ))))));
+
+                rank_temps[ smp ].emplace_back( std::make_pair( index, value ));
+            }
+
+            index++;
+            anno_names.emplace_back( anno.first );
+        }
+
+        sort_pair( rank_temps );
+        make_rank( rank_temps );
+        reordring( rank_temps );
+
+        for( auto& smp : bed_samples ) output << "\t" << smp.first;
+        for( std::size_t idx = 0; idx < rank_temps[0].size(); ++idx )
+        {
+            output << "\n" << anno_names[ rank_temps[0][ idx ].first ] << std::setprecision( 0 ) << std::fixed
+                << ( anno_mark_set.find( anno_names[ rank_temps[0][ idx ].first ] ) != anno_mark_set.end() ? "!" : "" );
+
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
                 output << "\t" << rank_temps[ smp ][ idx ].second;
         }
