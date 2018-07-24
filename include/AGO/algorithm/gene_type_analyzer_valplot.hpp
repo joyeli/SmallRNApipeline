@@ -13,7 +13,7 @@ class GeneTypeAnalyzerValplot
     GeneTypeAnalyzerValplot()
     {}
 
-    static void output_valplot(
+    static void output_valplot_isomirs(
             const std::string& output_name,
             const std::vector< BedSampleType >& bed_samples,
             const AnnoLengthIndexType& ano_len_idx,
@@ -22,7 +22,7 @@ class GeneTypeAnalyzerValplot
             const std::string& token
             )
     {
-        std::ofstream output( output_name + token + ".tsv" );
+        std::ofstream output( output_name + token + "-isomiRs.tsv" );
         output << "Annotation";
 
         double gm = 0.0;
@@ -70,7 +70,82 @@ class GeneTypeAnalyzerValplot
         output.close();
     }
 
-    static void output_valplot_visualization( const std::string& output_name )
+    static void output_valplot(
+            const std::string& output_name,
+            const std::vector< BedSampleType >& bed_samples,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< std::vector< CountingTableType >>& anno_table_tail,
+            std::vector< std::map< std::string, std::string >>& anno_mark,
+            const std::string& token
+            )
+    {
+        std::ofstream output( output_name + token + ".tsv" );
+        output << "Annotation";
+
+        std::vector< std::string > split;
+        std::set< std::string > anno_mark_set;
+        std::map< std::string, std::vector< std::pair< double, double >>> annos;
+
+        for( auto& anno : ano_len_idx.first )
+        {
+            boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
+
+            if( annos.find( split[0] ) == annos.end() )
+                annos[ split[0] ] = std::vector< std::pair< double, double >>( bed_samples.size(), { 0.0, 0.0 });
+
+            if( anno_mark[0].find( anno ) != anno_mark[0].end() )
+                if( anno_mark[0][ anno ].at( anno_mark[0][ anno ].length() -1 ) == '!' )
+                    anno_mark_set.emplace( split[0] );
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                if( token != "PM" )
+                {
+                    if( anno_table_tail[ smp ][5].find( anno ) != anno_table_tail[ smp ][5].end() )
+                        for( auto& len : ano_len_idx.second )
+                        {
+                            if( anno_table_tail[ smp ][5][ anno ].find( len ) != anno_table_tail[ smp ][5][ anno ].end() )
+                                annos[ split[0] ][ smp ].first += anno_table_tail[ smp ][5][ anno ][ len ];
+                        }
+                }
+
+                if( token != "GM" )
+                {
+                    for( std::size_t i = 0; i < 5; i++ )
+                    {
+                        if( anno_table_tail[ smp ][i].find( anno ) != anno_table_tail[ smp ][i].end() )
+                            for( auto& len : ano_len_idx.second )
+                            {
+                                if( anno_table_tail[ smp ][i][ anno ].find( len ) != anno_table_tail[ smp ][i][ anno ].end() )
+                                    annos[ split[0] ][ smp ].second += anno_table_tail[ smp ][i][ anno ][ len ];
+                            }
+                    }
+                }
+            }
+        }
+
+        for( auto& smp  : bed_samples ) output << "\t" << smp.first;
+        for( auto& anno : annos )
+        {
+            output << "\n" << anno.first << std::setprecision( 0 ) << std::fixed
+                << ( anno_mark_set.find( anno.first ) != anno_mark_set.end() ? "!" : "" );
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                output << "\t"
+                    << ( token == "GMPM" ? ( anno.second[ smp ].first + anno.second[ smp ].second )
+                            : ( token == "GM" ? anno.second[ smp ].first
+                                : ( token == "PM" ? anno.second[ smp ].second
+                                    : (( anno.second[ smp ].first + anno.second[ smp ].second ) < 1 ? 0
+                                        : ( anno.second[ smp ].second * 100 / ( anno.second[ smp ].first + anno.second[ smp ].second ))))));
+            }
+        }
+
+        output << "\n";
+        output.close();
+    }
+
+    static void output_valplot_visualization( const std::string& output_name, const bool& isSeed )
     {
         std::ofstream output( output_name + "index.php" );
 
@@ -84,6 +159,7 @@ class GeneTypeAnalyzerValplot
         output << "        $FGMPM = $_POST['FGMPM'];" << "\n"; 
         output << "        $isLog = $_POST['isLog'];" << "\n"; 
         output << "        $Filter = $_POST['Filter'];" << "\n"; 
+        output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $TSV_File = $_POST['TSV_File'];" << "\n"; 
         output << "        $FilterMin = $_POST['FilterMin'];" << "\n"; 
         output << "        $FilterMax = $_POST['FilterMax'];" << "\n"; 
@@ -119,16 +195,74 @@ class GeneTypeAnalyzerValplot
         output << "                }" << "\n"; 
         output << "            </style>';" << "\n"; 
         output << "" << "\n"; 
+
+        if( !isSeed )
+        {
+            output << "#<!--================== IsomiRs =====================-->" << "\n";
+            output << "                " << "\n";
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+            output << "" << "\n";
+            output << "        echo '<select name=IsomiRs onchange=this.form.submit();>';" << "\n";
+            output << "        echo '<option '; if($IsomiRs=='') echo 'selected'; echo '>Show IsomiRs?</option>';" << "\n";
+            output << "" << "\n";
+            output << "        $miR_List = array('Yes', 'No');" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 0; $i < Count( $miR_List ); ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            echo '<option value='.$miR_List[$i].' ';" << "\n";
+            output << "" << "\n";
+            output << "            if( $IsomiRs == $miR_List[$i] )" << "\n";
+            output << "                echo 'selected ';" << "\n";
+            output << "" << "\n";
+            output << "            echo '>' . $miR_List[$i] . '</option>';" << "\n";
+            output << "        }" << "\n";
+            output << "" << "\n";
+            output << "        echo \"</select>" << "\n";
+            output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
+            output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
+            output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+            output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
+            output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
+            output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
+            output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n"; 
+            output << "            </form>\";" << "\n";
+        }
+        else
+        {
+            output << "        $IsomiRs == 'No';" << "\n";
+        }
+
+        output << "" << "\n"; 
         output << "#<!--================== TSV File ====================-->" << "\n"; 
         output << "" << "\n"; 
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n"; 
         output << "" << "\n"; 
-        output << "        echo '<select name=TSV_File onchange=this.form.submit();>';" << "\n"; 
-        output << "        echo '<option '; if($TSV_File=='') echo 'selected'; echo '>Select TSV</option>';" << "\n"; 
-        output << "" << "\n"; 
         output << "        $TSV = Shell_Exec( 'ls | grep .tsv' );" << "\n"; 
         output << "        $TSV_List = Explode( \"\\n\", $TSV );" << "\n"; 
         output << "        $List_Size = Count( $TSV_List );" << "\n"; 
+        output << "        $TSV_List_Temp = array();" << "\n";
+        output << "" << "\n"; 
+        output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            $TSV_Temp = Explode( '-isomiRs', $TSV_List[$i] );" << "\n";
+        output << "" << "\n";
+        output << "            if( $IsomiRs == 'Yes' )" << "\n";
+        output << "            {" << "\n";
+        output << "                if( Count( $TSV_Temp ) > 1 )" << "\n";
+        output << "                    Array_Push( $TSV_List_Temp, $TSV_Temp[0] );" << "\n";
+        output << "            }" << "\n";
+        output << "            else" << "\n";
+        output << "            {" << "\n";
+        output << "                if( Count( $TSV_Temp ) == 1 )" << "\n";
+        output << "                    Array_Push( $TSV_List_Temp, Substr( $TSV_Temp[0], 0, Strlen( $TSV_Temp[0] ) - 4 ));" << "\n";
+        output << "            }" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        $TSV_List = $TSV_List_Temp;" << "\n";
+        output << "        $List_Size = Count( $TSV_List );" << "\n";
+        output << "" << "\n";
+        output << "        echo '<select name=TSV_File onchange=this.form.submit();>';" << "\n"; 
+        output << "        echo '<option '; if($TSV_File=='') echo 'selected'; echo '>GM or PM</option>';" << "\n"; 
         output << "" << "\n"; 
         output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n"; 
         output << "        {" << "\n"; 
@@ -139,17 +273,23 @@ class GeneTypeAnalyzerValplot
         output << "" << "\n"; 
         output << "            echo '>'.$TSV_List[$i].'</option>';" << "\n"; 
         output << "        }" << "\n"; 
+        output << "" << "\n";
+        output << "        $TSV_File_Temp = $TSV_File.( $IsomiRs == 'Yes' ? '-isomiRs.tsv' : '.tsv' );" << "\n";
+        output << "" << "\n";
         output << "        echo \"</select>" << "\n"; 
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n"; 
         output << "            </form>\";" << "\n"; 
         output << "" << "\n"; 
         output << "#<!--================== is_Abundant ====================-->" << "\n"; 
-        output << "                " << "\n"; 
+        output << "" << "\n"; 
+        output << "        if( $IsomiRs == 'No' ) $isAbundant = 'AllAnnotation';" << "\n"; 
+        output << "" << "\n"; 
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n"; 
         output << "        echo '<select name=isAbundant onchange=this.form.submit();>';" << "\n"; 
         output << "        " << "\n"; 
@@ -172,6 +312,7 @@ class GeneTypeAnalyzerValplot
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
@@ -200,6 +341,7 @@ class GeneTypeAnalyzerValplot
         output << "        echo \"</select>" << "\n"; 
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
@@ -254,7 +396,7 @@ class GeneTypeAnalyzerValplot
         output << "" << "\n"; 
         output << "        echo \"" << "\n"; 
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
-        output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
@@ -275,10 +417,10 @@ class GeneTypeAnalyzerValplot
         output << "                $FArray = Array();" << "\n"; 
         output << "            }" << "\n"; 
         output << "" << "\n"; 
-        output << "            $inFile = File_get_contents( $TSV_File );" << "\n"; 
+        output << "            $inFile = File_get_contents( $TSV_File_Temp );" << "\n"; 
         output << "            $inFile_Lines = Explode( \"\\n\", $inFile );" << "\n"; 
         output << "" << "\n"; 
-        output << "            $Temp = Tempnam( '/tmp', $TSV_File );" << "\n"; 
+        output << "            $Temp = Tempnam( '/tmp', $TSV_File_Temp );" << "\n"; 
         output << "            $Ftemp = Fopen( $Temp, 'w' );" << "\n"; 
         output << "" << "\n"; 
         output << "            $Sample_Nu = Count( Explode( \"\\t\", $inFile_Lines[0] ))-1;" << "\n"; 

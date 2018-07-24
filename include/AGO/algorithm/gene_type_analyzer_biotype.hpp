@@ -138,7 +138,7 @@ class GeneTypeAnalyzerBiotype
         GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
         GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
 
-        GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + valplot );
+        GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + valplot, false );
 
         smp_parallel_pool.flush_pool();
     }
