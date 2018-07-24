@@ -205,8 +205,9 @@ class GeneTypeAnalyzerDotplot
         output << "        $TSV_File1 = $_POST['TSV_File1'];" << "\n";
         output << "        $TSV_File2 = $_POST['TSV_File2'];" << "\n";
         output << "        $Color_Low = $_POST['Color_Low'];" << "\n";
-        output << "        $isAbundant = $_POST['isAbundant'];" << "\n";
         output << "        $Color_Hight = $_POST['Color_Hight'];" << "\n";
+        output << "" << "\n";
+        output << "        $isAbundant = $IsomiRs == 'No' ? 'AllmiRNA' : $_POST['isAbundant'];" << "\n";
         output << "" << "\n";
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
         output << "        echo '<script src=https://code.jquery.com/jquery-3.3.1.min.js></script>';" << "\n";
@@ -283,7 +284,7 @@ class GeneTypeAnalyzerDotplot
         output << "            </form>\";" << "\n";
         output << "" << "\n";
 
-        if( !isSeed )
+        if( !isSeed && biotype != "BioType/" )
         {
             output << "#<!--================== IsomiRs =====================-->" << "\n";
             output << "                " << "\n";
@@ -379,8 +380,18 @@ class GeneTypeAnalyzerDotplot
         output << "            echo '>'.$TSV_List[$i].'</option>';" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
-        output << "        $TSV_File_1 = $TSV_File1.( $IsomiRs == 'Yes' ? '-isomiRs.tsv' : '.tsv' );" << "\n";
-        output << "        $TSV_File_2 = $TSV_File2.( $IsomiRs == 'Yes' ? '-isomiRs.tsv' : '.tsv' );" << "\n";
+
+        if( biotype != "BioType/" )
+        {
+            output << "        $TSV_File_1 = $TSV_File1.( $IsomiRs == 'Yes' ? '-isomiRs.tsv' : '.tsv' );" << "\n";
+            output << "        $TSV_File_2 = $TSV_File2.( $IsomiRs == 'Yes' ? '-isomiRs.tsv' : '.tsv' );" << "\n";
+        }
+        else
+        {
+            output << "        $TSV_File_1 = $TSV_File1.'-isomiRs.tsv';" << "\n";
+            output << "        $TSV_File_2 = $TSV_File2.'-isomiRs.tsv';" << "\n";
+        }
+
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
@@ -396,7 +407,7 @@ class GeneTypeAnalyzerDotplot
         output << "            </form>\";" << "\n";
         output << "" << "\n";
 
-        if( !isSeed )
+        if( !isSeed && biotype != "BioType/" )
         {
             output << "#<!--================== is_Abundant ====================-->" << "\n";
             output << "" << "\n";
@@ -605,13 +616,13 @@ class GeneTypeAnalyzerDotplot
         output << "                {" << "\n";
         output << "                    if( $l == 0 )" << "\n";
         output << "                    {" << "\n";
-        output << "                        $Anno_Value1['miRNA'] = $inFile_Line[0];" << "\n";
-        output << "                        $Filter_Array1['miRNA']=$inFile_Line[0].'_F'.$FGMPM;" << "\n";
+        output << "                        $Anno_Value1['Anno'] = $inFile_Line[0];" << "\n";
+        output << "                        $Filter_Array1['Anno']=$inFile_Line[0].'_F'.$FGMPM;" << "\n";
         output << "                    }" << "\n";
         output << "                    else" << "\n";
         output << "                    {" << "\n";
-        output << "                        $Anno_Value2['miRNA'] = $inFile_Line[0];" << "\n";
-        output << "                        $Filter_Array2['miRNA']=$inFile_Line[0].'_F'.$FGMPM;" << "\n";
+        output << "                        $Anno_Value2['Anno'] = $inFile_Line[0];" << "\n";
+        output << "                        $Filter_Array2['Anno']=$inFile_Line[0].'_F'.$FGMPM;" << "\n";
         output << "                    }" << "\n";
         output << "" << "\n";
         output << "                    Array_Push( $Sample_Name, $inFile_Line[0] );" << "\n";
@@ -653,14 +664,14 @@ class GeneTypeAnalyzerDotplot
         output << "        $maxPPM = 0;" << "\n";
         output << "" << "\n";
         output << "        Fwrite( $Ftemp, 'miRNA'.\"\\t\"." << "\n";
-        output << "                $Anno_Value1['miRNA'].\"\\t\"." << "\n";
-        output << "                $Anno_Value2['miRNA'].\"\\t\"." << "\n";
-        output << "                $Filter_Array1['miRNA'].\"\\t\"." << "\n";
-        output << "                $Filter_Array2['miRNA'].\"\\n\" );" << "\n";
+        output << "                $Anno_Value1['Anno'].\"\\t\"." << "\n";
+        output << "                $Anno_Value2['Anno'].\"\\t\"." << "\n";
+        output << "                $Filter_Array1['Anno'].\"\\t\"." << "\n";
+        output << "                $Filter_Array2['Anno'].\"\\n\" );" << "\n";
         output << "" << "\n";
         output << "        For( $i = 0; $i < Count( $Index ); ++$i )" << "\n";
         output << "        {" << "\n";
-        output << "            if( $uIndex[$i] != '' && $uIndex[$i] != 'miRNA' )" << "\n";
+        output << "            if( $uIndex[$i] != '' && $uIndex[$i] != 'Anno' )" << "\n";
         output << "            {" << "\n";
         output << "                if( $Anno_Value1[$uIndex[$i]] == '' )" << "\n";
         output << "                {" << "\n";
@@ -796,7 +807,7 @@ class GeneTypeAnalyzerDotplot
         output << "                    .data(data)" << "\n";
         output << "                    .enter()" << "\n";
 
-        if( !isSeed )
+        if( !isSeed && biotype != "BioType/" )
         {
             output << "                    .append('a')" << "\n";
         	output << "                    .attr('xlink:href', function(d){ mirAnno = d.miRNA.split( '_' )[0]; return '../SqAlign/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=' + " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? "mirAnno.substring( 0, mirAnno.length -3 )" : "mirAnno" ) << "; })" << "\n";

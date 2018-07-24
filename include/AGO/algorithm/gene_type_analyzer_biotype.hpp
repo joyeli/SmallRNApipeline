@@ -96,49 +96,40 @@ class GeneTypeAnalyzerBiotype
             smp_parallel_pool.job_post([ smp, &sample_name, this ] ()
             {
                 output_biotype( output_path + biotype + sample_name, ano_len_idx, anno_table_tail[ smp ], "GMPM" );
-            });
-
-            smp_parallel_pool.job_post([ smp, &sample_name, this ] ()
-            {
                 output_biotype( output_path + biotype + sample_name, ano_len_idx, anno_table_tail[ smp ], "GM" );
-            });
-
-            smp_parallel_pool.job_post([ smp, &sample_name, this ] ()
-            {
                 output_biotype( output_path + biotype + sample_name, ano_len_idx, anno_table_tail[ smp ], "PM" );
             });
 
             smp_parallel_pool.job_post([ smp, &sample_name, this ] ()
             {
-                GeneTypeAnalyzerDotplot::output_dotplot( output_path + dotplot, ano_len_idx, anno_table_tail[ smp ], anno_mark[0], sample_name );
-            });
-
-            smp_parallel_pool.job_post([ smp, &sample_name, this ] ()
-            {
-                GeneTypeAnalyzerLendist::output_lendist( output_path + lendist, ano_len_idx, anno_table_tail[ smp ], anno_mark[0], sample_name );
-            });
-
-            smp_parallel_pool.job_post([ smp, &sample_name, this ] ()
-            {
-                bool trimming = true; // trimming about top 15% and last 15%
-                GeneTypeAnalyzerLendist::output_lendist( output_path + lendist, ano_len_idx, anno_table_trim[ smp ], anno_mark[0], sample_name, trimming );
+                GeneTypeAnalyzerDotplot::output_dotplot_isomirs( output_path + dotplot, ano_len_idx, anno_table_tail[ smp ], anno_mark[0], sample_name );
+                GeneTypeAnalyzerLendist::output_lendist_isomirs( output_path + lendist, ano_len_idx, anno_table_tail[ smp ], anno_mark[0], sample_name );
+                GeneTypeAnalyzerLendist::output_lendist_trimmed( output_path + lendist, ano_len_idx, anno_table_trim[ smp ], anno_mark[0], sample_name );
             });
         }
 
-        output_biotype_visualization( output_path + biotype );
-        GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot, biotype, false );
-        GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist, false, true );
+        smp_parallel_pool.job_post([ &bed_samples, this ] ()
+        {
+            output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM" );
+            output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"   );
+            output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"   );
+        });
 
-        output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM" );
-        output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"   );
-        output_biotype( output_path + biotype, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"   );
+        smp_parallel_pool.job_post([ &bed_samples, this ] ()
+        {
+            GeneTypeAnalyzerValplot::output_valplot_isomirs( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
+            GeneTypeAnalyzerValplot::output_valplot_isomirs( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
+            GeneTypeAnalyzerValplot::output_valplot_isomirs( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
+            GeneTypeAnalyzerValplot::output_valplot_isomirs( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
+        });
 
-        GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GMPM"    );
-        GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "GM"      );
-        GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "PM"      );
-        GeneTypeAnalyzerValplot::output_valplot( output_path + valplot, bed_samples, ano_len_idx, anno_table_tail, anno_mark, "Tailing" );
-
-        GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + valplot, false );
+        smp_parallel_pool.job_post([ this ] ()
+        {
+            output_biotype_visualization( output_path + biotype );
+            GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot, biotype, false );
+            GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist, false, true );
+            GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + valplot, false, true );
+        });
 
         smp_parallel_pool.flush_pool();
     }

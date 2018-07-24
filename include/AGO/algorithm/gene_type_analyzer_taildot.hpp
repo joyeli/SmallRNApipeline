@@ -237,8 +237,9 @@ class GeneTypeAnalyzerTaildot
         output << "        $XaxisType = $_POST['XaxisType'];" << "\n";
         output << "        $RatioType = $_POST['RatioType'];" << "\n";
         output << "        $Color_Low = $_POST['Color_Low'];" << "\n";
-        output << "        $isAbundant = $_POST['isAbundant'];" << "\n";
         output << "        $Color_Hight = $_POST['Color_Hight'];" << "\n";
+        output << "" << "\n";
+        output << "        $isAbundant = $IsomiRs == 'No' ? 'AllmiRNA' : $_POST['isAbundant'];" << "\n";
         output << "" << "\n";
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
         output << "        echo '<script src=https://code.jquery.com/jquery-3.3.1.min.js></script>';" << "\n";
