@@ -151,7 +151,8 @@ class GeneTypeAnalyzerDiffBar
             const std::string& output_path,
             const std::vector< BedSampleType >& bed_samples,
             const AnnoLengthIndexType& ano_len_idx,
-            std::vector< std::vector< CountingTableType >>& anno_table_tail
+            std::vector< std::vector< CountingTableType >>& anno_table_tail_isomir,
+            const bool& is_isomir = true
             )
     {
         std::ofstream output;
@@ -160,7 +161,7 @@ class GeneTypeAnalyzerDiffBar
             auto& s1 = compare[0];
             auto& s2 = compare[1];
 
-            output.open( output_path + "LoadingDifferential_" + s1.second + "_" + s2.second + ".text" );
+            output.open( output_path + "LoadingDifferential_" + s1.second + "_" + s2.second + ( is_isomir ? "-isomiRs" : "" ) + ".text" );
             output << output_header( s1.second, s2.second );
 
             double gm1, gm2, pm1, pm2, at1, at2, ct1, ct2, gt1, gt2, tt1, tt2, ot1, ot2;
@@ -168,22 +169,53 @@ class GeneTypeAnalyzerDiffBar
             std::vector< std::tuple< double, double, std::string >> out_temp;
             //                       total  smallestPvalue
 
-            for( auto& anno : ano_len_idx.first )
+            std::vector< std::string > split;
+            std::set< std::string > anno_idx;
+            std::vector< std::vector< CountingTableType >> anno_table_tail;
+
+            if( !is_isomir )
             {
-                gm1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'M' );
-                gm2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'M' );
-                pm1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'P' );
-                pm2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'P' );
-                at1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'A' );
-                at2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'A' );
-                ct1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'C' );
-                ct2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'C' );
-                gt1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'G' );
-                gt2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'G' );
-                tt1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'T' );
-                tt2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'T' );
-                ot1 = get_value( anno_table_tail, s1.first, anno, ano_len_idx.second, 'O' );
-                ot2 = get_value( anno_table_tail, s2.first, anno, ano_len_idx.second, 'O' );
+                anno_table_tail = std::vector< std::vector< CountingTableType >>( anno_table_tail_isomir.size(), std::vector< CountingTableType >() );
+
+                for( std::size_t smp = 0; smp < anno_table_tail_isomir.size(); smp++ )
+                    anno_table_tail[ smp ] = std::vector< CountingTableType >( anno_table_tail_isomir[ smp ].size(), CountingTableType() );
+
+                for( auto& anno : ano_len_idx.first )
+                {
+                    boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
+                    anno_idx.emplace( split[0] );
+
+                    for( std::size_t smp = 0; smp < anno_table_tail_isomir.size(); smp++ )
+                    {
+                        for( std::size_t i = 0; i < 5; i++ )
+                        {
+                            if( anno_table_tail[ smp ][i].find( split[0] ) == anno_table_tail[ smp ][i].end() )
+                                for( auto& len : ano_len_idx.second ) anno_table_tail[ smp ][i][ split[0] ][ len ] = 0.0;
+
+                            for( auto& len : anno_table_tail_isomir[ smp ][i][ anno ] )
+                                anno_table_tail[ smp ][i][ split[0] ][ len.first ] += anno_table_tail_isomir[ smp ][i][ anno ][ len.first ];
+                        }
+                    }
+                }
+            }
+            else anno_idx = ano_len_idx.first;
+
+            for( auto& anno : anno_idx )
+            {
+                gm1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'M' );
+                gm2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'M' );
+                pm1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'P' );
+                pm2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'P' );
+                at1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'A' );
+                at2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'A' );
+                ct1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'C' );
+                ct2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'C' );
+                gt1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'G' );
+                gt2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'G' );
+                tt1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'T' );
+                tt2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'T' );
+                ot1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'O' );
+                ot2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'O' );
 
                 diff_vec.emplace_back( get_differential( gm1 + pm1 + 1, gm2 + pm2  + 1 ));
                 diff_vec.emplace_back( get_differential( gm1       + 1, gm2        + 1 ));
@@ -223,6 +255,29 @@ class GeneTypeAnalyzerDiffBar
         }
     }
 
+    static void output_diffbar_isomirs(
+            const std::string& output_name,
+            const std::vector< BedSampleType >& bed_samples,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< std::vector< CountingTableType >>& anno_table_tail,
+            const std::string& biotype,
+            const std::string& token
+            )
+    {
+        std::ofstream output;
+        std::vector< std::pair< std::string, double >> total_vec;
+        std::map< std::string, std::map< std::string, std::vector< double >>> mirlen_map;
+        GeneTypeAnalyzerBarplot::make_table_isomirs( bed_samples, ano_len_idx, anno_table_tail, token, total_vec, mirlen_map );
+        GeneTypeAnalyzerBarplot::sort_total_vec( total_vec );
+
+        for( auto& len : ano_len_idx.second )
+        {
+            output.open( output_name + token + "_" + std::to_string( len ) + "-isomiRs.tsv" );
+            GeneTypeAnalyzerBarplot::output_table( output, std::to_string( len ), bed_samples, total_vec, mirlen_map );
+            output.close();
+        }
+    }
+
     static void output_diffbar(
             const std::string& output_name,
             const std::vector< BedSampleType >& bed_samples,
@@ -246,10 +301,13 @@ class GeneTypeAnalyzerDiffBar
         }
     }
 
-    static void output_diffbar_visualization( const std::string& output_name )
+    static void output_diffbar_visualization( const std::string& output_name, const bool& isSeed )
     {
         if( !boost::filesystem::exists( output_name + "GMPM.tsv" ))
              boost::filesystem::create_symlink( "../ValPlot/GMPM.tsv", ( output_name + "GMPM.tsv" ).c_str() );
+
+        if( !isSeed && !boost::filesystem::exists( output_name + "GMPM-isomiRs.tsv" ))
+             boost::filesystem::create_symlink( "../ValPlot/GMPM-isomiRs.tsv", ( output_name + "GMPM-isomiRs.tsv" ).c_str() );
 
         std::ofstream output( output_name + "index.php" );
 
@@ -262,6 +320,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
         output << "        $Diff = $_POST['Diff'];" << "\n";
         output << "        $GMPM = $_POST['GMPM'];" << "\n";
+        output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $P_Value = $_POST['P_Value'];" << "\n";
         output << "        $Sample1 = $_POST['Sample1'];" << "\n";
         output << "        $Sample2 = $_POST['Sample2'];" << "\n";
@@ -298,6 +357,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        }" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -330,6 +390,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        }" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -357,6 +418,8 @@ class GeneTypeAnalyzerDiffBar
         output << "            Array_Push( $Sample_List, $Temp[1] );" << "\n";
         output << "" << "\n";
         output << "            $Temp = Explode( '.', $Temp[2] );" << "\n";
+        output << "            $Temp = Explode( '-', $Temp[0] );" << "\n";
+        output << "" << "\n";
         output << "            Array_Push( $Sample_List, $Temp[0] );" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
@@ -380,6 +443,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
         output << "            <input type='hidden' name='MaxHight' value='$MaxHight' />" << "\n";
@@ -410,6 +474,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='MaxHight' value='$MaxHight' />" << "\n";
@@ -421,6 +486,50 @@ class GeneTypeAnalyzerDiffBar
         output << "            <input type='hidden' name='Select_Type' value='$Select_Type' />" << "\n";
         output << "            <input type='hidden' name='Single_Anno' value='$Single_Anno' />" << "\n";
         output << "            </form>\";" << "\n";
+        output << "" << "\n";
+
+        if( !isSeed )
+        {
+            output << "#<!--================== IsomiRs =====================-->" << "\n";
+            output << "                " << "\n";
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+            output << "" << "\n";
+            output << "        echo '<select name=IsomiRs onchange=this.form.submit();>';" << "\n";
+            output << "        echo '<option '; if($IsomiRs=='') echo 'selected'; echo '>Show IsomiRs?</option>';" << "\n";
+            output << "" << "\n";
+            output << "        $miR_List = array('Yes', 'No');" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 0; $i < Count( $miR_List ); ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            echo '<option value='.$miR_List[$i].' ';" << "\n";
+            output << "" << "\n";
+            output << "            if( $IsomiRs == $miR_List[$i] )" << "\n";
+            output << "                echo 'selected ';" << "\n";
+            output << "" << "\n";
+            output << "            echo '>' . $miR_List[$i] . '</option>';" << "\n";
+            output << "        }" << "\n";
+            output << "" << "\n";
+            output << "        echo \"</select>" << "\n";
+            output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
+            output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+            output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
+            output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+            output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+            output << "            <input type='hidden' name='MaxHight' value='$MaxHight' />" << "\n";
+            output << "            <input type='hidden' name='Top_miRNA' value='$Top_miRNA' />" << "\n";
+            output << "            <input type='hidden' name='Min_Length' value='$Min_Length' />" << "\n";
+            output << "            <input type='hidden' name='Max_Length' value='$Max_Length' />" << "\n";
+            output << "            <input type='hidden' name='Fold_Change' value='$Fold_Change' />" << "\n";
+            output << "            <input type='hidden' name='barPlotType' value='$barPlotType' />" << "\n";
+            output << "            <input type='hidden' name='Select_Type' value='$Select_Type' />" << "\n";
+            output << "            <input type='hidden' name='Single_Anno' value='$Single_Anno' />" << "\n";
+            output << "            </form>\";" << "\n";
+        }
+        else
+        {
+            output << "        $IsomiRs = 'No';" << "\n";
+        }
+
         output << "" << "\n";
         output << "#<!--================== barPlotType ====================-->" << "\n";
         output << "" << "\n";
@@ -441,6 +550,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -471,6 +581,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -493,6 +604,7 @@ class GeneTypeAnalyzerDiffBar
         output << "            echo \" onfocus=\\\"{this.value='';}\\\">" << "\n";
         output << "                <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "                <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "                <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "                <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "                <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "                <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -512,11 +624,11 @@ class GeneTypeAnalyzerDiffBar
         output << "        $isHeader = true;" << "\n";
         output << "        $Total_PPM = 0;" << "\n";
         output << "" << "\n";
-        output << "        if( File_Exists( './LoadingDifferential_'.$Sample1.'_'.$Sample2.'.text' ))" << "\n";
-        output << "            $TSV_File =  './LoadingDifferential_'.$Sample1.'_'.$Sample2.'.text';" << "\n";
+        output << "        if( File_Exists( './LoadingDifferential_'.$Sample1.'_'.$Sample2.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text' ))" << "\n";
+        output << "            $TSV_File =  './LoadingDifferential_'.$Sample1.'_'.$Sample2.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text';" << "\n";
         output << "" << "\n";
-        output << "        if( File_Exists( './LoadingDifferential_'.$Sample2.'_'.$Sample1.'.text' ))" << "\n";
-        output << "            $TSV_File =  './LoadingDifferential_'.$Sample2.'_'.$Sample1.'.text';" << "\n";
+        output << "        if( File_Exists( './LoadingDifferential_'.$Sample2.'_'.$Sample1.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text' ))" << "\n";
+        output << "            $TSV_File =  './LoadingDifferential_'.$Sample2.'_'.$Sample1.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text';" << "\n";
         output << "" << "\n";
         output << "        $Filtered_miRNAs = Array();" << "\n";
         output << "        $inFile = new SplFileObject( $TSV_File );" << "\n";
@@ -557,7 +669,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        $Total_PPM = 100 / $Total_PPM;" << "\n";
         output << "" << "\n";
         output << "        $Single_Anno_List = Array();" << "\n";
-        output << "        $inFile = new SplFileObject( './GMPM.tsv' );" << "\n";
+        output << "        $inFile = new SplFileObject( './GMPM'.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.tsv' );" << "\n";
         output << "" << "\n";
         output << "        while( !$inFile->eof() )" << "\n";
         output << "        {" << "\n";
@@ -581,7 +693,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        $TSV_File = Array();" << "\n";
         output << "" << "\n";
         output << "        For( $i = $Min_Length; $i <= $Max_Length; ++$i )" << "\n";
-        output << "            Array_Push( $TSV_File, './'.$GMPM.'_'.$i.'.tsv' );" << "\n";
+        output << "            Array_Push( $TSV_File, './'.$GMPM.'_'.$i.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.tsv' );" << "\n";
         output << "" << "\n";
         output << "#<!--================== Single Annotation ====================-->" << "\n";
         output << "" << "\n";
@@ -601,6 +713,7 @@ class GeneTypeAnalyzerDiffBar
         output << "            echo \"</select>" << "\n";
         output << "                <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "                <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "                <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "                <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "                <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "                <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -662,6 +775,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
         output << "            <input type='hidden' name='Top_miRNA' value='$Top_miRNA' />" << "\n";
@@ -677,6 +791,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample2' />" << "\n";

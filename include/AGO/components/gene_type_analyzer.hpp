@@ -154,17 +154,6 @@ class GeneTypeAnalyzer
             monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
             monitor.log( "\tBiotype Analysis - " + biotype, "Start" );
 
-            if( biotype != "miRNA_mirtron" )
-            {
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other_Seed/" + biotype ));
-            }
-            else
-            {
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR_Seed" ));
-            }
-
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
                     bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
 
@@ -188,10 +177,30 @@ class GeneTypeAnalyzer
 
             std::size_t total_anno_counts = ano_len_idx.first.size();
 
-            if( biotype == "miRNA_mirtron" )
-                algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+            if( total_anno_counts == 0 )
+            {
+                monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
+                monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
+                monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
+                monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
+                continue;
+            }
 
             monitor.log( "\tBiotype Analysis - " + biotype, "Doing Annotation Analysis ..." );
+
+            if( biotype != "miRNA_mirtron" )
+            {
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other_Seed/" + biotype ));
+            }
+            else
+            {
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR_Seed" ));
+            }
+
+            if( biotype == "miRNA_mirtron" )
+                algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
 
             algorithm::GeneTypeAnalyzerEachtype(
                       biotype

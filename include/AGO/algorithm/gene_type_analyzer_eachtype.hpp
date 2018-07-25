@@ -189,39 +189,12 @@ class GeneTypeAnalyzerEachtype
             std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
             GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "GMPM"    );
-
-            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-            if( is_time_log ) std::cerr << "DiffBar GMPM: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
-        });
-
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
-        {
-            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-
             GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "GM"      );
-
-            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-            if( is_time_log ) std::cerr << "DiffBar GM: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
-        });
-
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
-        {
-            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-
             GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "PM"      );
-
-            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-            if( is_time_log ) std::cerr << "DiffBar PM: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
-        });
-
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
-        {
-            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-
             GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Tailing" );
 
             std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-            if( is_time_log ) std::cerr << "DiffBar Tailing: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+            if( is_time_log ) std::cerr << "DiffBar: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
         });
 
         parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
@@ -250,8 +223,31 @@ class GeneTypeAnalyzerEachtype
             if( is_time_log ) std::cerr << "Ranking : " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
         });
 
+        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
+        {
+            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+
+            GeneTypeAnalyzerDiffBar::output_loading_differential( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, false );
+
+            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+            if( is_time_log ) std::cerr << "Differential: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+        });
+
         if( !isSeed )
         {
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
+            {
+                std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+
+                GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "GMPM"    );
+                GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "GM"      );
+                GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "PM"      );
+                GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Tailing" );
+
+                std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+                if( is_time_log ) std::cerr << "DiffBar_isomirs: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+            });
+
             parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &anno_mark, this ] ()
             {
                 std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -277,27 +273,17 @@ class GeneTypeAnalyzerEachtype
                 std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                 if( is_time_log ) std::cerr << "Ranking_isomirs : " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
             });
-        }
 
-        parallel_pool.job_post([ &biotype, &isSeed, this ] ()
-        {
-            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+            parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
+            {
+                std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-            GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot, biotype, isSeed );
-            GeneTypeAnalyzerTaildot::output_taildot_visualization( output_path + taildot, biotype, isSeed );
-            GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist, isSeed );
-            GeneTypeAnalyzerSA_Plot::output_sa_plot_visualization( output_path + sa_plot );
-            // GeneTypeAnalyzerBarplot::output_barplot_visualization( output_path + barplot );
-            GeneTypeAnalyzerDiffBar::output_diffbar_visualization( output_path + diffbar, isSeed );
-            GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + valplot, isSeed );
-            GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + ranking, isSeed );
+                GeneTypeAnalyzerDiffBar::output_loading_differential( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, true );
 
-            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-            if( is_time_log ) std::cerr << "Visualization: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
-        });
+                std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+                if( is_time_log ) std::cerr << "Differential_isomirs: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+            });
 
-        if( !isSeed )
-        {
             parallel_pool.job_post([ &bed_samples, &biotype, &genome_table, &extend_refseq, &max_anno_merge_size, this ] ()
             {
                 std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -334,6 +320,23 @@ class GeneTypeAnalyzerEachtype
                 if( is_time_log ) std::cerr << "SeedPie & SeedMap: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
             });
         }
+
+        parallel_pool.job_post([ &biotype, &isSeed, this ] ()
+        {
+            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+
+            GeneTypeAnalyzerDotplot::output_dotplot_visualization( output_path + dotplot, biotype, isSeed );
+            GeneTypeAnalyzerTaildot::output_taildot_visualization( output_path + taildot, biotype, isSeed );
+            GeneTypeAnalyzerLendist::output_lendist_visualization( output_path + lendist, isSeed );
+            GeneTypeAnalyzerSA_Plot::output_sa_plot_visualization( output_path + sa_plot );
+            // GeneTypeAnalyzerBarplot::output_barplot_visualization( output_path + barplot );
+            GeneTypeAnalyzerDiffBar::output_diffbar_visualization( output_path + diffbar, isSeed );
+            GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + valplot, isSeed );
+            GeneTypeAnalyzerValplot::output_valplot_visualization( output_path + ranking, isSeed );
+
+            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+            if( is_time_log ) std::cerr << "Visualization: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+        });
 
 
 
@@ -419,21 +422,6 @@ class GeneTypeAnalyzerEachtype
         //     if( is_time_log ) std::cerr << "output_length_difference Tailing: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
         // });
 
-
-
-        parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, &biotype, this ] ()
-        {
-            std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-
-            GeneTypeAnalyzerDiffBar::output_loading_differential( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail );
-            GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, biotype );
-
-            std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-            if( is_time_log ) std::cerr << "Differential & Volcano: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
-        });
-
-
-
         if( biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron" )
         {
             if( !isSeed )
@@ -452,8 +440,6 @@ class GeneTypeAnalyzerEachtype
                     if( is_time_log ) std::cerr << "Bubplot: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
                 });
             }
-
-
 
             // parallel_pool.job_post([ &bed_samples, &ano_len_idx, &anno_table_tail, this ] ()
             // {
@@ -497,6 +483,8 @@ class GeneTypeAnalyzerEachtype
         }
 
         parallel_pool.flush_pool();
+
+        GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, biotype );
     }
 };
 

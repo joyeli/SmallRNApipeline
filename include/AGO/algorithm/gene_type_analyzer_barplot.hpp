@@ -25,7 +25,7 @@ class GeneTypeAnalyzerBarplot
         std::vector< std::pair< std::string, double >> total_vec;
         std::map< std::string, std::map< std::string, std::vector< double >>> mirlen_map;
 
-        make_table( bed_samples, ano_len_idx, anno_table_tail, token, total_vec, mirlen_map );
+        make_table_isomirs( bed_samples, ano_len_idx, anno_table_tail, token, total_vec, mirlen_map );
 
         boost::filesystem::create_directory( boost::filesystem::path( output_name + "Loading/" ));
         sort_total_vec( total_vec );
@@ -64,7 +64,7 @@ class GeneTypeAnalyzerBarplot
         }
     }
 
-    static void make_table(
+    static void make_table_isomirs(
             const std::vector< BedSampleType >& bed_samples,
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
@@ -130,6 +130,82 @@ class GeneTypeAnalyzerBarplot
             }
 
             total_vec.emplace_back( anno, gm + pm );
+        }
+    }
+
+    static void make_table(
+            const std::vector< BedSampleType >& bed_samples,
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< std::vector< CountingTableType >>& anno_table_tail,
+            const std::string& token,
+            std::vector< std::pair< std::string, double >>& total_vec,
+            std::map< std::string, std::map< std::string, std::vector< double >>>& mirlen_map
+            )
+    {
+        double gmpm = 0.0;
+        std::vector< std::string > split;
+
+        std::map< std::string, std::vector< std::pair< double, double >>> annos;
+        std::map< std::string, std::map< std::size_t, std::vector< std::pair< double, double >>>> anno_len_map;
+
+        for( auto& anno : ano_len_idx.first )
+        {
+            boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
+
+            if( annos.find( split[0] ) == annos.end() )
+            {
+                annos[ split[0] ] = std::vector< std::pair< double, double >>( bed_samples.size(), { 0.0, 0.0 });
+
+                for( auto& len : ano_len_idx.second )
+                    anno_len_map[ split[0] ][ len ] = std::vector< std::pair< double, double >>( bed_samples.size(), { 0.0, 0.0 });
+            }
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                if( anno_table_tail[ smp ][5].find( anno ) != anno_table_tail[ smp ][5].end() )
+                    for( auto& len : ano_len_idx.second )
+                    {
+                        anno_len_map[ split[0] ][ len ][ smp ].first += anno_table_tail[ smp ][5][ anno ][ len ];
+                        if( anno_table_tail[ smp ][5][ anno ].find( len ) != anno_table_tail[ smp ][5][ anno ].end() )
+                            annos[ split[0] ][ smp ].first += anno_table_tail[ smp ][5][ anno ][ len ];
+                    }
+
+                for( std::size_t i = 0; i < 5; i++ )
+                {
+                    if( anno_table_tail[ smp ][i].find( anno ) != anno_table_tail[ smp ][i].end() )
+                        for( auto& len : ano_len_idx.second )
+                        {
+                            anno_len_map[ split[0] ][ len ][ smp ].second += anno_table_tail[ smp ][i][ anno ][ len ];
+                            if( anno_table_tail[ smp ][i][ anno ].find( len ) != anno_table_tail[ smp ][i][ anno ].end() )
+                                annos[ split[0] ][ smp ].second += anno_table_tail[ smp ][i][ anno ][ len ];
+                        }
+                }
+            }
+        }
+
+        for( auto& anno : annos )
+        {
+            gmpm = 0.0;
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                gmpm += anno.second[ smp ].first + anno.second[ smp ].second;
+
+                for( auto& len : anno_len_map[ anno.first ] )
+                {
+                    if( mirlen_map[ anno.first ].find( std::to_string( len.first )) == mirlen_map[ anno.first ].end() )
+                        mirlen_map[ anno.first ][ std::to_string( len.first )] = std::vector< double >( bed_samples.size(), 0.0 );
+
+                    mirlen_map[ anno.first ][ std::to_string( len.first )][ smp ] = 
+                        ( token == "GMPM" ? len.second[ smp ].first + len.second[ smp ].second
+                            : ( token == "GM" ? len.second[ smp ].first
+                            : ( token == "PM" ? len.second[ smp ].second
+                            : (( len.second[ smp ].first + len.second[ smp ].second ) < 1 ? 0
+                            :  ( len.second[ smp ].second * 100 / ( len.second[ smp ].first + len.second[ smp ].second ))))));
+                }
+            }
+
+            total_vec.emplace_back( anno.first, gmpm );
         }
     }
 
