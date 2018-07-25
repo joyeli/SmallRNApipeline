@@ -26,7 +26,7 @@ class GeneTypeAnalyzerVolcano
                  boost::filesystem::create_symlink(( "../DiffBar/" + file ).c_str(), ( p + file ).c_str() );
     }
 
-    static void output_volcano_visualization( const std::string& output_name, const std::string& biotype )
+    static void output_volcano_visualization( const std::string& output_name, const std::string& biotype, const bool& isSeed )
     {
         make_file_link( output_name );
         std::ofstream output( output_name + "index.php" );
@@ -41,6 +41,7 @@ class GeneTypeAnalyzerVolcano
         output << "        $GMPM = $_POST['GMPM'];" << "\n";
         output << "        $isLog = $_POST['isLog'];" << "\n";
         output << "        $Filter = $_POST['Filter'];" << "\n";
+        output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $Sample1 = $_POST['Sample1'];" << "\n";
         output << "        $Sample2 = $_POST['Sample2'];" << "\n";
         output << "        $Color_Low = $_POST['Color_Low'];" << "\n";
@@ -109,6 +110,7 @@ class GeneTypeAnalyzerVolcano
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
@@ -129,6 +131,8 @@ class GeneTypeAnalyzerVolcano
         output << "            Array_Push( $Sample_List, $Temp[1] );" << "\n";
         output << "" << "\n";
         output << "            $Temp = Explode( '.', $Temp[2] );" << "\n";
+        output << "            $Temp = Explode( '-', $Temp[0] );" << "\n";
+        output << "" << "\n";
         output << "            Array_Push( $Sample_List, $Temp[0] );" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
@@ -153,6 +157,7 @@ class GeneTypeAnalyzerVolcano
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
@@ -177,10 +182,49 @@ class GeneTypeAnalyzerVolcano
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
         output << "            </form>\";" << "\n";
+        output << "" << "\n";
+
+        if( !isSeed )
+        {
+            output << "#<!--================== IsomiRs =====================-->" << "\n";
+            output << "                " << "\n";
+            output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+            output << "" << "\n";
+            output << "        echo '<select name=IsomiRs onchange=this.form.submit();>';" << "\n";
+            output << "        echo '<option '; if($IsomiRs=='') echo 'selected'; echo '>Show IsomiRs?</option>';" << "\n";
+            output << "" << "\n";
+            output << "        $miR_List = array('Yes', 'No');" << "\n";
+            output << "" << "\n";
+            output << "        For( $i = 0; $i < Count( $miR_List ); ++$i )" << "\n";
+            output << "        {" << "\n";
+            output << "            echo '<option value='.$miR_List[$i].' ';" << "\n";
+            output << "" << "\n";
+            output << "            if( $IsomiRs == $miR_List[$i] )" << "\n";
+            output << "                echo 'selected ';" << "\n";
+            output << "" << "\n";
+            output << "            echo '>' . $miR_List[$i] . '</option>';" << "\n";
+            output << "        }" << "\n";
+            output << "" << "\n";
+            output << "        echo \"</select>" << "\n";
+            output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+            output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+            output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+            output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+            output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+            output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
+            output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+            output << "            </form>\";" << "\n";
+        }
+        else
+        {
+            output << "        $IsomiRs == 'No';" << "\n";
+        }
+
         output << "" << "\n";
         output << "#<!--================== isLog ====================-->" << "\n";
         output << "" << "\n";
@@ -204,6 +248,7 @@ class GeneTypeAnalyzerVolcano
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
@@ -229,6 +274,7 @@ class GeneTypeAnalyzerVolcano
         output << "        echo \" onfocus=\\\"{this.value='';}\\\">" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
         output << "            <input type='submit' value='Submit' /> " << "\n";
@@ -241,6 +287,7 @@ class GeneTypeAnalyzerVolcano
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample2' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
@@ -252,11 +299,11 @@ class GeneTypeAnalyzerVolcano
         output << "" << "\n";
         output << "        $TSV_File = '';" << "\n";
         output << "" << "\n";
-        output << "        if( File_Exists( './LoadingDifferential_'.$Sample1.'_'.$Sample2.'.text' ))" << "\n";
-        output << "            $TSV_File =  './LoadingDifferential_'.$Sample1.'_'.$Sample2.'.text';" << "\n";
+        output << "        if( File_Exists( './LoadingDifferential_'.$Sample1.'_'.$Sample2.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text' ))" << "\n";
+        output << "            $TSV_File =  './LoadingDifferential_'.$Sample1.'_'.$Sample2.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text';" << "\n";
         output << "" << "\n";
-        output << "        if( File_Exists( './LoadingDifferential_'.$Sample2.'_'.$Sample1.'.text' ))" << "\n";
-        output << "            $TSV_File =  './LoadingDifferential_'.$Sample2.'_'.$Sample1.'.text';" << "\n";
+        output << "        if( File_Exists( './LoadingDifferential_'.$Sample2.'_'.$Sample1.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text' ))" << "\n";
+        output << "            $TSV_File =  './LoadingDifferential_'.$Sample2.'_'.$Sample1.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text';" << "\n";
         output << "" << "\n";
         output << "        $Temp = Tempnam( '/tmp', $TSV_File.'_'.$GMPM.'_'.$Filter );" << "\n";
         output << "        $Ftemp = Fopen( $Temp, 'w' );" << "\n";

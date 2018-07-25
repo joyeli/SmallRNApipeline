@@ -484,7 +484,7 @@ class GeneTypeAnalyzerEachtype
 
         parallel_pool.flush_pool();
 
-        GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, biotype );
+        GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, biotype, isSeed );
     }
 };
 
