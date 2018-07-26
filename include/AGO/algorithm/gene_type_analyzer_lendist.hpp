@@ -175,7 +175,6 @@ class GeneTypeAnalyzerLendist
         output << "        }" << "\n";
         output << "        else $annotation_select = $_POST['annotation_select'];" << "\n";
         output << "" << "\n";
-        output << "" << "\n";
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
         output << "        echo '<script src=https://code.jquery.com/jquery-3.3.1.min.js ></script>';" << "\n";
         output << "        echo '<script src=https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.min.js></script>';" << "\n";
@@ -212,11 +211,7 @@ class GeneTypeAnalyzerLendist
             output << "            </form>\";" << "\n";
             output << "" << "\n";
         }
-        else
-        {
-            output << "        $Trimmed = 'No';" << "\n";
-            output << "" << "\n";
-        }
+        else output << "        $Trimmed = 'No';" << "\n";
 
         if( !isSeed && !is_biotype )
         {
@@ -248,11 +243,9 @@ class GeneTypeAnalyzerLendist
             output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
             output << "            </form>\";" << "\n";
         }
-        else
-        {
-            output << "        $IsomiRs == 'No';" << "\n";
-        }
+        else output << "        $IsomiRs = 'No';" << "\n";
 
+        output << "" << "\n";
         output << "#<!--================== TSV File ====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
