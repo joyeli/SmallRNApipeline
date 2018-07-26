@@ -73,42 +73,30 @@ class GeneTypeAnalyzerBarplot
             std::map< std::string, std::map< std::string, std::vector< double >>>& mirlen_map
             )
     {
-        double gm = 0.0;
-        double pm = 0.0;
-        std::map< std::size_t, std::vector< std::pair< double, double >>> len_map;
+        double value, total, gmpm, pm;
+        std::vector< double > gmpm_vec = std::vector< double >( 6, 0.0 );
+        std::map< std::size_t, std::vector< std::vector< double >>> len_map;
 
         for( auto& anno : ano_len_idx.first )
         {
-            gm = 0.0;
-            pm = 0.0;
+            gmpm_vec = std::vector< double >( 6, 0.0 ); // A0 C1 T2 G3 O4 GM5
             len_map.clear();
+            total = 0.0;
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                if( anno_table_tail[ smp ][5].find( anno ) != anno_table_tail[ smp ][5].end() )
-                    for( auto& len : ano_len_idx.second )
-                    {
-                        if( anno_table_tail[ smp ][5][ anno ].find( len ) != anno_table_tail[ smp ][5][ anno ].end() )
-                            gm += anno_table_tail[ smp ][5][ anno ][ len ];
-
-                        if( len_map.find( len ) == len_map.end() )
-                            len_map[ len ] = std::vector< std::pair< double, double >>( bed_samples.size(), std::make_pair( 0.0, 0.0 ));
-
-                        len_map[ len ][ smp ].first += anno_table_tail[ smp ][5][ anno ][ len ];
-                    }
-
-                for( std::size_t i = 0; i < 5; i++ )
+                for( std::size_t i = 0; i < 6; i++ )
                 {
                     if( anno_table_tail[ smp ][i].find( anno ) != anno_table_tail[ smp ][i].end() )
                         for( auto& len : ano_len_idx.second )
                         {
                             if( anno_table_tail[ smp ][i][ anno ].find( len ) != anno_table_tail[ smp ][i][ anno ].end() )
-                                pm += anno_table_tail[ smp ][i][ anno ][ len ];
+                                gmpm_vec[i] += anno_table_tail[ smp ][i][ anno ][ len ];
 
                             if( len_map.find( len ) == len_map.end() )
-                                len_map[ len ] = std::vector< std::pair< double, double >>( bed_samples.size(), std::make_pair( 0.0, 0.0 ));
+                                len_map[ len ] = std::vector< std::vector< double >>( bed_samples.size(), std::vector< double >( 6, 0.0 ));
 
-                            len_map[ len ][ smp ].second += anno_table_tail[ smp ][i][ anno ][ len ];
+                            len_map[ len ][ smp ][i] += anno_table_tail[ smp ][i][ anno ][ len ];
                         }
                 }
 
@@ -116,20 +104,60 @@ class GeneTypeAnalyzerBarplot
                 {
                     if( mirlen_map[ anno ].find( std::to_string( len.first )) == mirlen_map[ anno ].end() )
                         mirlen_map[ anno ][ std::to_string( len.first )] = std::vector< double >( bed_samples.size(), 0.0 );
-                    mirlen_map[ anno ][ std::to_string( len.first )][ smp ] = 
-                        ( token == "GMPM"
-                        ? len.second[ smp ].first + len.second[ smp ].second
-                        : ( token == "GM"
-                            ? len.second[ smp ].first
-                            : ( token == "PM"
-                                ? len.second[ smp ].second
-                                : (( len.second[ smp ].first + len.second[ smp ].second ) < 1
-                                    ? 0
-                                    : ( len.second[ smp ].second * 100 / ( len.second[ smp ].first + len.second[ smp ].second ))))));
+
+                    value = 0.0;
+                    gmpm = 0.0;
+                    pm = 0.0;
+
+                    for( std::size_t i = 0; i < 6; i++ )
+                    {
+                        gmpm += len.second[ smp ][i];
+                        if( i == 5 ) continue;
+                          pm += len.second[ smp ][i];
+                    }
+                    if( token == "GMPM" )
+                    {
+                        value = gmpm;
+                    }
+                    else if( token == "GM" )
+                    {
+                        value = len.second[ smp ][5];
+                    }
+                    else if( token == "PM" )
+                    {
+                        value = pm;
+                    }
+                    else if( token == "Atail" )
+                    {
+                        value = len.second[ smp ][0];
+                    }
+                    else if( token == "Ctail" )
+                    {
+                        value = len.second[ smp ][1];
+                    }
+                    else if( token == "Gtail" )
+                    {
+                        value = len.second[ smp ][2];
+                    }
+                    else if( token == "Ttail" )
+                    {
+                        value = len.second[ smp ][3];
+                    }
+                    else if( token == "Other" )
+                    {
+                        value = len.second[ smp ][4];
+                    }
+                    else // Tailing Ratio
+                    {
+                        value = gmpm < 1 ? 0 : ( pm * 100 / gmpm );
+                    }
+
+                    mirlen_map[ anno ][ std::to_string( len.first )][ smp ] = value;
+                    total += gmpm;
                 }
             }
 
-            total_vec.emplace_back( anno, gm + pm );
+            total_vec.emplace_back( anno, total );
         }
     }
 
@@ -142,70 +170,97 @@ class GeneTypeAnalyzerBarplot
             std::map< std::string, std::map< std::string, std::vector< double >>>& mirlen_map
             )
     {
-        double gmpm = 0.0;
+        double value, total, gmpm, pm;
         std::vector< std::string > split;
 
-        std::map< std::string, std::vector< std::pair< double, double >>> annos;
-        std::map< std::string, std::map< std::size_t, std::vector< std::pair< double, double >>>> anno_len_map;
+        std::map< std::string, std::map< std::size_t, std::vector< std::vector< double >>>> anno_len_map;
 
         for( auto& anno : ano_len_idx.first )
         {
             boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
 
-            if( annos.find( split[0] ) == annos.end() )
-            {
-                annos[ split[0] ] = std::vector< std::pair< double, double >>( bed_samples.size(), { 0.0, 0.0 });
-
+            if( anno_len_map.find( split[0] ) == anno_len_map.end() )
                 for( auto& len : ano_len_idx.second )
-                    anno_len_map[ split[0] ][ len ] = std::vector< std::pair< double, double >>( bed_samples.size(), { 0.0, 0.0 });
-            }
+                    anno_len_map[ split[0] ][ len ] = std::vector< std::vector< double >>( bed_samples.size(), std::vector< double >( 6, 0.0 ));
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                if( anno_table_tail[ smp ][5].find( anno ) != anno_table_tail[ smp ][5].end() )
-                    for( auto& len : ano_len_idx.second )
-                    {
-                        anno_len_map[ split[0] ][ len ][ smp ].first += anno_table_tail[ smp ][5][ anno ][ len ];
-                        if( anno_table_tail[ smp ][5][ anno ].find( len ) != anno_table_tail[ smp ][5][ anno ].end() )
-                            annos[ split[0] ][ smp ].first += anno_table_tail[ smp ][5][ anno ][ len ];
-                    }
-
-                for( std::size_t i = 0; i < 5; i++ )
+                for( std::size_t i = 0; i < 6; i++ )
                 {
                     if( anno_table_tail[ smp ][i].find( anno ) != anno_table_tail[ smp ][i].end() )
                         for( auto& len : ano_len_idx.second )
                         {
-                            anno_len_map[ split[0] ][ len ][ smp ].second += anno_table_tail[ smp ][i][ anno ][ len ];
                             if( anno_table_tail[ smp ][i][ anno ].find( len ) != anno_table_tail[ smp ][i][ anno ].end() )
-                                annos[ split[0] ][ smp ].second += anno_table_tail[ smp ][i][ anno ][ len ];
+                                anno_len_map[ split[0] ][ len ][ smp ][i] += anno_table_tail[ smp ][i][ anno ][ len ];
                         }
                 }
             }
         }
 
-        for( auto& anno : annos )
+        for( auto& anno : anno_len_map )
         {
-            gmpm = 0.0;
+            total = 0.0;
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                gmpm += anno.second[ smp ].first + anno.second[ smp ].second;
-
                 for( auto& len : anno_len_map[ anno.first ] )
                 {
                     if( mirlen_map[ anno.first ].find( std::to_string( len.first )) == mirlen_map[ anno.first ].end() )
                         mirlen_map[ anno.first ][ std::to_string( len.first )] = std::vector< double >( bed_samples.size(), 0.0 );
 
-                    mirlen_map[ anno.first ][ std::to_string( len.first )][ smp ] = 
-                        ( token == "GMPM" ? len.second[ smp ].first + len.second[ smp ].second
-                            : ( token == "GM" ? len.second[ smp ].first
-                            : ( token == "PM" ? len.second[ smp ].second
-                            : (( len.second[ smp ].first + len.second[ smp ].second ) < 1 ? 0
-                            :  ( len.second[ smp ].second * 100 / ( len.second[ smp ].first + len.second[ smp ].second ))))));
+                    value = 0.0;
+                    gmpm = 0.0;
+                    pm = 0.0;
+
+                    for( std::size_t i = 0; i < 6; i++ )
+                    {
+                        gmpm += len.second[ smp ][i];
+                        if( i == 5 ) continue;
+                          pm += len.second[ smp ][i];
+                    }
+                    if( token == "GMPM" )
+                    {
+                        value = gmpm;
+                    }
+                    else if( token == "GM" )
+                    {
+                        value = len.second[ smp ][5];
+                    }
+                    else if( token == "PM" )
+                    {
+                        value = pm;
+                    }
+                    else if( token == "Atail" )
+                    {
+                        value = len.second[ smp ][0];
+                    }
+                    else if( token == "Ctail" )
+                    {
+                        value = len.second[ smp ][1];
+                    }
+                    else if( token == "Gtail" )
+                    {
+                        value = len.second[ smp ][2];
+                    }
+                    else if( token == "Ttail" )
+                    {
+                        value = len.second[ smp ][3];
+                    }
+                    else if( token == "Other" )
+                    {
+                        value = len.second[ smp ][4];
+                    }
+                    else // Tailing Ratio
+                    {
+                        value = gmpm < 1 ? 0 : ( pm * 100 / gmpm );
+                    }
+
+                    mirlen_map[ anno.first ][ std::to_string( len.first )][ smp ] = value;
+                    total += gmpm;
                 }
             }
 
-            total_vec.emplace_back( anno.first, gmpm );
+            total_vec.emplace_back( anno.first, total );
         }
     }
 
