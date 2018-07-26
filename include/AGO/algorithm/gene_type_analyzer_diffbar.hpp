@@ -424,6 +424,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        $Sample_List = Array_Unique( $Sample_List );" << "\n";
+        output << "        $Sample_List = Array_Values( $Sample_List );" << "\n";
         output << "" << "\n";
         output << "#<!--=================== Sample1 =====================-->" << "\n";
         output << "" << "\n";
