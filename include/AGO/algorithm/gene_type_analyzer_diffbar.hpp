@@ -74,8 +74,8 @@ class GeneTypeAnalyzerDiffBar
             {
                 case 'A' : i = 0; break;
                 case 'C' : i = 1; break;
-                case 'T' : i = 2; break;
-                case 'G' : i = 3; break;
+                case 'G' : i = 2; break;
+                case 'T' : i = 3; break;
                 case 'O' : i = 4; break;
                 case 'M' : i = 5; break;
             }
@@ -378,7 +378,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo '<select name=GMPM onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '.( $GMPM=='' ? 'selected' : '' ).'>GM or PM</option>';" << "\n";
         output << "" << "\n";
-        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Tailing');" << "\n";
+        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Tailing', 'Atail', 'Ctail', 'Gtail', 'Ttail', 'Other');" << "\n";
         output << "" << "\n";
         output << "        $GMPM_Size = Count( $GMPM_List );" << "\n";
         output << "" << "\n";
