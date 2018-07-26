@@ -165,6 +165,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        $TSV_File = $_GET['TSV_File'];" << "\n";
         output << "        $annotation_select = $_GET['annotation_select'];" << "\n";
+        output << "        $isAbundant = $IsomiRs == 'No' ? 'AllAnnotations' : $_POST['isAbundant'];" << "\n";
         output << "" << "\n";
         output << "        if( $_GET['TSV_File'] == '' ) $TSV_File = $_POST['TSV_File'];" << "\n";
         output << "        if( $_GET['annotation_select'] != '' )" << "\n";
@@ -174,7 +175,6 @@ class GeneTypeAnalyzerLendist
         output << "        }" << "\n";
         output << "        else $annotation_select = $_POST['annotation_select'];" << "\n";
         output << "" << "\n";
-        output << "        $isAbundant = $IsomiRs == 'No' ? 'AllAnnotations' : $_POST['isAbundant'];" << "\n";
         output << "" << "\n";
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
         output << "        echo '<script src=https://code.jquery.com/jquery-3.3.1.min.js ></script>';" << "\n";
