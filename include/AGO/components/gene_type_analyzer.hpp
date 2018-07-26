@@ -203,7 +203,7 @@ class GeneTypeAnalyzer
                     boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR_Seed" ));
                 }
 
-                if( biotype == "miRNA_mirtron" )
+                // if( biotype == "miRNA_mirtron" )
                     algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
             }
 
@@ -251,7 +251,7 @@ class GeneTypeAnalyzer
                 table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
                 seed_refinding( ano_len_idx, anno_table_tail, seed_match_table );
 
-                if( biotype == "miRNA_mirtron" )
+                // if( biotype == "miRNA_mirtron" )
                     algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
             }
 
