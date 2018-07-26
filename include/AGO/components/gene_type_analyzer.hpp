@@ -31,6 +31,7 @@ class GeneTypeAnalyzer
     bool output_annobed;
     bool is_skip_un_annotated;
     bool is_keep_other_biotype;
+    bool webpage_update_only;
 
     std::size_t thread_number;
     std::size_t extend_refseq;
@@ -48,6 +49,7 @@ class GeneTypeAnalyzer
         output_annobed = p.get_optional< bool >( "output_annobed" ).value_or( true     );
         is_skip_un_annotated  = p.get_optional< bool >( "is_skip_un_annotated"  ).value_or( false );
         is_keep_other_biotype = p.get_optional< bool >( "is_keep_other_biotype" ).value_or( false );
+        webpage_update_only   = p.get_optional< bool >( "webpage_update_only"   ).value_or( false );
         thread_number  = p.get_optional< std::size_t >( "thread_number" ).value_or( 8  );
         extend_refseq  = p.get_optional< std::size_t >( "extend_refseq" ).value_or( 10 );
         extend_merge   = p.get_optional< std::size_t >( "extend_merge"  ).value_or( 2  );
@@ -137,7 +139,7 @@ class GeneTypeAnalyzer
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other" ));
 
         monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotypes" );
-        algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, sudo_count );
+        algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, sudo_count, webpage_update_only );
         algorithm::AnnoLengthIndexType ano_len_idx;
 
         std::vector< std::vector< algorithm::CountingTableType >> anno_table_tail;
@@ -188,19 +190,22 @@ class GeneTypeAnalyzer
 
             monitor.log( "\tBiotype Analysis - " + biotype, "Doing Annotation Analysis ..." );
 
-            if( biotype != "miRNA_mirtron" )
+            if( !webpage_update_only )
             {
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other_Seed/" + biotype ));
-            }
-            else
-            {
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR_Seed" ));
-            }
+                if( biotype != "miRNA_mirtron" )
+                {
+                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
+                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other_Seed/" + biotype ));
+                }
+                else
+                {
+                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
+                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR_Seed" ));
+                }
 
-            if( biotype == "miRNA_mirtron" )
-                algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+                if( biotype == "miRNA_mirtron" )
+                    algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+            }
 
             algorithm::GeneTypeAnalyzerEachtype(
                       biotype
@@ -219,6 +224,7 @@ class GeneTypeAnalyzer
                     , extend_merge
                     , extend_refseq
                     , max_anno_merge_size
+                    , webpage_update_only
                     , false
                     );
 
@@ -229,22 +235,25 @@ class GeneTypeAnalyzer
 
             anno_mark = std::vector< std::map< std::string, std::string >>( bed_samples.size(), std::map< std::string, std::string >());
 
-            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            if( !webpage_update_only )
             {
-                smp_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &seed_match_table, &genome_table, &biotype, this ] ()
+                for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
                 {
-                    make_seed_table( bed_samples[ smp ].second, anno_table_tail[ smp ], seed_match_table[ smp ], genome_table, biotype );
-                });
+                    smp_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &seed_match_table, &genome_table, &biotype, this ] ()
+                    {
+                        make_seed_table( bed_samples[ smp ].second, anno_table_tail[ smp ], seed_match_table[ smp ], genome_table, biotype );
+                    });
+                }
+
+                smp_parallel_pool.flush_pool();
+
+                ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype, true );
+                table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
+                seed_refinding( ano_len_idx, anno_table_tail, seed_match_table );
+
+                if( biotype == "miRNA_mirtron" )
+                    algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
             }
-
-            smp_parallel_pool.flush_pool();
-
-            ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype, true );
-            table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
-            seed_refinding( ano_len_idx, anno_table_tail, seed_match_table );
-
-            if( biotype == "miRNA_mirtron" )
-                algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
 
             monitor.log( "\tBiotype Analysis - " + biotype, "Doing Seed Analysis ..." );
 
@@ -265,6 +274,7 @@ class GeneTypeAnalyzer
                     , extend_merge
                     , extend_refseq
                     , max_anno_merge_size
+                    , webpage_update_only
                     , true
                     );
 
@@ -277,9 +287,12 @@ class GeneTypeAnalyzer
             {
                 monitor.log( "Component GeneTypeAnalyzer", "Outputing ... AnnoBed [ " + std::to_string( smp+1 ) + " / " + std::to_string( bed_samples.size() ) + " ]" );
 
-                std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_analyzedbed.text" );
-                annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second );
-                annobed_output.close();
+                if( !webpage_update_only )
+                {
+                    std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_analyzedbed.text" );
+                    annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second );
+                    annobed_output.close();
+                }
             }
         }
 
