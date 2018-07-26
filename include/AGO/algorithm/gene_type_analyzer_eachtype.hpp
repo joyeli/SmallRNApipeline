@@ -308,9 +308,7 @@ class GeneTypeAnalyzerEachtype
             {
                 std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                if( !webpage_update_only )
-                    GeneTypeAnalyzerMDTCpos::make_mdtcpos( bed_samples, biotype );
-
+                GeneTypeAnalyzerMDTCpos::make_mdtcpos( bed_samples, biotype );
                 GeneTypeAnalyzerMDTCpos::output_mdtcpos_visualization( output_path + mdtcpos );
 
                 std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
