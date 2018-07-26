@@ -24,9 +24,6 @@ class GeneTypeAnalyzerBubplot
             auto& genome_table
             )
     {
-        for( auto& smp : bed_samples ) if( !boost::filesystem::exists( output_name + smp.first + ".tsv" ))
-            boost::filesystem::create_symlink(( "../LenDist/" + smp.first + ".tsv" ).c_str(), ( output_name + smp.first + ".tsv" ).c_str() );
-
         std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extend_merge, ppm_filter );
         std::vector< std::string > out_vec = sequence_formating( chr_mapping, genome_table );
 
@@ -265,6 +262,28 @@ class GeneTypeAnalyzerBubplot
 		return c;
 	}
 
+    static void make_file_link( const std::string& p )
+    {
+        std::set< std::string > samples;
+        std::vector< std::string > temp;
+        boost::filesystem::path path( p + "../LenDist/" );
+
+        for( auto& file : boost::filesystem::directory_iterator( path ))
+        {
+            boost::iter_split( temp, file.path().filename().string(), boost::algorithm::first_finder( "." ));
+            if( temp[0] == "index" ) continue;
+
+            boost::iter_split( temp, temp[0], boost::algorithm::first_finder( "-" ));
+            samples.emplace( temp[0] );
+        }
+
+        for( auto& smp : samples )
+        {
+            if( boost::filesystem::exists( p + smp + ".tsv" )) boost::filesystem::remove( p + smp + ".tsv" );
+            boost::filesystem::create_symlink(( "../LenDist/" + smp + "-isomiRs.tsv" ).c_str(), ( p + smp + ".tsv" ).c_str() );
+        }
+    }
+
     static void output_bubplot_visualization(
             const std::string& output_name,
             const std::string& node_path,
@@ -273,6 +292,7 @@ class GeneTypeAnalyzerBubplot
             const std::size_t& max_len
             )
     {
+        make_file_link( output_name );
         std::ofstream output( output_name + "index.php" );
 
         output << "<!DOCTYPE html>" << "\n";
