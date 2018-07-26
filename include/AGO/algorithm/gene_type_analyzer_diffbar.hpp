@@ -684,11 +684,13 @@ class GeneTypeAnalyzerDiffBar
         output << "            }" << "\n";
         output << "" << "\n";
         output << "            $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
+        output << "            $Annotation  = Explode( '!', $inFile_Line[0] );" << "\n";
+        output << "            $Annotation  = Explode( '*', $Annotation[0] );" << "\n";
         output << "" << "\n";
         output << "            if( !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs ))" << "\n";
         output << "                continue;" << "\n";
         output << "" << "\n";
-        output << "            Array_Push( $Single_Anno_List, $inFile_Line[0] );" << "\n";
+        output << "            Array_Push( $Single_Anno_List, $Annotation[0] );" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        $TSV_File = Array();" << "\n";
