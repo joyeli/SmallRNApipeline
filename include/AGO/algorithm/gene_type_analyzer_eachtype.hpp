@@ -120,7 +120,6 @@ class GeneTypeAnalyzerEachtype
             boost::filesystem::create_directory( boost::filesystem::path( output_path + lendist ));
             boost::filesystem::create_directory( boost::filesystem::path( output_path + valplot ));
             boost::filesystem::create_directory( boost::filesystem::path( output_path + ranking ));
-            boost::filesystem::create_directory( boost::filesystem::path( output_path + mdtcpos ));
             boost::filesystem::create_directory( boost::filesystem::path( output_path + diffbar ));
             // boost::filesystem::create_directory( boost::filesystem::path( output_path + barplot ));
             // boost::filesystem::create_directory( boost::filesystem::path( output_path + difference ));
@@ -130,7 +129,11 @@ class GeneTypeAnalyzerEachtype
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + seedmap ));
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + seedpie ));
             }
-            else boost::filesystem::create_directory( boost::filesystem::path( output_path + sqalign ));
+            else
+            {
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + mdtcpos ));
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + sqalign ));
+            }
 
             std::chrono::time_point< std::chrono::system_clock > make_table_start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
