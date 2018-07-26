@@ -198,6 +198,11 @@ class GeneTypeAnalyzerEachtype
                 GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "GM"      );
                 GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "PM"      );
                 GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Tailing" );
+                GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Atail"   );
+                GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Ctail"   );
+                GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Gtail"   );
+                GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Ttail"   );
+                GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Other"   );
 
                 std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                 if( is_time_log ) std::cerr << "DiffBar: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
@@ -252,6 +257,11 @@ class GeneTypeAnalyzerEachtype
                     GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "GM"      );
                     GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "PM"      );
                     GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Tailing" );
+                    GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Atail"   );
+                    GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Ctail"   );
+                    GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Gtail"   );
+                    GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Ttail"   );
+                    GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Other"   );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                     if( is_time_log ) std::cerr << "DiffBar_isomirs: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
