@@ -124,46 +124,72 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
         std::vector< std::string > fastq_paths( get_path_list_string( db.get_path_list( "sample_files" )));
         Fastq_ihandler_impl< IoHandlerIfstream > fastq_reader( fastq_paths );
 
-        monitor.set_monitor( "Component GithubTailorFastqToSamOut", fastq_paths.size() +2 );
+        // monitor.set_monitor( "Component GithubTailorFastqToSamOut", fastq_paths.size() +2 );
+        monitor.set_monitor( "Component GithubTailorFastqToSamOut", 5 );
         monitor.log( "Component GithubTailorFastqToSamOut", "Start" );
 
         sam_header_ss_.clear();
         sam_header_ss_ << "@HD" << '\t' << "VN:1.0" << '\t' << "SO:unsorted\n";
 
-        std::ofstream output_sam;
+        // std::ofstream output_sam;
         std::stringstream fastq_ss;
 
         std::string sample_name;
         std::set< std::string > align_count;
 
-        std::map< std::string, size_t > rawread_count;
-        std::map< std::string, size_t > fastq_n_count;
-        std::map< std::string, size_t > fastq_count;
+        // std::map< std::string, size_t > rawread_count;
+        // std::map< std::string, size_t > fastq_n_count;
+        // std::map< std::string, size_t > fastq_count;
+        
+        std::vector< std::map< std::string, size_t >> rawread_count = std::vector< std::map< std::string, size_t >>( fastq_paths.size() );
+        std::vector< std::map< std::string, size_t >> fastq_n_count = std::vector< std::map< std::string, size_t >>( fastq_paths.size() );
+        std::vector< std::map< std::string, size_t >> fastq_count   = std::vector< std::map< std::string, size_t >>( fastq_paths.size() );
 
         bool break_flag = false;
         bool new_line_check = false;
 
         std::mutex sam_mutex;
         ParaThreadPool parallel_pool( thread_num_ );
-        std::vector< std::pair< std::string, std::vector< double >>> statistic_samples;
 
+        std::vector< std::pair< std::string, std::vector< double >>> statistic_samples;
+        std::vector< std::ofstream > output_sams = std::vector< std::ofstream >( fastq_paths.size() );
+
+        std::map< std::thread::id, std::map< std::size_t, std::vector< std::pair< std::string, std::string >>>> sams_map;
+        //          thread_id                   smp                                 fastq_id    sam_res
+        
         for( size_t smp = 0; smp < fastq_paths.size(); ++smp )
         {
-            load_counts = 0;
-
             sample_name = get_sample_name( fastq_paths[ smp ] );
             statistic_samples.emplace_back( sample_name, std::vector< double >
                     { 0.0, 0.0, 0.0, 0.0, 0.0 });
             //     RawReads FilteredReads Mappable%
             //          ReadsWithN  Mappable
+            
+            output_sams[ smp ].open( db.output_dir().string() + sample_name + ".sam" );
+            output_sams[ smp ] << sam_header_ss_.str();
+        }
+
+        monitor.log( "Component GithubTailorFastqToSamOut", "Aligning Fastqs ..." );
+
+        for( size_t smp = 0; smp < fastq_paths.size(); ++smp )
+        {
+            load_counts = 0;
+
+            // sample_name = get_sample_name( fastq_paths[ smp ] );
+            // statistic_samples.emplace_back( sample_name, std::vector< double >
+            //         { 0.0, 0.0, 0.0, 0.0, 0.0 });
+            // //     RawReads FilteredReads Mappable%
+            // //          ReadsWithN  Mappable
 
             // print_mem_usage( "Sample " + sample_name + " Start" );
 
-            monitor.set_monitor(( "	" + sample_name ).c_str(), 2 );
-            monitor.log(( "	" + sample_name ).c_str(), "Aligning ..." );
+            // monitor.set_monitor(( "	" + sample_name ).c_str(), 2 );
+            // monitor.log(( "	" + sample_name ).c_str(), "Aligning ..." );
 
-            output_sam.open( db.output_dir().string() + sample_name + ".sam" );
-            output_sam << sam_header_ss_.str();
+            // output_sam.open( db.output_dir().string() + sample_name + ".sam" );
+            // output_sam << sam_header_ss_.str();
+
+            // std::map< std::thread::id, std::vector< std::pair< std::string, std::string >>> sams_map;
 
             break_flag = false;
 
@@ -182,16 +208,19 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
                         break;
                     }
 
-                    insert_statistic( rawread_count, fastq.getName() ); 
+                    // insert_statistic( rawread_count, fastq.getName() ); 
+                    insert_statistic( rawread_count[ smp ], fastq.getName() ); 
 
                     if( n_check( fastq ))
                     {
-                        insert_statistic( fastq_n_count, fastq.getName() ); 
+                        // insert_statistic( fastq_n_count, fastq.getName() ); 
+                        insert_statistic( fastq_n_count[ smp ], fastq.getName() ); 
                         --job;
                         continue;
                     }
 
-                    insert_statistic( fastq_count, fastq.getName() ); 
+                    // insert_statistic( fastq_count, fastq.getName() ); 
+                    insert_statistic( fastq_count[ smp ], fastq.getName() ); 
 
                     if( new_line_check )
                     {
@@ -217,9 +246,21 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
 
                 // print_mem_usage( "Sample " + sample_name + " Fastq " + std::to_string( load_counts * task_number_ ) + " Loading-" + std::to_string( load_counts ));
 
-                parallel_pool.job_post([ fastq_str = fastq_ss.str(), &sam_mutex, load_counts, &output_sam, &align_count, this ] () mutable
+                // parallel_pool.job_post([ fastq_str = fastq_ss.str(), &sam_mutex, load_counts, &output_sam, &align_count, this ] () mutable
+                parallel_pool.job_post([ fastq_str = fastq_ss.str(), smp_size = fastq_paths.size(), smp, &sam_mutex, load_counts, &sams_map, this ] () mutable
                 {
-                    aligning( fastq_str, sam_mutex, load_counts, output_sam, align_count );
+                    std::thread::id this_id = std::this_thread::get_id();
+
+                    if( sams_map.find( this_id ) == sams_map.end() )
+                    {
+                        std::lock_guard< std::mutex > sam_lock( sam_mutex );
+
+                        for( std::size_t i = 0; i < smp_size; ++i )
+                            sams_map[ this_id ][ i ] = std::vector< std::pair< std::string, std::string >>();
+                    }
+
+                    // aligning( fastq_str, sam_mutex, load_counts, output_sam, align_count );
+                    aligning( this_id, smp, fastq_str, load_counts, sams_map );
                 });
 
                 fastq_ss.str("");
@@ -233,22 +274,90 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
                 }
             }
 
-            parallel_pool.flush_pool();
-            output_sam.close();
+            // parallel_pool.flush_pool();
 
-            // print_mem_usage( "Sample " + sample_name + " Aligning" );
-            
-            for( auto& raw : rawread_count )
+            // for( auto& sams : sams_map )
+            // {
+            //     for( auto& sam : sams.second )
+            //     {
+            //         align_count.emplace( sam.first );
+            //         output_sam << sam.second << "\n";
+            //     }
+            // }
+
+            // output_sam.close();
+
+            // // print_mem_usage( "Sample " + sample_name + " Aligning" );
+            // 
+            // for( auto& raw : rawread_count )
+            // {
+            //     statistic_samples[ smp ].second[0] += raw.second;
+            // }
+            // 
+            // for( auto& fqn : fastq_n_count )
+            // {
+            //     statistic_samples[ smp ].second[1] += fqn.second;
+            // }
+
+            // for( auto& fqc : fastq_count )
+            // {
+            //     statistic_samples[ smp ].second[2] += fqc.second;
+
+            //     if( align_count.find( fqc.first ) != align_count.end() )
+            //     {
+            //         statistic_samples[ smp ].second[3] += fqc.second;
+            //     }
+            // }
+
+            // rawread_count.clear();
+            // fastq_n_count.clear();
+            // fastq_count.clear();
+            // align_count.clear();
+
+            // statistic_samples[ smp ].second[4] =
+            //     statistic_samples[ smp ].second[3] * 100 / statistic_samples[ smp ].second[2];
+
+            // // print_mem_usage( "Sample " + sample_name + " Statistic Releasing" );
+
+            // monitor.log(( "	" + sample_name ).c_str(), "Done" );
+            // monitor.log( "Component GithubTailorFastqToSamOut", ( sample_name ).c_str() );
+
+            // // print_mem_usage( "Sample " + sample_name + " Complete" );
+        }
+
+        parallel_pool.flush_pool();
+
+        monitor.log( "Component GithubTailorFastqToSamOut", "Outputing Sams ..." );
+
+        for( auto& sams : sams_map )
+        {
+            for( auto& smp : sams.second )
+            {
+                for( auto& sam : smp.second )
+                {
+                    align_count.emplace( sam.first );
+                    output_sams[ smp.first ] << sam.second << "\n";
+                }
+            }
+        }
+
+        monitor.log( "Component GithubTailorFastqToSamOut", "Making Statistic ..." );
+
+        for( size_t smp = 0; smp < fastq_paths.size(); ++smp )
+        {
+            output_sams[ smp ].close();
+
+            for( auto& raw : rawread_count[ smp ] )
             {
                 statistic_samples[ smp ].second[0] += raw.second;
             }
-            
-            for( auto& fqn : fastq_n_count )
+
+            for( auto& fqn : fastq_n_count[ smp ] )
             {
                 statistic_samples[ smp ].second[1] += fqn.second;
             }
 
-            for( auto& fqc : fastq_count )
+            for( auto& fqc : fastq_count[ smp ] )
             {
                 statistic_samples[ smp ].second[2] += fqc.second;
 
@@ -258,20 +367,8 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
                 }
             }
 
-            rawread_count.clear();
-            fastq_n_count.clear();
-            fastq_count.clear();
-            align_count.clear();
-
             statistic_samples[ smp ].second[4] =
                 statistic_samples[ smp ].second[3] * 100 / statistic_samples[ smp ].second[2];
-
-            // print_mem_usage( "Sample " + sample_name + " Statistic Releasing" );
-
-            monitor.log(( "	" + sample_name ).c_str(), "Done" );
-            monitor.log( "Component GithubTailorFastqToSamOut", ( sample_name ).c_str() );
-
-            // print_mem_usage( "Sample " + sample_name + " Complete" );
         }
 
         make_statistic( db.output_dir().string(), statistic_samples );
@@ -367,7 +464,8 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
         output.close();
     }
 
-    void aligning( auto& fastq_str, auto& sam_mutex, auto& load_counts, auto& output_sam, auto& align_count )
+    // void aligning( auto& fastq_str, auto& sam_mutex, auto& load_counts, auto& output_sam, auto& align_count )
+    void aligning( auto& this_id, auto& smp, auto& fastq_str, auto& load_counts, auto& sams_map )
     {
         // print_mem_usage( "Tailor Start-" + std::to_string( load_counts ));
 
@@ -403,7 +501,7 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
         SamDefaultTuple sam_tpl;
 
         std::vector< std::string > split;
-        std::vector< std::pair< std::string, std::string >> sams;
+        // std::vector< std::pair< std::string, std::string >> sams;
 
         while( true )
         {
@@ -413,7 +511,8 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
             }
 
             boost::iter_split( split, samline, boost::algorithm::first_finder( "\t" ));
-            sams.emplace_back( std::make_pair( split[0], samline ));
+            // sams.emplace_back( std::make_pair( split[0], samline ));
+            sams_map[ this_id ][ smp ].emplace_back( std::make_pair( split[0], samline ));
             split.clear();
         }
 
@@ -422,14 +521,14 @@ class GithubTailorFastqToSamOut : public engine::NamedComponent
         sam_ss.str("");
         sam_ss.clear();
 
-        for( auto& sam : sams )
-        {
-            std::lock_guard< std::mutex > sam_lock( sam_mutex );
-            align_count.emplace( sam.first );
-            output_sam << sam.second << "\n";
-        }
+        // for( auto& sam : sams )
+        // {
+        //     std::lock_guard< std::mutex > sam_lock( sam_mutex );
+        //     align_count.emplace( sam.first );
+        //     output_sam << sam.second << "\n";
+        // }
 
-        sams.clear();
+        // sams.clear();
 
         // print_mem_usage( "Tailor Sam Releasing-" + std::to_string( load_counts ));
     }
