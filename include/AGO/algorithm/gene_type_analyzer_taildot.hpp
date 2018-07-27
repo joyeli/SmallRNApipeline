@@ -617,6 +617,8 @@ class GeneTypeAnalyzerTaildot
         output << "        $Temp = Tempnam( '/tmp', $RatioType.'_'.$TSV_File_Temp.'_'.$isAbundant.'_'.$Filter );" << "\n";
         output << "        $Ftemp = Fopen( $Temp, 'w' );" << "\n";
         output << "" << "\n";
+        output << "        $Filter = $isLog != '' && $isLog != 'isLog' ? ( Log( $Filter ) / Log( $isLog )) : $Filter;" << "\n";
+        output << "" << "\n";
         output << "        For( $i = 0; $i < Count( $inFile_Lines )-1; ++$i )" << "\n";
         output << "        {" << "\n";
         output << "            $inFile_Line = Explode( \"\\t\", $inFile_Lines[$i] );" << "\n";

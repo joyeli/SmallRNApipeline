@@ -663,6 +663,8 @@ class GeneTypeAnalyzerDotplot
         output << "        $minPPM = 1000000;" << "\n";
         output << "        $maxPPM = 0;" << "\n";
         output << "" << "\n";
+        output << "        $Filter = $isLog != '' && $isLog != 'isLog' ? ( Log( $Filter ) / Log( $isLog )) : $Filter;" << "\n";
+        output << "" << "\n";
         output << "        Fwrite( $Ftemp, 'miRNA'.\"\\t\"." << "\n";
         output << "                $Anno_Value1['Anno'].\"\\t\"." << "\n";
         output << "                $Anno_Value2['Anno'].\"\\t\"." << "\n";
@@ -722,7 +724,7 @@ class GeneTypeAnalyzerDotplot
         output << "            var svg_width  = window.innerWidth;" << "\n";
         output << "            var svg_height = window.innerHeight;" << "\n";
         output << "        " << "\n";
-        output << "            var margin = {top: 20, right: 60, bottom: 70, left: 60}" << "\n";
+        output << "            var margin = {top: 20, right: 70, bottom: 70, left: 70}" << "\n";
         output << "                width = svg_width - margin.left - margin.right," << "\n";
         output << "                height = svg_height - margin.top - margin.bottom;" << "\n";
         output << "        " << "\n";
@@ -747,8 +749,8 @@ class GeneTypeAnalyzerDotplot
         output << "                .orient('left');" << "\n";
         output << "        " << "\n";
         output << "            var svg = d3.select('body').append('svg')" << "\n";
-        output << "                .attr('width', width+70)" << "\n";
-        output << "                .attr('height', height+60)" << "\n";
+        output << "                .attr('width', width+100)" << "\n";
+        output << "                .attr('height', height+40)" << "\n";
         output << "            .append('g')" << "\n";
         output << "                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');" << "\n";
         output << "        " << "\n";
