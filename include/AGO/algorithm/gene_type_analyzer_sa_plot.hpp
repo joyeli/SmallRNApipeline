@@ -478,9 +478,6 @@ class GeneTypeAnalyzerSA_Plot
         output << "        $Alln = Count( $Value_Array );" << "\n";
         output << "        $Trimming = $Alln * ( $isTrimmed == '' || $isTrimmed == 'isTrimmed' ? 0 : $isTrimmed ) / 100;" << "\n";
         output << "" << "\n";
-        output << "        $Label  = $Trimming == 0 ? 'All' : 'Trimmed';" << "\n";
-        output << "        $nLabel = $Alln;" << "\n";
-        output << "" << "\n";
         output << "#<!--================== Ranking ====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
@@ -705,9 +702,12 @@ class GeneTypeAnalyzerSA_Plot
         output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
         output << "" << "\n";
         output << "                $Temp_Array = Array();" << "\n";
-        output << "                $nLabel = $N;" << "\n";
+        output << "                $Trimmedn = $N;" << "\n";
         output << "            }" << "\n";
         output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        $Label_Witdh = $Trimming == 0 ? 2.3 : 5.3;" << "\n";
+        output << "        $Label = 'All = '.$Alln.( $Trimming == 0 ? '' : ( ', Trimmed = '.$Trimmedn ));" << "\n";
         output << "" << "\n";
         output << "        For( $n = $nNumber, $i = $Alln - $nNumber; $i < $Alln; $n--,++$i )" << "\n";
         output << "        {" << "\n";
@@ -955,11 +955,11 @@ class GeneTypeAnalyzerSA_Plot
         output << "                'font-size': '16px'," << "\n";
         output << "                });" << "\n";
         output << "" << "\n";
-        output << "            $( 'body' ).append( '<div id=all>$Label = $nLabel</div>' );" << "\n";
+        output << "            $( 'body' ).append( '<div id=all>$Label</div>' );" << "\n";
         output << "            $( '#all' ).css({" << "\n";
         output << "                'position': 'absolute'," << "\n";
         output << "                'top': height - 15 + 'px'," << "\n";
-        output << "                'left': width * 2 + width / 2.5 + 'px'," << "\n";
+        output << "                'left': width * 2 + width / $Label_Witdh + 'px'," << "\n";
         output << "                'font-size': '16px'," << "\n";
         output << "                });" << "\n";
         output << "" << "\n";
