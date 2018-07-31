@@ -25,6 +25,7 @@ class GeneTypeAnalyzer
     using Base = engine::NamedComponent;
 
     std::vector< std::string > biotype_list;
+    std::vector< std::string > analysis_list;
 
     double sudo_count;
 
@@ -43,6 +44,55 @@ class GeneTypeAnalyzer
     std::string node_path;
     std::string heatbub_js;
 
+    void emplace_list( const bpt::ptree& p, const std::string& tag, std::vector< std::string >& list )
+    {
+        std::size_t i = 0;
+        std::size_t miRNA_idx = 0;
+        std::size_t mirtron_idx = 0;
+        std::size_t miRNA_mirtron_idx = 0;
+
+        for( auto& biotype : p.get_child( tag ))
+        {
+            i++;
+            if( biotype.second.data() == "miRNA" ) miRNA_idx = i; 
+            if( biotype.second.data() == "mirtron" ) mirtron_idx = i; 
+            if( biotype.second.data() == "miRNA_mirtron" ) miRNA_mirtron_idx = i; 
+            list.emplace_back( biotype.second.data() );
+        }
+
+        if(( miRNA_mirtron_idx != 0 && ( miRNA_idx == 0 || mirtron_idx == 0 ))
+        || ( miRNA_idx != 0 && mirtron_idx != 0 && miRNA_idx < mirtron_idx  ))
+        {
+            std::vector< std::string > biotype_list_temp;
+
+            for( std::size_t i = 0; i < list.size(); ++i )
+            {
+                if( list[i] == "mirtron" ) continue;
+                if( miRNA_mirtron_idx != 0 )
+                {
+                    if( list[i] == "miRNA" ) continue;
+                    if( list[i] == "miRNA_mirtron" )
+                    {
+                        biotype_list_temp.emplace_back( "mirtron" );
+                        biotype_list_temp.emplace_back( "miRNA" );
+                    }
+                }
+                else if( list[i] == "miRNA" )
+                {
+                    biotype_list_temp.emplace_back( "mirtron" );
+                    biotype_list_temp.emplace_back( "miRNA" );
+                }
+
+                biotype_list_temp.emplace_back( list[i] );
+            }
+
+            list = biotype_list_temp;
+        }
+
+        if( !is_skip_un_annotated )
+            list.emplace_back( "un_annotated" );
+    }
+
     virtual void config_parameters( const bpt::ptree& p ) override
     {
         sudo_count = p.get_optional< double   >( "sudo_count"     ).value_or( 0.000001 );
@@ -59,54 +109,8 @@ class GeneTypeAnalyzer
         node_path  = p.get_optional< std::string >( "node_path"  ).value_or( "/home/joyel/bin/node" );
         heatbub_js = p.get_optional< std::string >( "heatbub_js" ).value_or( "/home/joyel/WorkDir/AgoD3/heatmap_bubble_plot/heatmap_bubble_plot.js" );
 
-        if(  p.get_child_optional( "biotype_list" ))
-        {
-            std::size_t i = 0;
-            std::size_t miRNA_idx = 0;
-            std::size_t mirtron_idx = 0;
-            std::size_t miRNA_mirtron_idx = 0;
-
-            for( auto& biotype : p.get_child( "biotype_list" ))
-            {
-                i++;
-                if( biotype.second.data() == "miRNA" ) miRNA_idx = i; 
-                if( biotype.second.data() == "mirtron" ) mirtron_idx = i; 
-                if( biotype.second.data() == "miRNA_mirtron" ) miRNA_mirtron_idx = i; 
-                biotype_list.emplace_back( biotype.second.data() );
-            }
-
-            if(( miRNA_mirtron_idx != 0 && ( miRNA_idx == 0 || mirtron_idx == 0 ))
-            || ( miRNA_idx != 0 && mirtron_idx != 0 && miRNA_idx < mirtron_idx  ))
-            {
-                std::vector< std::string > biotype_list_temp;
-
-                for( std::size_t i = 0; i < biotype_list.size(); ++i )
-                {
-                    if( biotype_list[i] == "mirtron" ) continue;
-                    if( miRNA_mirtron_idx != 0 )
-                    {
-                        if( biotype_list[i] == "miRNA" ) continue;
-                        if( biotype_list[i] == "miRNA_mirtron" )
-                        {
-                            biotype_list_temp.emplace_back( "mirtron" );
-                            biotype_list_temp.emplace_back( "miRNA" );
-                        }
-                    }
-                    else if( biotype_list[i] == "miRNA" )
-                    {
-                        biotype_list_temp.emplace_back( "mirtron" );
-                        biotype_list_temp.emplace_back( "miRNA" );
-                    }
-
-                    biotype_list_temp.emplace_back( biotype_list[i] );
-                }
-
-                biotype_list = biotype_list_temp;
-            }
-
-            if( !is_skip_un_annotated )
-                biotype_list.emplace_back( "un_annotated" );
-        }
+        if( p.get_child_optional( "biotype_list"  )) emplace_list( p, "biotype_list", biotype_list );
+        if( p.get_child_optional( "analysis_list" )) emplace_list( p, "analysis_list", analysis_list );
     }
 
   public:
@@ -125,7 +129,9 @@ class GeneTypeAnalyzer
         auto& bed_samples  = db.bed_samples;
         auto& genome_table = db.genome_table;
 
-        monitor.set_monitor( "Component GeneTypeAnalyzer", 4 + biotype_list.size() + ( output_annobed ? bed_samples.size() : 0 ));
+        std::size_t analysis_size = analysis_list.empty() ? biotype_list.size() : analysis_list.size() ;
+
+        monitor.set_monitor( "Component GeneTypeAnalyzer", 4 + analysis_size + ( output_annobed ? bed_samples.size() : 0 ));
         monitor.log( "Component GeneTypeAnalyzer", "Start" );
 
 
@@ -146,14 +152,16 @@ class GeneTypeAnalyzer
         std::vector< std::map< std::string, std::string >> anno_mark;
         std::vector< std::map< std::string, std::map< std::string, double >>> seed_match_table;
 
-        for( std::size_t i = 0; i < biotype_list.size(); ++i )
+        for( std::size_t i = 0; i < analysis_size; ++i )
         {
-            auto& biotype = biotype_list[i];
+            // break;
+
+            auto& biotype = analysis_list.empty() ? biotype_list[i] : analysis_list[i];
             if( biotype == "rmsk" ) continue;
 
             monitor.set_monitor( "\tBiotype Analysis - " + biotype, 6 );
 
-            monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( biotype_list.size() ) + " ]" );
+            monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( analysis_size ) + " ]" );
             monitor.log( "\tBiotype Analysis - " + biotype, "Start" );
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
