@@ -785,6 +785,12 @@ class GeneTypeAnalyzerTaildot
         	output << "                    .attr('xlink:href', function(d){ mirAnno = d.miRNA.split( '_' )[0]; return '../SqAlign/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=' + " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? "mirAnno.substring( 0, mirAnno.length -3 )" : "mirAnno" ) << "; })" << "\n";
         	output << "                    .attr('target', '_blank')" << "\n";
         }
+        else
+        {
+        	output << "                    .append('a')" << "\n";
+        	output << "                    .attr('xlink:href', function(d){ mirAnno = d.miRNA.split( '_' )[0]; return '../SeedPie/index.php?TSV_File=$TSV_File.tsv&Annotation_Select=' + mirAnno + '&Filter=10'; })" << "\n";
+        	output << "                    .attr('target', '_blank')" << "\n";
+        }
 
         output << "                    .append('circle')" << "\n";
         output << "                    .attr('class', 'dot')" << "\n";

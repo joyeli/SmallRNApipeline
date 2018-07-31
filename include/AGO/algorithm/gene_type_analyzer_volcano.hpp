@@ -485,9 +485,20 @@ class GeneTypeAnalyzerVolcano
         output << "                svg.selectAll('.dot')" << "\n";
         output << "                    .data(data)" << "\n";
         output << "                    .enter()" << "\n";
-        output << "                    .append('a')" << "\n";
-        output << "                    .attr('xlink:href', function(d){ mirAnno = d.miRNA.split( '_' )[0]; return '../SqAlign/index.php?TSV_File=$Sample1.tsv&Annotation_Select=' + " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? "mirAnno.substring( 0, mirAnno.length -3 )" : "mirAnno" ) << "; })" << "\n";
-        output << "                    .attr('target', '_blank')" << "\n";
+
+        if( !isSeed )
+        {
+            output << "                    .append('a')" << "\n";
+            output << "                    .attr('xlink:href', function(d){ mirAnno = d.miRNA.split( '_' )[0]; return '../SqAlign/index.php?TSV_File=$Sample1.tsv&Annotation_Select=' + " << ( biotype == "miRNA" || biotype == "mirtron" || biotype == "miRNA_mirtron" ? "mirAnno.substring( 0, mirAnno.length -3 )" : "mirAnno" ) << "; })" << "\n";
+            output << "                    .attr('target', '_blank')" << "\n";
+        }
+        else
+        {
+            output << "                    .append('a')" << "\n";
+            output << "                    .attr('xlink:href', function(d){ mirAnno = d.miRNA.split( '_' )[0]; return '../SeedPie/index.php?TSV_File=All.tsv&Annotation_Select=' + mirAnno; })" << "\n";
+            output << "                    .attr('target', '_blank')" << "\n";
+        }
+
         output << "                    .append('circle')" << "\n";
         output << "                    .attr('class', 'dot')" << "\n";
         output << "                    .attr('r', 3)" << "\n";
