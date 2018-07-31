@@ -105,6 +105,8 @@ class GeneTypeAnalyzerDiffBar
         double fold_change2 = s2 / s1;
         double count1 = std::log( s1 );
         double count2 = std::log( s2 );
+        // double count1 = s1 / ( std::log( s1 > s2 ? s1 : s2 ) / std::log(2) );
+        // double count2 = s2 / ( std::log( s1 > s2 ? s1 : s2 ) / std::log(2) );
         double p_value = 1 - ( fold_change1 < 1
                 ? boost::math::ibeta(( 3.26 + count2 ), ( 1.63 + count1 ), ( fold_change2 / ( 1 + fold_change2 )))
                 : boost::math::ibeta(( 3.26 + count1 ), ( 1.63 + count2 ), ( fold_change1 / ( 1 + fold_change1 )))
@@ -684,13 +686,13 @@ class GeneTypeAnalyzerDiffBar
         output << "            }" << "\n";
         output << "" << "\n";
         output << "            $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
-        output << "            $Annotation  = Explode( '!', $inFile_Line[0] );" << "\n";
-        output << "            $Annotation  = Explode( '*', $Annotation[0] );" << "\n";
+        output << "            $inFile_Line = Explode( '!', $inFile_Line[0] );" << "\n";
+        output << "            $inFile_Line = Explode( '*', $inFile_Line[0] );" << "\n";
         output << "" << "\n";
         output << "            if( !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs ))" << "\n";
         output << "                continue;" << "\n";
         output << "" << "\n";
-        output << "            Array_Push( $Single_Anno_List, $Annotation[0] );" << "\n";
+        output << "            Array_Push( $Single_Anno_List, $inFile_Line[0] );" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        $TSV_File = Array();" << "\n";
