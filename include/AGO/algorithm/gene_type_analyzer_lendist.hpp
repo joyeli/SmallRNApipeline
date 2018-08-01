@@ -243,7 +243,14 @@ class GeneTypeAnalyzerLendist
             output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
             output << "            </form>\";" << "\n";
         }
-        else output << "        $IsomiRs = 'No';" << "\n";
+        else if( isSeed )
+        {
+            output << "        $IsomiRs = 'No';" << "\n";
+        }
+        else if( is_biotype )
+        {
+            output << "        $IsomiRs = 'Yes';" << "\n";
+        }
 
         output << "" << "\n";
         output << "#<!--================== TSV File ====================-->" << "\n";
@@ -263,18 +270,10 @@ class GeneTypeAnalyzerLendist
         {
             output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n";
             output << "        {" << "\n";
-            output << "            $TSV_Temp = Explode( '-trimmed', $TSV_List[$i] );" << "\n";
+            output << "            $TSV_Temp = Explode( $Trimmed == 'Yes' ? '-trimmed' : '-isomiRs', $TSV_List[$i] );" << "\n";
             output << "" << "\n";
-            output << "            if( $Trimmed == 'Yes' )" << "\n";
-            output << "            {" << "\n";
-            output << "                if( Count( $TSV_Temp ) > 1 )" << "\n";
-            output << "                    Array_Push( $TSV_List_Temp, $TSV_Temp[0] );" << "\n";
-            output << "            }" << "\n";
-            output << "            else" << "\n";
-            output << "            {" << "\n";
-            output << "                if( Count( $TSV_Temp ) == 1 )" << "\n";
-            output << "                    Array_Push( $TSV_List_Temp, Substr( $TSV_Temp[0], 0, Strlen( $TSV_Temp[0] ) - 4 ));" << "\n";
-            output << "            }" << "\n";
+            output << "            if( Count( $TSV_Temp ) > 1 )" << "\n";
+            output << "                Array_Push( $TSV_List_Temp, $TSV_Temp[0] );" << "\n";
             output << "        }" << "\n";
         }
         else
