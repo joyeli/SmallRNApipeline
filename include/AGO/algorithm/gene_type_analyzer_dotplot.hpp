@@ -707,6 +707,12 @@ class GeneTypeAnalyzerDotplot
         output << "            }" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
+        output << "        if( $FGMPM == 'Tailing_Ratio' )" << "\n";
+        output << "        {" << "\n";
+        output << "            $minPPM = 0;" << "\n";
+        output << "            $maxPPM = $isLog != '' && $isLog != 'isLog' ? ( Log( 100 ) / Log( $isLog )) : 100;" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
         output << "        Fclose( $Ftemp );" << "\n";
         output << "" << "\n";
         output << "        if( $FGMPM == '' )" << "\n";
