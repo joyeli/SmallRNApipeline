@@ -8,6 +8,7 @@
 #include <AGO/algorithm/gene_type_analyzer_eachtype.hpp>
 #include <AGO/algorithm/gene_type_analyzer_annobed.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
+#include <AGO/algorithm/gene_type_analyzer_tmm.hpp>
 #include <iomanip>
 
 namespace ago {
@@ -21,6 +22,7 @@ class GeneTypeAnalyzer
       , algorithm::GeneTypeAnalyzerQuantile
       , algorithm::GeneTypeAnalyzerEachtype
       , algorithm::GeneTypeAnalyzerAnnobed
+      , algorithm::GeneTypeAnalyzerTmm
 {
     using Base = engine::NamedComponent;
 
@@ -211,8 +213,17 @@ class GeneTypeAnalyzer
                     boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR_Seed" ));
                 }
 
-                if( biotype == "miRNA_mirtron" )
-                    algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+                // if( biotype == "miRNA_mirtron" )
+                {
+                    // algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+
+                    std::vector< double > tmm_means;
+                    algorithm::GeneTypeAnalyzerTmm( ano_len_idx, anno_table_tail, tmm_means, 30, 5, 2000 ); // Mg / Ag / mean
+
+                    std::cerr << biotype;
+                    for( auto& tmm : tmm_means ) std::cerr << "\t" << tmm;
+                    std::cerr << "\n";
+                }
             }
 
             algorithm::GeneTypeAnalyzerEachtype(
