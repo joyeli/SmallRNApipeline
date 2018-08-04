@@ -131,20 +131,25 @@ class GeneTypeAnalyzer
         auto& bed_samples  = db.bed_samples;
         auto& genome_table = db.genome_table;
 
+        std::vector< double > tmm_means;
+        std::vector< std::pair< std::string, std::vector< double >>> trim_means;
+
         std::size_t analysis_size = analysis_list.empty() ? biotype_list.size() : analysis_list.size() ;
 
-        monitor.set_monitor( "Component GeneTypeAnalyzer", 4 + analysis_size + ( output_annobed ? bed_samples.size() : 0 ));
+        monitor.set_monitor( "Component GeneTypeAnalyzer", 4 + analysis_size );
         monitor.log( "Component GeneTypeAnalyzer", "Start" );
-
 
         monitor.log( "Component GeneTypeAnalyzer", "Filtering ... " );
         filtering( bed_samples, biotype_list, is_keep_other_biotype, max_anno_merge_size );
         ParaThreadPool smp_parallel_pool( bed_samples.size() );
 
         std::string output_path = db.output_dir().string() + ( db.output_dir().string().at( db.output_dir().string().length() -1 ) != '/' ? "/" : "" ) ;
+
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "Biotypes" ));
-        boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other_Seed" ));
-        boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other" ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "Genetype" ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "Genetype_Seed" ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "Genetype_5p" ));
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "Genetype_3p" ));
 
         monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotypes" );
         algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, sudo_count, webpage_update_only );
@@ -161,7 +166,7 @@ class GeneTypeAnalyzer
             auto& biotype = analysis_list.empty() ? biotype_list[i] : analysis_list[i];
             if( biotype == "rmsk" ) continue;
 
-            monitor.set_monitor( "\tBiotype Analysis - " + biotype, 6 );
+            monitor.set_monitor( "\tBiotype Analysis - " + biotype, 10 );
 
             monitor.log( "Component GeneTypeAnalyzer", "Outputing ... " + biotype + " [ " + std::to_string( i+1 ) + " / " + std::to_string( analysis_size ) + " ]" );
             monitor.log( "\tBiotype Analysis - " + biotype, "Start" );
@@ -191,10 +196,8 @@ class GeneTypeAnalyzer
 
             if( total_anno_counts == 0 )
             {
-                monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
-                monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
-                monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
-                monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
+                for( std::size_t i = 0; i < 8; ++i )
+                    monitor.log( "\tBiotype Analysis - " + biotype, "Skip with " + std::to_string( total_anno_counts ) + " annotations" );
                 continue;
             }
 
@@ -202,33 +205,28 @@ class GeneTypeAnalyzer
 
             if( !webpage_update_only )
             {
-                if( biotype != "miRNA_mirtron" )
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Genetype/" + biotype ));
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + "Genetype_Seed/" + biotype ));
+
+                if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
                 {
-                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other/" + biotype ));
-                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "Other_Seed/" + biotype ));
-                }
-                else
-                {
-                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR" ));
-                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "miR_Seed" ));
+                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "Genetype_5p/" + biotype ));
+                    boost::filesystem::create_directory( boost::filesystem::path( output_path + "Genetype_3p/" + biotype ));
                 }
 
                 // if( biotype == "miRNA_mirtron" )
                 {
                     // algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
 
-                    std::vector< double > tmm_means;
                     algorithm::GeneTypeAnalyzerTmm( ano_len_idx, anno_table_tail, tmm_means, 30, 5, 2000 ); // Mg / Ag / mean
-
-                    std::cerr << biotype;
-                    for( auto& tmm : tmm_means ) std::cerr << "\t" << tmm;
-                    std::cerr << "\n";
+                    trim_means.emplace_back( std::make_pair( biotype, tmm_means ));
+                    tmm_means.clear();
                 }
             }
 
             algorithm::GeneTypeAnalyzerEachtype(
                       biotype
-                    , output_path + ( biotype == "miRNA_mirtron" ? "miR/" : "Other/" )
+                    , output_path + "Genetype/" + ( biotype == "miRNA_mirtron" ? "miRNA_mirtron/" : "" )
                     , bed_samples
                     , ano_len_idx
                     , anno_table_tail
@@ -266,19 +264,24 @@ class GeneTypeAnalyzer
 
                 smp_parallel_pool.flush_pool();
 
-                ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype, true );
+                ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype, "seed" );
                 table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
                 seed_refinding( ano_len_idx, anno_table_tail, seed_match_table );
 
                 // if( biotype == "miRNA_mirtron" )
-                    algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+                {
+                    // algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+
+                    algorithm::GeneTypeAnalyzerTmm( ano_len_idx, anno_table_tail, tmm_means, 30, 5, 2000 ); // Mg / Ag / mean
+                    tmm_means.clear();
+                }
             }
 
             monitor.log( "\tBiotype Analysis - " + biotype, "Doing Seed Analysis ..." );
 
             algorithm::GeneTypeAnalyzerEachtype(
                       biotype
-                    , output_path + ( biotype == "miRNA_mirtron" ? "miR_Seed/" : "Other_Seed/" )
+                    , output_path + "Genetype_Seed/" + ( biotype == "miRNA_mirtron" ? "miRNA_mirtron/" : "" )
                     , bed_samples
                     , ano_len_idx
                     , anno_table_tail
@@ -297,22 +300,153 @@ class GeneTypeAnalyzer
                     , true
                     );
 
+            if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
+            {
+                monitor.log( "\tBiotype Analysis - " + biotype, "Makeing Arm-5p Counting Table ..." );
+
+                anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
+                        bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
+
+                anno_mark = std::vector< std::map< std::string, std::string >>( bed_samples.size(), std::map< std::string, std::string >());
+
+                if( !webpage_update_only )
+                {
+                    for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+                    {
+                        smp_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &anno_mark, &genome_table, &biotype, this ] ()
+                        {
+                            make_arm_table( bed_samples[ smp ].second, anno_table_tail[ smp ], anno_mark[ smp ], genome_table, biotype, "5p" );
+                        });
+                    }
+
+                    smp_parallel_pool.flush_pool();
+
+                    ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype, "5p" );
+                    table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
+
+                    // if( biotype == "miRNA_mirtron" )
+                    {
+                        // algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+
+                        algorithm::GeneTypeAnalyzerTmm( ano_len_idx, anno_table_tail, tmm_means, 30, 5, 2000 ); // Mg / Ag / mean
+                        tmm_means.clear();
+                    }
+                }
+
+                monitor.log( "\tBiotype Analysis - " + biotype, "Doing Arm-5p Analysis ..." );
+
+                algorithm::GeneTypeAnalyzerEachtype(
+                          biotype
+                        , output_path + "Genetype_5p/" + ( biotype == "miRNA_mirtron" ? "miRNA_mirtron/" : "" )
+                        , bed_samples
+                        , ano_len_idx
+                        , anno_table_tail
+                        , seed_match_table
+                        , anno_mark
+                        , genome_table
+                        , thread_number
+                        , node_path
+                        , heatbub_js
+                        , min_len
+                        , max_len
+                        , extend_merge
+                        , extend_refseq
+                        , max_anno_merge_size
+                        , webpage_update_only
+                        , false
+                        );
+
+                monitor.log( "\tBiotype Analysis - " + biotype, "Makeing Arm-3p Counting Table ..." );
+
+                anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>(
+                        bed_samples.size(), std::vector< algorithm::CountingTableType >( 6, algorithm::CountingTableType() ));
+
+                anno_mark = std::vector< std::map< std::string, std::string >>( bed_samples.size(), std::map< std::string, std::string >());
+
+                if( !webpage_update_only )
+                {
+                    for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+                    {
+                        smp_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &anno_mark, &genome_table, &biotype, this ] ()
+                        {
+                            make_arm_table( bed_samples[ smp ].second, anno_table_tail[ smp ], anno_mark[ smp ], genome_table, biotype, "3p" );
+                        });
+                    }
+
+                    smp_parallel_pool.flush_pool();
+
+                    ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype, "3p" );
+                    table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
+
+                    // if( biotype == "miRNA_mirtron" )
+                    {
+                        // algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
+
+                        algorithm::GeneTypeAnalyzerTmm( ano_len_idx, anno_table_tail, tmm_means, 30, 5, 2000 ); // Mg / Ag / mean
+                        tmm_means.clear();
+                    }
+                }
+
+                monitor.log( "\tBiotype Analysis - " + biotype, "Doing Arm-3p Analysis ..." );
+
+                algorithm::GeneTypeAnalyzerEachtype(
+                          biotype
+                        , output_path + "Genetype_3p/" + ( biotype == "miRNA_mirtron" ? "miRNA_mirtron/" : "" )
+                        , bed_samples
+                        , ano_len_idx
+                        , anno_table_tail
+                        , seed_match_table
+                        , anno_mark
+                        , genome_table
+                        , thread_number
+                        , node_path
+                        , heatbub_js
+                        , min_len
+                        , max_len
+                        , extend_merge
+                        , extend_refseq
+                        , max_anno_merge_size
+                        , webpage_update_only
+                        , false
+                        );
+            }
+            else
+            {
+                for( std::size_t i = 0; i < 4; ++i )
+                    monitor.log( "\tBiotype Analysis - " + biotype, "Complete with " + std::to_string( total_anno_counts ) + " annotations" );
+            }
+
             monitor.log( "\tBiotype Analysis - " + biotype, "Complete with " + std::to_string( total_anno_counts ) + " annotations" );
         }
 
-        if( output_annobed )
+        if( !webpage_update_only )
         {
-            for( size_t smp = 0; smp < bed_samples.size(); ++smp )
+            if( output_annobed )
             {
-                monitor.log( "Component GeneTypeAnalyzer", "Outputing ... AnnoBed [ " + std::to_string( smp+1 ) + " / " + std::to_string( bed_samples.size() ) + " ]" );
-
-                if( !webpage_update_only )
+                for( size_t smp = 0; smp < bed_samples.size(); ++smp )
                 {
                     std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_analyzedbed.text" );
                     annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second );
                     annobed_output.close();
                 }
             }
+
+            std::ofstream tmm_output( output_path + "tmm_means.text" );
+            tmm_output << "Biotypes";
+
+            for( size_t smp = 0; smp < bed_samples.size(); ++smp )
+                tmm_output << "\t" << bed_samples[ smp ].first;
+
+            for( auto& bio : trim_means )
+            {
+                tmm_output << "\n" << bio.first;
+
+                for( size_t smp = 0; smp < bed_samples.size(); ++smp )
+                    tmm_output << "\t" << bio.second[ smp ];
+            }
+
+            tmm_output << "\n";
+            tmm_output.close();
         }
 
         monitor.log( "Component GeneTypeAnalyzer", "Complete" );
