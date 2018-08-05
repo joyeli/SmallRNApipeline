@@ -189,7 +189,7 @@ class GeneTypeAnalyzerDiffBar
 
                     for( std::size_t smp = 0; smp < anno_table_tail_isomir.size(); smp++ )
                     {
-                        for( std::size_t i = 0; i < 5; i++ )
+                        for( std::size_t i = 0; i < 6; i++ )
                         {
                             if( anno_table_tail[ smp ][i].find( split[0] ) == anno_table_tail[ smp ][i].end() )
                                 for( auto& len : ano_len_idx.second ) anno_table_tail[ smp ][i][ split[0] ][ len ] = 0.0;
