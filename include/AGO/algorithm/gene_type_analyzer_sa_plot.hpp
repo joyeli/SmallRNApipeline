@@ -8,13 +8,13 @@ struct SA_Type
     std::vector< double > GMPM; // GMPM, GM, PM
     std::vector< double > Tail; // Atail, Ctail, Gtail, Other
     std::vector< double > tail; // aTail, cTail, gTail, Other is splite in to each Tail
-    std::vector< std::map< char, double >> Seed; // 5'End-NT + Seed + 3'End-NT ( 1 + 7 + 1 )
+    std::vector< std::map< char, double >> Ends; // 5'End-NT + Seed + 3'End-NT ( 0 ~ -4 ) + 3'End-4N ( 1 + 7 + 5 + 1 )
 
     SA_Type()
         : GMPM( 3, 0.0 )
         , Tail( 5, 0.0 )
         , tail( 4, 0.0 )
-        , Seed( 9, std::map< char, double >() )
+        , Ends( 14, std::map< char, double >() )
     {}
 };
 
@@ -78,11 +78,11 @@ class GeneTypeAnalyzerSA_Plot
             {
                 std::map< char, std::size_t > tail_count;
 
-                for( std::size_t j = 0; j < tail_seq.length(); ++j )
+                for( std::size_t i = 0; i < tail_seq.length(); ++i )
                 {
-                    if( tail_count.find( tail_seq.at(j) ) == tail_count.end() )
-                        tail_count[ tail_seq.at(j) ] = 0;
-                    tail_count[ tail_seq.at(j) ] += 1;
+                    if( tail_count.find( tail_seq.at(i) ) == tail_count.end() )
+                        tail_count[ tail_seq.at(i) ] = 0;
+                    tail_count[ tail_seq.at(i) ] += 1;
                 }
 
                 for( auto& tail_char : tail_count ) switch ( tail_char.first )
@@ -98,29 +98,48 @@ class GeneTypeAnalyzerSA_Plot
         else sa_it->second.GMPM[1] += ppm;
 
         char nt = ' ';
+        std::string last4n = "";
 
-        for( std::size_t j = 0; j < 8; ++j )
+        for( std::size_t i = 0; i < 8; ++i )
         {
-            nt = sequence.at(j);
+            nt = sequence.at(i);
 
-            if( md_map.find(j) != md_map.end() ) nt = md_map[j];
-            if( tc_set.find(j) != tc_set.end() ) nt = 'T';
+            if( md_map.find(i) != md_map.end() ) nt = md_map[i];
+            if( tc_set.find(i) != tc_set.end() ) nt = 'T';
 
-            if( sa_it->second.Seed[j].find( nt ) == sa_it->second.Seed[j].end() )
-                sa_it->second.Seed[j][ nt ] = 0;
+            if( sa_it->second.Ends[i].find( nt ) == sa_it->second.Ends[i].end() )
+                sa_it->second.Ends[i][ nt ] = 0;
 
-            sa_it->second.Seed[j][ nt ] += ppm;
+            sa_it->second.Ends[i][ nt ] += ppm;
         }
 
-        nt = sequence.at( sequence.length() -1 );
+        for( std::size_t i = 0; i < 5; ++i )
+        {
+            nt = sequence.at( sequence.length() -1 -i );
 
-        if( md_map.find( sequence.length() -1 ) != md_map.end() ) nt = md_map[ sequence.length() -1 ];
-        if( tc_set.find( sequence.length() -1 ) != tc_set.end() ) nt = 'T';
+            if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
+            if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
 
-        if( sa_it->second.Seed[8].find( nt ) == sa_it->second.Seed[8].end() )
-            sa_it->second.Seed[8][ nt ] = 0;
+            if( sa_it->second.Ends[ 8 + i ].find( nt ) == sa_it->second.Ends[ 8 + i ].end() )
+                sa_it->second.Ends[ 8 + i ][ nt ] = 0;
 
-        sa_it->second.Seed[8][ nt ] += ppm;
+            sa_it->second.Ends[ 8 + i ][ nt ] += ppm;
+        }
+
+        last4n = sequence.substr( sequence.length() -1 -4, 4 );
+
+        for( std::size_t i = 0; i < 4; ++i )
+        {
+            nt = last4n.at(i);
+
+            if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
+            if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
+
+            if( sa_it->second.Ends[13].find( nt ) == sa_it->second.Ends[13].end() )
+                sa_it->second.Ends[13][ nt ] = 0;
+
+            sa_it->second.Ends[13][ nt ] += ppm;
+        }
     }
 
     static void make_sa_counting_table(
@@ -168,14 +187,14 @@ class GeneTypeAnalyzerSA_Plot
     {
         SA_Type sum;
 
-        for( std::size_t i = 0; i < 9; ++i ) sum.Seed[i]['S'] = 0.0;
+        for( std::size_t i = 0; i < 14; ++i ) sum.Ends[i]['S'] = 0.0;
 
         for( auto& sa : sa_table )
         {
             for( std::size_t i = 0; i < 5; ++i ) sum.Tail[i] += sa.second.Tail[i];
             for( std::size_t i = 0; i < 4; ++i ) sum.tail[i] += sa.second.tail[i];
-            for( std::size_t i = 0; i < 9; ++i )
-            for( auto & nt : sa.second.Seed[i] ) sum.Seed[i]['S'] += nt.second;
+            for( std::size_t i = 0; i < 14; ++i )
+            for( auto & nt : sa.second.Ends[i] ) sum.Ends[i]['S'] += nt.second;
         }
 
         return sum;
@@ -189,13 +208,13 @@ class GeneTypeAnalyzerSA_Plot
         {
             // for( std::size_t i = 0; i < 5; ++i ) sa.second.Tail[i] = sa.second.Tail[i] / sum.Tail[i];
             // for( std::size_t i = 0; i < 4; ++i ) sa.second.tail[i] = sa.second.tail[i] / sum.tail[i];
-            for( std::size_t i = 0; i < 9; ++i )
+            for( std::size_t i = 0; i < 14; ++i )
             {
-                // for( auto & nt : sa.second.Seed[i] ) nt.second = nt.second / sum.Seed[i]['S'];
-                if( sa.second.Seed[i].find( 'A' ) == sa.second.Seed[i].end() ) sa.second.Seed[i][ 'A' ] = 0.0;
-                if( sa.second.Seed[i].find( 'C' ) == sa.second.Seed[i].end() ) sa.second.Seed[i][ 'C' ] = 0.0;
-                if( sa.second.Seed[i].find( 'G' ) == sa.second.Seed[i].end() ) sa.second.Seed[i][ 'G' ] = 0.0;
-                if( sa.second.Seed[i].find( 'T' ) == sa.second.Seed[i].end() ) sa.second.Seed[i][ 'T' ] = 0.0;
+                // for( auto & nt : sa.second.Ends[i] ) nt.second = nt.second / sum.Ends[i]['S'];
+                if( sa.second.Ends[i].find( 'A' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'A' ] = 0.0;
+                if( sa.second.Ends[i].find( 'C' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'C' ] = 0.0;
+                if( sa.second.Ends[i].find( 'G' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'G' ] = 0.0;
+                if( sa.second.Ends[i].find( 'T' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'T' ] = 0.0;
             }
         }
     }
@@ -217,7 +236,12 @@ class GeneTypeAnalyzerSA_Plot
         std::ofstream outnt5( output_name + sample_name + "-nt_5.tsv" );
         std::ofstream outnt6( output_name + sample_name + "-nt_6.tsv" );
         std::ofstream outnt7( output_name + sample_name + "-nt_7.tsv" );
-        std::ofstream outnt8( output_name + sample_name + "-nt_last.tsv" );
+        std::ofstream outlt0( output_name + sample_name + "-nt_last_0.tsv" );
+        std::ofstream outlt1( output_name + sample_name + "-nt_last_-1.tsv" );
+        std::ofstream outlt2( output_name + sample_name + "-nt_last_-2.tsv" );
+        std::ofstream outlt3( output_name + sample_name + "-nt_last_-3.tsv" );
+        std::ofstream outlt4( output_name + sample_name + "-nt_last_-4.tsv" );
+        std::ofstream outl4n( output_name + sample_name + "-nt_last_4N.tsv" );
 
         outtll << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
         outtlo << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT\tO";
@@ -229,7 +253,12 @@ class GeneTypeAnalyzerSA_Plot
         outnt5 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
         outnt6 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
         outnt7 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outnt8 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+        outlt0 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+        outlt1 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+        outlt2 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+        outlt3 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+        outlt4 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+        outl4n << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
 
         for( auto& anno : ano_len_idx.first )
         {
@@ -245,7 +274,12 @@ class GeneTypeAnalyzerSA_Plot
             outnt5 << "\n" << anno;
             outnt6 << "\n" << anno;
             outnt7 << "\n" << anno;
-            outnt8 << "\n" << anno;
+            outlt0 << "\n" << anno;
+            outlt1 << "\n" << anno;
+            outlt2 << "\n" << anno;
+            outlt3 << "\n" << anno;
+            outlt4 << "\n" << anno;
+            outl4n << "\n" << anno;
 
             for( std::size_t i = 0; i < 3; ++i )
             {
@@ -259,22 +293,32 @@ class GeneTypeAnalyzerSA_Plot
                 outnt5 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
                 outnt6 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
                 outnt7 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt8 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
+                outlt0 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
+                outlt1 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
+                outlt2 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
+                outlt3 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
+                outlt4 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
+                outl4n << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
             }
 
             for( std::size_t i = 0; i < 4; ++i ) outtll << "\t" << anno_sa_table[ smp ][ anno ].tail[i];
             for( std::size_t i = 0; i < 5; ++i ) outtlo << "\t" << anno_sa_table[ smp ][ anno ].Tail[i];
-            for( std::size_t i = 0; i < 9; ++i ) switch( i )
+            for( std::size_t i = 0; i < 14; ++i ) switch( i )
             {
-                case 0 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt0 << "\t" << nt.second; break;
-                case 1 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt1 << "\t" << nt.second; break;
-                case 2 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt2 << "\t" << nt.second; break;
-                case 3 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt3 << "\t" << nt.second; break;
-                case 4 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt4 << "\t" << nt.second; break;
-                case 5 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt5 << "\t" << nt.second; break;
-                case 6 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt6 << "\t" << nt.second; break;
-                case 7 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt7 << "\t" << nt.second; break;
-                case 8 : for( auto& nt : anno_sa_table[ smp ][ anno ].Seed[i] ) outnt8 << "\t" << nt.second; break;
+                case 0 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt0 << "\t" << nt.second; break;
+                case 1 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt1 << "\t" << nt.second; break;
+                case 2 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt2 << "\t" << nt.second; break;
+                case 3 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt3 << "\t" << nt.second; break;
+                case 4 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt4 << "\t" << nt.second; break;
+                case 5 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt5 << "\t" << nt.second; break;
+                case 6 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt6 << "\t" << nt.second; break;
+                case 7 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt7 << "\t" << nt.second; break;
+                case 8 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt0 << "\t" << nt.second; break;
+                case 9 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt1 << "\t" << nt.second; break;
+                case 10: for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt2 << "\t" << nt.second; break;
+                case 11: for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt3 << "\t" << nt.second; break;
+                case 12: for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt4 << "\t" << nt.second; break;
+                case 13: for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outl4n << "\t" << nt.second; break;
             }
         }
 
@@ -288,7 +332,12 @@ class GeneTypeAnalyzerSA_Plot
         outnt5.close();
         outnt6.close();
         outnt7.close();
-        outnt8.close();
+        outlt0.close();
+        outlt1.close();
+        outlt2.close();
+        outlt3.close();
+        outlt4.close();
+        outl4n.close();
     }
 
     static void debug( std::map< std::string, SA_Type >& sa_table )
@@ -301,12 +350,12 @@ class GeneTypeAnalyzerSA_Plot
             for( std::size_t i = 0; i < 3; ++i ) std::cerr << "\t" << sa.GMPM[i];
             for( std::size_t i = 0; i < 5; ++i ) std::cerr << "\t" << sa.Tail[i];
             for( std::size_t i = 0; i < 4; ++i ) std::cerr << "\t" << sa.tail[i];
-            for( std::size_t i = 0; i < 9; ++i )
+            for( std::size_t i = 0; i < 14; ++i )
             {
-                std::cerr << ( sa.Seed[i].find( 'A' ) == sa.Seed[i].end() ? "\tAnotFound" : ( "\t" + std::to_string( sa.Seed[i][ 'A' ] )));
-                std::cerr << ( sa.Seed[i].find( 'C' ) == sa.Seed[i].end() ? "\tCnotFound" : ( "\t" + std::to_string( sa.Seed[i][ 'C' ] )));
-                std::cerr << ( sa.Seed[i].find( 'G' ) == sa.Seed[i].end() ? "\tGnotFound" : ( "\t" + std::to_string( sa.Seed[i][ 'G' ] )));
-                std::cerr << ( sa.Seed[i].find( 'T' ) == sa.Seed[i].end() ? "\tTnotFound" : ( "\t" + std::to_string( sa.Seed[i][ 'T' ] )));
+                std::cerr << ( sa.Ends[i].find( 'A' ) == sa.Ends[i].end() ? "\tAnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'A' ] )));
+                std::cerr << ( sa.Ends[i].find( 'C' ) == sa.Ends[i].end() ? "\tCnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'C' ] )));
+                std::cerr << ( sa.Ends[i].find( 'G' ) == sa.Ends[i].end() ? "\tGnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'G' ] )));
+                std::cerr << ( sa.Ends[i].find( 'T' ) == sa.Ends[i].end() ? "\tTnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'T' ] )));
             }
 
             std::cerr << "\n";
@@ -344,7 +393,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "        echo '<select name=Type onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '; if($Type=='') echo 'selected'; echo 'value= >Select Type</option>';" << "\n";
         output << "" << "\n";
-        output << "        $Type_List = array( '5’End', '3’End', 'Seed0', 'Seed1', 'Seed2', 'Seed3', 'Seed4', 'Seed5', 'Seed6', 'Tail', 'TailwithOther' );" << "\n";
+        output << "        $Type_List = array('5’End','Seed0','Seed1','Seed2','Seed3','Seed4','Seed5','Seed6','3’End-4','3’End-3','3’End-2','3’End-1','3’End','3’End4N','Tail','TailwithOther');" << "\n";
         output << "        $Type_Size = Count( $Type_List );" << "\n";
         output << "        $Type_Name = '';" << "\n";
         output << "" << "\n";
@@ -361,7 +410,6 @@ class GeneTypeAnalyzerSA_Plot
         output << "        switch( $Type )" << "\n";
         output << "        {" << "\n";
         output << "            case '5’End'         : $Type_Name = '-nt_0.tsv'           ; break;" << "\n";
-        output << "            case '3’End'         : $Type_Name = '-nt_last.tsv'        ; break;" << "\n";
         output << "            case 'Seed0'         : $Type_Name = '-nt_1.tsv'           ; break;" << "\n";
         output << "            case 'Seed1'         : $Type_Name = '-nt_2.tsv'           ; break;" << "\n";
         output << "            case 'Seed2'         : $Type_Name = '-nt_3.tsv'           ; break;" << "\n";
@@ -369,6 +417,12 @@ class GeneTypeAnalyzerSA_Plot
         output << "            case 'Seed4'         : $Type_Name = '-nt_5.tsv'           ; break;" << "\n";
         output << "            case 'Seed5'         : $Type_Name = '-nt_6.tsv'           ; break;" << "\n";
         output << "            case 'Seed6'         : $Type_Name = '-nt_7.tsv'           ; break;" << "\n";
+        output << "            case '3’End-4'       : $Type_Name = '-nt_last_-4.tsv'     ; break;" << "\n";
+        output << "            case '3’End-3'       : $Type_Name = '-nt_last_-3.tsv'     ; break;" << "\n";
+        output << "            case '3’End-2'       : $Type_Name = '-nt_last_-2.tsv'     ; break;" << "\n";
+        output << "            case '3’End-1'       : $Type_Name = '-nt_last_-1.tsv'     ; break;" << "\n";
+        output << "            case '3’End'         : $Type_Name = '-nt_last_0.tsv'      ; break;" << "\n";
+        output << "            case '3’End4N'       : $Type_Name = '-nt_last_4N.tsv'     ; break;" << "\n";
         output << "            case 'Tail'          : $Type_Name = '-tail.tsv'           ; break;" << "\n";
         output << "            case 'TailwithOther' : $Type_Name = '-tail_with_other.tsv'; break;" << "\n";
         output << "        }" << "\n";
@@ -445,11 +499,10 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "                if( $isHeader )" << "\n";
         output << "                {" << "\n";
-        output << "                    if( $Ranking == 'Tailing％' )" << "\n";
-        output << "                        $Header[0] = $inFile_Line[2];" << "\n";
+        output << "                    $Header[0] = $inFile_Line[2];" << "\n";
         output << "" << "\n";
         output << "                    For( $i = 4; $i < Count( $inFile_Line ); ++$i )" << "\n";
-        output << "                        $Header[ $i - ( $Ranking != 'Tailing％' ? 4 : 3 )] = $inFile_Line[$i];" << "\n";
+        output << "                        $Header[ $i - 3 ] = $inFile_Line[$i];" << "\n";
         output << "" << "\n";
         output << "                    $isHeader = false;" << "\n";
         output << "                    continue;" << "\n";
@@ -467,11 +520,10 @@ class GeneTypeAnalyzerSA_Plot
         output << "                    default          : $Ranking_Type = $inFile_Line[1] ; break;" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                if( $Ranking == 'Tailing％' )" << "\n";
-        output << "                    $Ratio_Array[0] = $inFile_Line[2];" << "\n";
+        output << "                $Ratio_Array[0] = $inFile_Line[2];" << "\n";
         output << "" << "\n";
         output << "                For( $i = 4; $i < Count( $inFile_Line ); ++$i )" << "\n";
-        output << "                    $Ratio_Array[ $i - ( $Ranking != 'Tailing％' ? 4 : 3 )] = $inFile_Line[$i];" << "\n";
+        output << "                    $Ratio_Array[ $i - 3 ] = $inFile_Line[$i];" << "\n";
         output << "" << "\n";
         output << "                Array_Push( $Index_Array, $Ranking_Type );" << "\n";
         output << "                Array_Push( $Value_Array, $Ratio_Array );" << "\n";
@@ -871,7 +923,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "#<!--================== SA_Plot ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $Color_Array = $Ranking != 'Tailing％' ? \"['#FF0000','#088A08','#0000FF','#FFBF00']\" : \"['#000000','#FF0000','#088A08','#0000FF','#FFBF00']\";" << "\n";
+        output << "        $Color_Array = \"['#000000','#FF0000','#088A08','#0000FF','#FFBF00']\";" << "\n";
         output << "" << "\n";
         output << "        echo \"<script>" << "\n";
         output << "            var svg_width  = window.innerWidth;" << "\n";
