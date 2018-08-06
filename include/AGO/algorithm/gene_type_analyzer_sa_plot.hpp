@@ -113,32 +113,35 @@ class GeneTypeAnalyzerSA_Plot
             sa_it->second.Ends[i][ nt ] += ppm;
         }
 
-        for( std::size_t i = 0; i < 5; ++i )
+        if( tail != 5 )
         {
-            nt = sequence.at( sequence.length() -1 -i );
+            for( std::size_t i = 0; i < 5; ++i )
+            {
+                nt = sequence.at( sequence.length() -1 -i );
 
-            if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
-            if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
+                if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
+                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
 
-            if( sa_it->second.Ends[ 8 + i ].find( nt ) == sa_it->second.Ends[ 8 + i ].end() )
-                sa_it->second.Ends[ 8 + i ][ nt ] = 0;
+                if( sa_it->second.Ends[ 8 + i ].find( nt ) == sa_it->second.Ends[ 8 + i ].end() )
+                    sa_it->second.Ends[ 8 + i ][ nt ] = 0;
 
-            sa_it->second.Ends[ 8 + i ][ nt ] += ppm;
-        }
+                sa_it->second.Ends[ 8 + i ][ nt ] += ppm;
+            }
 
-        last4n = sequence.substr( sequence.length() -1 -4, 4 );
+            last4n = sequence.substr( sequence.length() -1 -4, 4 );
 
-        for( std::size_t i = 0; i < 4; ++i )
-        {
-            nt = last4n.at(i);
+            for( std::size_t i = 0; i < 4; ++i )
+            {
+                nt = last4n.at(i);
 
-            if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
-            if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
+                if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
+                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
 
-            if( sa_it->second.Ends[13].find( nt ) == sa_it->second.Ends[13].end() )
-                sa_it->second.Ends[13][ nt ] = 0;
+                if( sa_it->second.Ends[13].find( nt ) == sa_it->second.Ends[13].end() )
+                    sa_it->second.Ends[13][ nt ] = 0;
 
-            sa_it->second.Ends[13][ nt ] += ppm;
+                sa_it->second.Ends[13][ nt ] += ppm;
+            }
         }
     }
 
@@ -833,7 +836,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "#<!--=================== TempFile ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $Order = [ 'GM', 'A', 'T', 'C', 'G' ];" << "\n";
+        output << "        $Order = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? [ 'A', 'T', 'C', 'G' ] : [ 'GM', 'A', 'T', 'C', 'G' ];" << "\n";
         output << "" << "\n";
         output << "        $LTemp = Tempnam( '/tmp', 'L_'.$TSV_File.$Type_Name );" << "\n";
         output << "        $MTemp = Tempnam( '/tmp', 'M_'.$TSV_File.$Type_Name );" << "\n";
@@ -923,7 +926,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "#<!--================== SA_Plot ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $Color_Array = \"['#000000','#FF0000','#088A08','#0000FF','#FFBF00']\";" << "\n";
+        output << "        $Color_Array = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? \"['#FF0000','#088A08','#0000FF','#FFBF00']\" : \"['#000000','#FF0000','#088A08','#0000FF','#FFBF00']\";" << "\n";
         output << "" << "\n";
         output << "        echo \"<script>" << "\n";
         output << "            var svg_width  = window.innerWidth;" << "\n";
