@@ -129,13 +129,13 @@ public :
             Wrk = Wrk + Wgrk_[i];
         }
 
-        tmm_ = WMrk / Wrk;
+        tmm_ = std::sqrt( WMrk / Wrk );
     }
 
     void TmmNormalization()
     {
         for( auto& value : values_ )
-            value = value / tmm_;
+            value = ( value * 1000000 )/( Nk_ * tmm_ );
     }
 };
 
@@ -146,7 +146,7 @@ public:
 
     TmmNor(
             Vector< TmmDataType<> >& samples,
-            Vector< double >& tmm_vector,
+            double& tmm_mean,
             const double& Mg_per,
             const double& Ag_per,
             const std::size_t& trim_mean
@@ -158,7 +158,7 @@ public:
             sample.ValueTrimming( trim_mean, Mg_per, Ag_per );
             sample.TmmCalculation();
             sample.TmmNormalization();
-            tmm_vector.emplace_back( sample.tmm_ );
+            tmm_mean = sample.tmm_;
         }
     }
 };

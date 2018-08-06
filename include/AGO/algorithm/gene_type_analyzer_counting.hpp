@@ -307,7 +307,8 @@ class GeneTypeAnalyzerCounting
                             anno_temp[ anno_first ][ anno_second ][ tail ].end() )
                             anno_temp[ anno_first ][ anno_second ][ tail ][ read_len ] = 0.0;
 
-                        anno_counts = raw_bed.ppm_;
+                        // anno_counts = raw_bed.ppm_;
+                        anno_counts = biotype == "" ? raw_bed.ppm_ : ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
 
                         if( anno_check.find( anno_pair ) == anno_check.end() )
                             anno_check[ anno_pair ] = 0.0;
@@ -378,12 +379,14 @@ class GeneTypeAnalyzerCounting
                 if( anno_table[ tail ][ gene_seed ].find( read_len ) == anno_table[ tail ][ gene_seed ].end() )
                     anno_table[ tail ][ gene_seed ][ read_len ] = 0.0;
 
-                anno_table[ tail ][ gene_seed ][ read_len ] += raw_bed.ppm_;
+                // anno_table[ tail ][ gene_seed ][ read_len ] += raw_bed.ppm_;
+                anno_table[ tail ][ gene_seed ][ read_len ] += ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
 
                 if( seed_match_table[ gene_seed ].find( gene_name ) == seed_match_table[ gene_seed ].end() )
                     seed_match_table[ gene_seed ][ gene_name ] = 0.0;
 
-                seed_match_table[ gene_seed ][ gene_name ] += raw_bed.ppm_;
+                // seed_match_table[ gene_seed ][ gene_name ] += raw_bed.ppm_;
+                seed_match_table[ gene_seed ][ gene_name ] += ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
             }
         }
     }
@@ -439,7 +442,8 @@ class GeneTypeAnalyzerCounting
                     anno_temp[ gene_name ][ gene_seed ][ tail ].end() )
                     anno_temp[ gene_name ][ gene_seed ][ tail ][ read_len ] = 0.0;
 
-                anno_temp[ gene_name ][ gene_seed ][ tail ][ read_len ] += raw_bed.ppm_;
+                // anno_temp[ gene_name ][ gene_seed ][ tail ][ read_len ] += raw_bed.ppm_;
+                anno_temp[ gene_name ][ gene_seed ][ tail ][ read_len ] += ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
             }
         }
 
