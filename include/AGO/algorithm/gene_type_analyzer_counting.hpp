@@ -57,7 +57,7 @@ class GeneTypeAnalyzerCounting
                                 gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
                                         + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
 
-                                gene_name = token == "seed" ? gene_seed : ( biotype == ""
+                                gene_name = token == "Seed" ? gene_seed : ( biotype == ""
                                     ?   raw_bed.annotation_info_[i][j]
                                     : ( raw_bed.annotation_info_[i][ j+1 ] + "_" + gene_seed )
                                 );
@@ -307,8 +307,8 @@ class GeneTypeAnalyzerCounting
                             anno_temp[ anno_first ][ anno_second ][ tail ].end() )
                             anno_temp[ anno_first ][ anno_second ][ tail ][ read_len ] = 0.0;
 
-                        // anno_counts = raw_bed.ppm_;
-                        anno_counts = biotype == "" ? raw_bed.ppm_ : ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
+                        anno_counts = raw_bed.ppm_;
+                        // anno_counts = biotype == "" ? raw_bed.ppm_ : ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
 
                         if( anno_check.find( anno_pair ) == anno_check.end() )
                             anno_check[ anno_pair ] = 0.0;
@@ -346,125 +346,65 @@ class GeneTypeAnalyzerCounting
         }
     }
 
-    static void make_seed_table(
-            std::vector< ago::format::MDRawBed >& annotations,
-            std::vector< CountingTableType >& anno_table,
-            std::map< std::string, std::map< std::string, double >>& seed_match_table,
-            std::map< std::string, std::string >& genome_table,
-            const std::string& biotype
-            )
-    {
-        std::string gene_name;
-        std::string gene_seed;
-
-        std::size_t read_len;
-        std::size_t tail;
-
-        for( auto& raw_bed : annotations )
-        {
-            if( raw_bed.annotation_info_.empty() ) continue;
-            if( raw_bed.annotation_info_[0].empty() ) continue;
-            if( biotype == "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != "miRNA" && raw_bed.annotation_info_[0][0] != "mirtron" ) continue;
-            if( biotype != "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != biotype ) continue;
-
-            tail = which_tail( raw_bed.getTail() );
-            read_len = raw_bed.length_ - raw_bed.tail_length_;
-
-            for( std::size_t i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
-            {
-                gene_name = raw_bed.annotation_info_[0][ i+1 ];
-                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                          + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
-
-                if( anno_table[ tail ][ gene_seed ].find( read_len ) == anno_table[ tail ][ gene_seed ].end() )
-                    anno_table[ tail ][ gene_seed ][ read_len ] = 0.0;
-
-                // anno_table[ tail ][ gene_seed ][ read_len ] += raw_bed.ppm_;
-                anno_table[ tail ][ gene_seed ][ read_len ] += ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
-
-                if( seed_match_table[ gene_seed ].find( gene_name ) == seed_match_table[ gene_seed ].end() )
-                    seed_match_table[ gene_seed ][ gene_name ] = 0.0;
-
-                // seed_match_table[ gene_seed ][ gene_name ] += raw_bed.ppm_;
-                seed_match_table[ gene_seed ][ gene_name ] += ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
-            }
-        }
-    }
-
-    static void make_arm_table(
-            std::vector< ago::format::MDRawBed >& annotations,
+    static void make_ana_table(
             std::vector< CountingTableType >& anno_table,
             std::map< std::string, std::string >& anno_mark,
-            std::map< std::string, std::string >& genome_table,
-            const std::string& biotype,
-            const std::string& arm
+            std::map< std::string, std::map< std::string, double >>& seed_match_table,
+            const std::string& token
             )
     {
-        std::map< std::string, std::map< std::string, std::map< std::size_t, std::map< std::size_t, double >>>> anno_temp;
-        //          annotation              seed                    tail    count
-        
-        std::pair< std::string, std::string > anno_pair;
+        std::vector< std::string > split;
+        std::vector< CountingTableType > anno_table_temp = std::vector< CountingTableType >( anno_table.size() );
+        std::map< std::string, std::string > anno_mark_temp;
 
-        std::string anno_idx;
+        bool is_seed = token == "Seed" ? true : false;
+        bool is_arms = token == "3p" || token == "5p" ? true : false;
+        bool is_lens = !is_seed && !is_arms ? true : false;
 
-        std::string gene_name;
-        std::string gene_seed;
-
-        std::string abundance;
-        std::size_t read_len;
-        std::size_t tail;
-
-        std::set< std::pair< std::string, std::string >> anno_trimmed;
-
-        for( auto& raw_bed : annotations )
+        for( std::size_t tail = 0; tail < anno_table.size(); tail++ )
         {
-            if( raw_bed.annotation_info_.empty() ) continue;
-            if( raw_bed.annotation_info_[0].empty() ) continue;
-            if( biotype == "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != "miRNA" && raw_bed.annotation_info_[0][0] != "mirtron" ) continue;
-            if( biotype != "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != biotype ) continue;
-
-            read_len = raw_bed.length_ - raw_bed.tail_length_;
-            tail = which_tail( raw_bed.getTail() );
-
-            for( std::size_t i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
+            for( auto& name_seed : anno_table[ tail ] )
             {
-                gene_name = raw_bed.annotation_info_[0][ i+1 ];
-                if( get_arm( gene_name ) != arm ) continue;
+                boost::iter_split( split, name_seed.first, boost::algorithm::first_finder( "_" ));
 
-                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                          + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
-
-                anno_pair = std::make_pair( gene_name, gene_seed );
-
-                if( raw_bed.is_filtered_ != 0 ) anno_mark[ gene_name + "_" + gene_seed ] = "!";
-                
-                if( anno_temp[ gene_name ][ gene_seed ][ tail ].find( read_len ) ==
-                    anno_temp[ gene_name ][ gene_seed ][ tail ].end() )
-                    anno_temp[ gene_name ][ gene_seed ][ tail ][ read_len ] = 0.0;
-
-                // anno_temp[ gene_name ][ gene_seed ][ tail ][ read_len ] += raw_bed.ppm_;
-                anno_temp[ gene_name ][ gene_seed ][ tail ][ read_len ] += ((double)(raw_bed.reads_count_)/(double)(raw_bed.multiple_alignment_site_count_));
-            }
-        }
-
-        for( auto& anno : anno_temp )
-        {
-            abundance = find_abundance( anno.second );
-            anno_mark[ anno.first + "_" + abundance ] += "*";
-
-            for( auto& seed : anno.second )
-            {
-                anno_idx = anno.first + "_" + seed.first;
-
-                for( auto& tal : seed.second ) for( auto& len : tal.second )
+                if( split.size() > 2 )
                 {
-                    if( anno_table[ tal.first ][ anno_idx ].find( len.first ) == anno_table[ tal.first ][ anno_idx ].end() )
-                        anno_table[ tal.first ][ anno_idx ][ len.first ] = 0.0;
-
-                    anno_table[ tal.first ][ anno_idx ][ len.first ] += len.second;
+                    for( std::size_t i = 1; i < split.size() -2; ++i )
+                        split[0] = split[0] + "_" + split[i];
+                    split[1] = split[ split.size() -1 ];
                 }
+
+                if( is_arms && get_arm( split[0] ) != token )
+                    continue;
+
+                for( auto& len : name_seed.second )
+                {
+                    if( is_lens && token != std::to_string( len.first ))
+                        continue;
+
+                    if( anno_table_temp[ tail ][ split[1] ].find( len.first ) == anno_table_temp[ tail ][ split[1] ].end() )
+                        anno_table_temp[ tail ][ split[1] ][ len.first ] = 0.0;
+
+                    anno_table_temp[ tail ][ split[1] ][ len.first ] += len.second;
+
+                    if( is_seed )
+                    {
+                        if( seed_match_table[ split[1] ].find( split[0] ) == seed_match_table[ split[1] ].end() )
+                            seed_match_table[ split[1] ][ split[0] ] = 0.0;
+
+                        seed_match_table[ split[1] ][ split[0] ] += len.second;
+                    }
+                }
+
+                if( !is_seed && anno_mark.find( name_seed.first ) != anno_mark.end() )
+                    anno_mark_temp[ name_seed.first ] = anno_mark[ name_seed.first ];
             }
         }
+
+        if( !is_seed )
+            anno_mark = std::move( anno_mark_temp );
+
+        anno_table = std::move( anno_table_temp );
     }
 
     static std::string get_arm( const std::string& anno )
