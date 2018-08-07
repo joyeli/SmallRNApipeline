@@ -67,6 +67,9 @@ class GeneTypeAnalyzerSA_Plot
             auto& tc_set
             )
     {
+        char nt = ' ';
+        std::string last4n = "";
+
         sa_it->second.GMPM[0] += ppm;
 
         if( tail != 5 )
@@ -94,27 +97,7 @@ class GeneTypeAnalyzerSA_Plot
                 }
             }
             else sa_it->second.tail[ tail ] += ppm;
-        }
-        else sa_it->second.GMPM[1] += ppm;
 
-        char nt = ' ';
-        std::string last4n = "";
-
-        for( std::size_t i = 0; i < 8; ++i )
-        {
-            nt = sequence.at(i);
-
-            if( md_map.find(i) != md_map.end() ) nt = md_map[i];
-            if( tc_set.find(i) != tc_set.end() ) nt = 'T';
-
-            if( sa_it->second.Ends[i].find( nt ) == sa_it->second.Ends[i].end() )
-                sa_it->second.Ends[i][ nt ] = 0;
-
-            sa_it->second.Ends[i][ nt ] += ppm;
-        }
-
-        if( tail != 5 )
-        {
             for( std::size_t i = 0; i < 5; ++i )
             {
                 nt = sequence.at( sequence.length() -1 -i );
@@ -142,6 +125,20 @@ class GeneTypeAnalyzerSA_Plot
 
                 sa_it->second.Ends[13][ nt ] += ppm;
             }
+        }
+        else sa_it->second.GMPM[1] += ppm;
+
+        for( std::size_t i = 0; i < 8; ++i )
+        {
+            nt = sequence.at(i);
+
+            if( md_map.find(i) != md_map.end() ) nt = md_map[i];
+            if( tc_set.find(i) != tc_set.end() ) nt = 'T';
+
+            if( sa_it->second.Ends[i].find( nt ) == sa_it->second.Ends[i].end() )
+                sa_it->second.Ends[i][ nt ] = 0;
+
+            sa_it->second.Ends[i][ nt ] += ppm;
         }
     }
 
@@ -694,7 +691,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "        $M_Array = Array();" << "\n";
         output << "        $R_Array = Array();" << "\n";
         output << "" << "\n";
-        output << "        For( $i = 0; $i < Count( $Header ); ++$i )" << "\n";
+        output << "        For( $i = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $i < Count( $Header ); ++$i )" << "\n";
         output << "        {" << "\n";
         output << "            $Sum_Array[$i] = 0.0;" << "\n";
         output << "            $L_Array[ $Header[$i] ] = Array();" << "\n";
@@ -718,17 +715,17 @@ class GeneTypeAnalyzerSA_Plot
         output << "                {" << "\n";
         output << "                    $PM = 0.0;" << "\n";
         output << "" << "\n";
-        output << "                    if( $isRatio == 'Yes' ) For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    if( $isRatio == 'Yes' ) For( $k = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $PM += $Temp_Array[$j][$k];" << "\n";
         output << "" << "\n";
         output << "                    For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $SumArray[$k] += $Temp_Array[$j][$k] / ( $isRatio == 'Yes' ? $PM : 1 );" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $L_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $L_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
         output << "" << "\n";
         output << "                $Temp_Array = Array();" << "\n";
         output << "            }" << "\n";
@@ -753,18 +750,18 @@ class GeneTypeAnalyzerSA_Plot
         output << "                {" << "\n";
         output << "                    $PM = 0.0;" << "\n";
         output << "" << "\n";
-        output << "                    if( $isRatio == 'Yes' ) For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    if( $isRatio == 'Yes' ) For( $k = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $PM += $Temp_Array[$j][$k];" << "\n";
         output << "" << "\n";
         output << "                    For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $SumArray[$k] += $Temp_Array[$j][$k] / ( $isRatio == 'Yes' ? $PM : 1 );" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][0]  = $SumArray[$j];" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][0]  = $SumArray[$j];" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
         output << "" << "\n";
         output << "                $Temp_Array = Array();" << "\n";
         output << "                $Trimmedn = $N;" << "\n";
@@ -788,17 +785,17 @@ class GeneTypeAnalyzerSA_Plot
         output << "                {" << "\n";
         output << "                    $PM = 0.0;" << "\n";
         output << "" << "\n";
-        output << "                    if( $isRatio == 'Yes' ) For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    if( $isRatio == 'Yes' ) For( $k = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $PM += $Temp_Array[$j][$k];" << "\n";
         output << "" << "\n";
         output << "                    For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $SumArray[$k] += $Temp_Array[$j][$k] / ( $isRatio == 'Yes' ? $PM : 1 );" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
-        output << "                For( $j = 0; $j < Count( $SumArray ); ++$j ) $R_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
+        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $R_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
         output << "" << "\n";
         output << "                $Temp_Array = Array();" << "\n";
         output << "            }" << "\n";
@@ -838,91 +835,100 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "        $Order = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? [ 'A', 'T', 'C', 'G' ] : [ 'GM', 'A', 'T', 'C', 'G' ];" << "\n";
         output << "" << "\n";
-        output << "        $LTemp = Tempnam( '/tmp', 'L_'.$TSV_File.$Type_Name );" << "\n";
-        output << "        $MTemp = Tempnam( '/tmp', 'M_'.$TSV_File.$Type_Name );" << "\n";
-        output << "        $RTemp = Tempnam( '/tmp', 'R_'.$TSV_File.$Type_Name );" << "\n";
+        output << "        $JsonL = Tempnam( '/tmp', 'Json_L_'.$TSV_File.$Type_Name );" << "\n";
+        output << "        $JsonM = Tempnam( '/tmp', 'Json_M_'.$TSV_File.$Type_Name );" << "\n";
+        output << "        $JsonR = Tempnam( '/tmp', 'Json_R_'.$TSV_File.$Type_Name );" << "\n";
         output << "" << "\n";
-        output << "        $lFtemp = Fopen( $LTemp, 'w' );" << "\n";
-        output << "        $mFtemp = Fopen( $MTemp, 'w' );" << "\n";
-        output << "        $rFtemp = Fopen( $RTemp, 'w' );" << "\n";
+        output << "        $TextL = Tempnam( '/tmp', 'Text_L_'.$TSV_File.$Type_Name );" << "\n";
+        output << "        $TextM = Tempnam( '/tmp', 'Text_M_'.$TSV_File.$Type_Name );" << "\n";
+        output << "        $TextR = Tempnam( '/tmp', 'Text_R_'.$TSV_File.$Type_Name );" << "\n";
         output << "" << "\n";
-        output << "        Fwrite( $lFtemp, \"[\\n\" );" << "\n";
-        output << "        Fwrite( $mFtemp, \"[\\n\" );" << "\n";
-        output << "        Fwrite( $rFtemp, \"[\\n\" );" << "\n";
+        output << "        $lJout = Fopen( $JsonL, 'w' );" << "\n";
+        output << "        $mJout = Fopen( $JsonM, 'w' );" << "\n";
+        output << "        $rJout = Fopen( $JsonR, 'w' );" << "\n";
+        output << "" << "\n";
+        output << "        $lTout = Fopen( $TextL, 'w' );" << "\n";
+        output << "        $mTout = Fopen( $TextM, 'w' );" << "\n";
+        output << "        $rTout = Fopen( $TextR, 'w' );" << "\n";
+        output << "" << "\n";
+        output << "        Fwrite( $lJout, \"[\\n\" );" << "\n";
+        output << "        Fwrite( $mJout, \"[\\n\" );" << "\n";
+        output << "        Fwrite( $rJout, \"[\\n\" );" << "\n";
         output << "" << "\n";
         output << "        $Count1 = 0;" << "\n";
         output << "        For( $i = 0; $i < Count( $Order ); ++$i )" << "\n";
         output << "        {" << "\n";
+        output << "            if( $Count1 != 0 )" << "\n";
+        output << "            {" << "\n";
+        output << "                Fwrite( $lJout, \",\\n\" );" << "\n";
+        output << "                Fwrite( $mJout, \",\\n\" );" << "\n";
+        output << "                Fwrite( $rJout, \",\\n\" );" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
+        output << "            Fwrite( $lJout, \"    {\\n        \\\"key\\\" : \\\"$Order[$i]\\\",\\n        \\\"values\\\" : [\" );" << "\n";
+        output << "            Fwrite( $mJout, \"    {\\n        \\\"key\\\" : \\\"$Order[$i]\\\",\\n        \\\"values\\\" : [\" );" << "\n";
+        output << "            Fwrite( $rJout, \"    {\\n        \\\"key\\\" : \\\"$Order[$i]\\\",\\n        \\\"values\\\" : [\" );" << "\n";
+        output << "" << "\n";
         output << "            $Count2 = 0;" << "\n";
-        output << "" << "\n";
-        output << "            if( !Array_Key_Exists( $Order[$i], $L_Array ))" << "\n";
-        output << "                continue;" << "\n";
-        output << "" << "\n";
-        output << "            if( $Count1 != 0 ) Fwrite( $lFtemp, \",\\n\" );" << "\n";
-        output << "            Fwrite( $lFtemp, \"    {\\n        \\\"key\\\" : \\\"$Order[$i]\\\",\\n        \\\"values\\\" : [\" );" << "\n";
-        output << "" << "\n";
         output << "            Foreach( $L_Array[ $Order[$i] ] as $N => $Value )" << "\n";
         output << "            {" << "\n";
-        output << "                if( $Count2 != 0 ) Fwrite( $lFtemp, ', ' );" << "\n";
-        output << "                Fwrite( $lFtemp, '[ '.$N.', '.$Value.' ]' );" << "\n";
+        output << "                Fwrite( $lJout, ( $Count2 == 0 ?  '' : ', ' ).'[ '.$N.', '.$Value.' ]' );" << "\n";
+        output << "                if( $i != 0 ) $L_Array[ $Order[$i] ][$N] = $L_Array[ $Order[$i-1] ][$N] + $Value;" << "\n";
         output << "                $Count2++;" << "\n";
         output << "            }" << "\n";
         output << "" << "\n";
-        output << "            Fwrite( $lFtemp, \"]\\n    }\" );" << "\n";
-        output << "            $Count1++;" << "\n";
-        output << "        }" << "\n";
-        output << "" << "\n";
-        output << "        $Count1 = 0;" << "\n";
-        output << "        For( $i = 0; $i < Count( $Order ); ++$i )" << "\n";
-        output << "        {" << "\n";
         output << "            $Count2 = 0;" << "\n";
-        output << "" << "\n";
-        output << "            if( !Array_Key_Exists( $Order[$i], $M_Array ))" << "\n";
-        output << "                continue;" << "\n";
-        output << "" << "\n";
-        output << "            if( $Count1 != 0 ) Fwrite( $mFtemp, \",\\n\" );" << "\n";
-        output << "            Fwrite( $mFtemp, \"    {\\n        \\\"key\\\" : \\\"$Order[$i]\\\",\\n        \\\"values\\\" : [\" );" << "\n";
-        output << "" << "\n";
         output << "            Foreach( $M_Array[ $Order[$i] ] as $N => $Value )" << "\n";
         output << "            {" << "\n";
-        output << "                if( $Count2 != 0 ) Fwrite( $mFtemp, ', ' );" << "\n";
-        output << "                Fwrite( $mFtemp, '[ '.$N.', '.$Value.' ]' );" << "\n";
+        output << "                Fwrite( $mJout, ( $Count2 == 0 ?  '' : ', ' ).'[ '.$N.', '.$Value.' ]' );" << "\n";
+        output << "                if( $i != 0 ) $M_Array[ $Order[$i] ][$N] = $M_Array[ $Order[$i-1] ][$N] + $Value;" << "\n";
         output << "                $Count2++;" << "\n";
         output << "            }" << "\n";
         output << "" << "\n";
-        output << "            Fwrite( $mFtemp, \"]\\n    }\" );" << "\n";
-        output << "            $Count1++;" << "\n";
-        output << "        }" << "\n";
-        output << "" << "\n";
-        output << "        $Count1 = 0;" << "\n";
-        output << "        For( $i = 0; $i < Count( $Order ); ++$i )" << "\n";
-        output << "        {" << "\n";
         output << "            $Count2 = 0;" << "\n";
-        output << "" << "\n";
-        output << "            if( !Array_Key_Exists( $Order[$i], $R_Array ))" << "\n";
-        output << "                continue;" << "\n";
-        output << "" << "\n";
-        output << "            if( $Count1 != 0 ) Fwrite( $rFtemp, \",\\n\" );" << "\n";
-        output << "            Fwrite( $rFtemp, \"    {\\n        \\\"key\\\" : \\\"$Order[$i]\\\",\\n        \\\"values\\\" : [\" );" << "\n";
-        output << "" << "\n";
         output << "            Foreach( $R_Array[ $Order[$i] ] as $N => $Value )" << "\n";
         output << "            {" << "\n";
-        output << "                if( $Count2 != 0 ) Fwrite( $rFtemp, ', ' );" << "\n";
-        output << "                Fwrite( $rFtemp, '[ '.$N.', '.$Value.' ]' );" << "\n";
+        output << "                Fwrite( $rJout, ( $Count2 == 0 ?  '' : ', ' ).'[ '.$N.', '.$Value.' ]' );" << "\n";
+        output << "                if( $i != 0 ) $R_Array[ $Order[$i] ][$N] = $R_Array[ $Order[$i-1] ][$N] + $Value;" << "\n";
         output << "                $Count2++;" << "\n";
         output << "            }" << "\n";
         output << "" << "\n";
-        output << "            Fwrite( $rFtemp, \"]\\n    }\" );" << "\n";
+        output << "            Fwrite( $lJout, \"]\\n    }\" );" << "\n";
+        output << "            Fwrite( $mJout, \"]\\n    }\" );" << "\n";
+        output << "            Fwrite( $rJout, \"]\\n    }\" );" << "\n";
+        output << "" << "\n";
         output << "            $Count1++;" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
-        output << "        Fwrite( $lFtemp, \"\\n]\\n\" );" << "\n";
-        output << "        Fwrite( $mFtemp, \"\\n]\\n\" );" << "\n";
-        output << "        Fwrite( $rFtemp, \"\\n]\\n\" );" << "\n";
+        output << "        Fwrite( $lJout, \"\\n]\\n\" );" << "\n";
+        output << "        Fwrite( $mJout, \"\\n]\\n\" );" << "\n";
+        output << "        Fwrite( $rJout, \"\\n]\\n\" );" << "\n";
         output << "" << "\n";
-        output << "        Fclose( $lFtemp );" << "\n";
-        output << "        Fclose( $mFtemp );" << "\n";
-        output << "        Fclose( $rFtemp );" << "\n";
+        output << "        Fclose( $lJout );" << "\n";
+        output << "        Fclose( $mJout );" << "\n";
+        output << "        Fclose( $rJout );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Order ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            if( $i == 0 )" << "\n";
+        output << "            {" << "\n";
+        output << "                Foreach( $L_Array[ $Order[$i] ] as $N => $Value ) Fwrite( $lTout, \"\\t\".$N );" << "\n";
+        output << "                Foreach( $M_Array[ $Order[$i] ] as $N => $Value ) Fwrite( $mTout, \"\\t\".$N );" << "\n";
+        output << "                Foreach( $R_Array[ $Order[$i] ] as $N => $Value ) Fwrite( $rTout, \"\\t\".$N );" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
+        output << "            Fwrite( $lTout, \"\\n\".$Order[$i] );" << "\n";
+        output << "            Fwrite( $mTout, \"\\n\".$Order[$i] );" << "\n";
+        output << "            Fwrite( $rTout, \"\\n\".$Order[$i] );" << "\n";
+        output << "" << "\n";
+        output << "            Foreach( $L_Array[ $Order[$i] ] as $N => $Value ) Fwrite( $lTout, \"\\t\".$Value );" << "\n";
+        output << "            Foreach( $M_Array[ $Order[$i] ] as $N => $Value ) Fwrite( $mTout, \"\\t\".$Value );" << "\n";
+        output << "            Foreach( $R_Array[ $Order[$i] ] as $N => $Value ) Fwrite( $rTout, \"\\t\".$Value );" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        Fclose( $lTout );" << "\n";
+        output << "        Fclose( $mTout );" << "\n";
+        output << "        Fclose( $rTout );" << "\n";
         output << "" << "\n";
         output << "#<!--================== SA_Plot ====================-->" << "\n";
         output << "" << "\n";
@@ -957,7 +963,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "                .style('display', 'inline-block' )" << "\n";
         output << "                .append('svg');" << "\n";
         output << "" << "\n";
-        output << "            d3.json('$LTemp', function(data) {" << "\n";
+        output << "            d3.json('$JsonL', function(data) {" << "\n";
         output << "                nv.addGraph(function() {" << "\n";
         output << "" << "\n";
         output << "                    var chart = nv.models.stackedAreaChart()" << "\n";
@@ -976,7 +982,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "                });" << "\n";
         output << "            });" << "\n";
         output << "" << "\n";
-        output << "            d3.json('$MTemp', function(data) {" << "\n";
+        output << "            d3.json('$JsonM', function(data) {" << "\n";
         output << "                nv.addGraph(function() {" << "\n";
         output << "" << "\n";
         output << "                    var chart = nv.models.stackedAreaChart()" << "\n";
@@ -997,7 +1003,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "                });" << "\n";
         output << "            });" << "\n";
         output << "" << "\n";
-        output << "            d3.json('$RTemp', function(data) {" << "\n";
+        output << "            d3.json('$JsonR', function(data) {" << "\n";
         output << "                nv.addGraph(function() {" << "\n";
         output << "" << "\n";
         output << "                    var chart = nv.models.stackedAreaChart()" << "\n";
