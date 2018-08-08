@@ -9,30 +9,28 @@ class GeneTypeAnalyzerHete53p
 
   public:
 
-    std::vector< std::map< std::string, std::map< std::size_t, double >>> hete_5p_tables;
-    //     smp                miR                 start / end    ppm
-    std::vector< std::map< std::string, std::map< std::size_t, double >>> hete_3p_tables;
-
     GeneTypeAnalyzerHete53p()
     {}
 
     static void make_hete_table(
+            const std::string& output_path,
             std::vector< BedSampleType >& bed_samples,
-            const std::string& biotype,
-            std::vector< std::map< std::string, std::map< std::size_t, double >>>& hete_5p_tables,
-            std::vector< std::map< std::string, std::map< std::size_t, double >>>& hete_3p_tables,
+            AnnoLengthIndexType& ano_len_idx,
             auto& genome_table,
+            const std::string& biotype,
             const std::string& token = ""
             )
     {
+        std::vector< std::pair< 
+            std::map< std::string, std::map< std::size_t, double >>, // 5p
+            std::map< std::string, std::map< std::size_t, double >>  // 3p
+        >> hete_tables( bed_samples.size() );
+
         std::size_t arm;
         std::string gene_name;
 
         bool is_arms = token == "3p" || token == "5p" ? true : false;
         bool is_lens = token != "" && !is_arms ? true : false;
-
-        hete_5p_tables = std::vector< std::map< std::string, std::map< std::size_t, double >>>( bed_samples.size() );
-        hete_3p_tables = std::vector< std::map< std::string, std::map< std::size_t, double >>>( bed_samples.size() );
 
         std::size_t* end_5p;
         std::size_t* end_3p;
@@ -66,20 +64,22 @@ class GeneTypeAnalyzerHete53p
                             break;
                     }
 
-                    if( hete_5p_tables[ smp ][ gene_name ].find( *end_5p ) == hete_5p_tables[ smp ][ gene_name ].end() )
-                        hete_5p_tables[ smp ][ gene_name ][ *end_5p ] = 0;
+                    if( hete_tables[ smp ].first[ gene_name ].find( *end_5p ) == hete_tables[ smp ].first[ gene_name ].end() )
+                        hete_tables[ smp ].first[ gene_name ][ *end_5p ] = 0;
 
-                    if( hete_3p_tables[ smp ][ gene_name ].find( *end_3p ) == hete_3p_tables[ smp ][ gene_name ].end() )
-                        hete_3p_tables[ smp ][ gene_name ][ *end_3p ] = 0;
+                    if( hete_tables[ smp ].second[ gene_name ].find( *end_3p ) == hete_tables[ smp ].second[ gene_name ].end() )
+                        hete_tables[ smp ].second[ gene_name ][ *end_3p ] = 0;
 
-                    hete_5p_tables[ smp ][ gene_name ][ *end_5p ] += raw_bed.ppm_;
-                    hete_3p_tables[ smp ][ gene_name ][ *end_3p ] += raw_bed.ppm_;
+                    hete_tables[ smp ].first[ gene_name ][ *end_5p ] += raw_bed.ppm_;
+                    hete_tables[ smp ].second[ gene_name ][ *end_3p ] += raw_bed.ppm_;
                 }
             }
 
-            format_hete_table( hete_5p_tables[ smp ]);
-            format_hete_table( hete_3p_tables[ smp ]);
+            format_hete_table( hete_tables[ smp ].first );
+            format_hete_table( hete_tables[ smp ].second );
         }
+
+        output_heterorgeneity( output_path, bed_samples, ano_len_idx, hete_tables, token );
     }
 
     static void format_hete_table( std::map< std::string, std::map< std::size_t, double >>& hete_tables )
@@ -127,7 +127,7 @@ class GeneTypeAnalyzerHete53p
             const std::string& output_path,
             std::vector< BedSampleType >& bed_samples,
             AnnoLengthIndexType& ano_len_idx,
-            std::vector< std::map< std::string, std::map< std::size_t, double >>>& hete_tables,
+            auto& hete_tables,
             const std::string& token
             )
     {
@@ -143,19 +143,25 @@ class GeneTypeAnalyzerHete53p
             anno_idx.emplace( split[0] );
         }
 
-        std::ofstream output( output_path + "heterorgeneity_" + token + ".text" );
-        output << "heterorgeneity-" << token;
+        std::ofstream output( output_path + "heterorgeneity.tsv" );
+        output << "heterorgeneity" << token;
 
-        for( auto& smp  : bed_samples ) output << "\t" << smp.first;
+        for( auto& smp  : bed_samples ) output << "\t" << smp.first << "-5p" << "\t" << smp.first << "-3p";
         for( auto& anno : anno_idx )
         {
             output << "\n" << anno;
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                if( hete_tables[ smp ][ anno ].find( 0 ) != hete_tables[ smp ][ anno ].end() )
+                if( hete_tables[ smp ].first[ anno ].find( 0 ) != hete_tables[ smp ].first[ anno ].end() )
                 {
-                    output << "\t" << hete_tables[ smp ][ anno ][0];
+                    output << "\t" << hete_tables[ smp ].first[ anno ][0];
+                }
+                else output << "\t0";
+
+                if( hete_tables[ smp ].second[ anno ].find( 0 ) != hete_tables[ smp ].second[ anno ].end() )
+                {
+                    output << "\t" << hete_tables[ smp ].second[ anno ][0];
                 }
                 else output << "\t0";
             }
@@ -171,6 +177,152 @@ class GeneTypeAnalyzerHete53p
         for( auto& gene : hete_table )
             for( auto& end : gene.second )
                 output << gene.first << "\t" << end.first << "\t" << end.second << "\n";
+        output.close();
+    }
+
+    static void output_hete53p_visualization( const std::string& output_name )
+    {
+        std::ofstream output( output_name + "index.php" );
+
+        output << "<!DOCTYPE html>" << "\n";
+        output << "<html>" << "\n";
+        output << "    <meta charset='utf-8'>" << "\n";
+        output << "    <body>" << "\n";
+        output << "" << "\n";
+        output << "    <? " << "\n";
+        output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
+        output << "        $isTrimmed = $_POST['isTrimmed'];" << "\n";
+        output << "" << "\n";
+        output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
+        output << "        echo '<script src=https://cdn.rawgit.com/novus/nvd3/v1.8.6/build/nv.d3.min.js></script>';" << "\n";
+        output << "        echo '<link href=https://cdn.rawgit.com/novus/nvd3/v1.8.6/build/nv.d3.css rel=stylesheet type=text/css>';" << "\n";
+        output << "" << "\n";
+        output << "#<!--================= isTrimmed ===================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=isTrimmed onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($isTrimmed=='') echo 'selected'; echo 'value= >isTrimmed</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $Trim_List = array( '1', '5', '10', '20', '25', '30' );" << "\n";
+        output << "        $Trim_Size = Count( $Trim_List );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < $Trim_Size; ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Trim_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $isTrimmed == $Trim_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>±'.$Trim_List[$i].'％</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo '</select></form><br/>';" << "\n";
+        output << "" << "\n";
+        output << "#<!--=================== Read File =====================-->" << "\n";
+        output << "" << "\n";
+        output << "        $yMax = 0;" << "\n";
+        output << "        $Header = Array();" << "\n";
+        output << "" << "\n";
+        output << "        $Hete_Array = Array();" << "\n";
+        output << "        $Boxs_Array = Array();" << "\n";
+        output << "" << "\n";
+        output << "        $inFile = new SplFileObject( 'heterorgeneity.tsv' );" << "\n";
+        output << "        $isHeader = true;" << "\n";
+        output << "" << "\n";
+        output << "        while( !$inFile->eof() )" << "\n";
+        output << "        {" << "\n";
+        output << "            $inFile_Lines = $inFile->fgets();" << "\n";
+        output << "            if( $inFile_Lines == '' ) continue;" << "\n";
+        output << "" << "\n";
+        output << "            $inFile_Lines = Rtrim( $inFile_Lines );" << "\n";
+        output << "            $inFile_Line = Explode( \"\\t\", $inFile_Lines );" << "\n";
+        output << "" << "\n";
+        output << "            if( $isHeader )" << "\n";
+        output << "            {" << "\n";
+        output << "                $isHeader = false;" << "\n";
+        output << "                For( $i = 1; $i < Count( $inFile_Line ); ++$i )" << "\n";
+        output << "                {" << "\n";
+        output << "                    $Header[ $i-1 ] = $inFile_Line[$i];" << "\n";
+        output << "                    $Hete_Array[ $i-1 ] = Array();" << "\n";
+        output << "                    $Boxs_Array[ $i-1 ] = Array();" << "\n";
+        output << "                }" << "\n";
+        output << "                continue;" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
+        output << "            For( $i = 1; $i < Count( $inFile_Line ); ++$i )" << "\n";
+        output << "                Array_Push( $Hete_Array[ $i-1 ], $inFile_Line[$i] );" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Hete_Array ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            Sort( $Hete_Array[$i] );" << "\n";
+        output << "" << "\n";
+        output << "            $Boxs_Array[$i][ 'Q1' ] = $Hete_Array[$i][ Floor(( Count( $Hete_Array[$i] ) -1 ) * 0.25 )];" << "\n";
+        output << "            $Boxs_Array[$i][ 'Q2' ] = $Hete_Array[$i][ Floor(( Count( $Hete_Array[$i] ) -1 ) * 0.5  )];" << "\n";
+        output << "            $Boxs_Array[$i][ 'Q3' ] = $Hete_Array[$i][ Floor(( Count( $Hete_Array[$i] ) -1 ) * 0.75 )];" << "\n";
+        output << "            $Boxs_Array[$i][ 'whisker_low'  ] = $Hete_Array[$i][0];" << "\n";
+        output << "            $Boxs_Array[$i][ 'whisker_high' ] = $Hete_Array[$i][ Count( $Hete_Array[$i] ) -1];" << "\n";
+        output << "" << "\n";
+        output << "            if( $isTrimmed != '' )" << "\n";
+        output << "            {" << "\n";
+        output << "                $Rate = $isTrimmed / 100;" << "\n";
+        output << "                $Boxs_Array[$i][ 'whisker_low'  ] = $Hete_Array[$i][ Floor(( Count( $Hete_Array[$i] ) -1 ) *       $Rate  )];" << "\n";
+        output << "                $Boxs_Array[$i][ 'whisker_high' ] = $Hete_Array[$i][ Floor(( Count( $Hete_Array[$i] ) -1 ) * ( 1 - $Rate ))];" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
+        output << "            if( $Boxs_Array[$i][ 'whisker_high' ] > $yMax ) $yMax = $Boxs_Array[$i][ 'whisker_high' ];" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "#<!--================== Hete53p ====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo \"<script>" << "\n";
+        output << "            var svg_width  = window.innerWidth;" << "\n";
+        output << "            var svg_height = window.innerHeight;" << "\n";
+        output << "" << "\n";
+        output << "            var margin = {top: 10, right: 20, bottom: 10, left: 20}" << "\n";
+        output << "                width  = svg_width  - margin.left - margin.right," << "\n";
+        output << "                height = svg_height - margin.top  - margin.bottom;" << "\n";
+        output << "" << "\n";
+        output << "            var svg = d3.select('body').append('div')" << "\n";
+        output << "                .attr('id', 'svg')" << "\n";
+        output << "                .style('width', width + 'px')" << "\n";
+        output << "                .style('height', height + 'px')" << "\n";
+        output << "                .style('display', 'inline-block' )" << "\n";
+        output << "                .append('svg');" << "\n";
+        output << "" << "\n";
+        output << "            nv.addGraph( function() {" << "\n";
+        output << "                var chart = nv.models.boxPlotChart()" << "\n";
+        output << "                    .x(function(d) { return d.label })" << "\n";
+        output << "                    .staggerLabels(true)" << "\n";
+        output << "                    .maxBoxWidth(75) // prevent boxes from being incredibly wide" << "\n";
+        output << "                    .yDomain([0, $yMax]);" << "\n";
+        output << "" << "\n";
+        output << "                d3.select('#svg svg')" << "\n";
+        output << "                    .data([data])" << "\n";
+        output << "                    .call(chart);" << "\n";
+        output << "" << "\n";
+        output << "                nv.utils.windowResize(chart.update);" << "\n";
+        output << "                return chart;" << "\n";
+        output << "            });" << "\n";
+        output << "" << "\n";
+        output << "            var data = [\";" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Boxs_Array ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '{label:\"'.$Header[$i].'\",values:{';" << "\n";
+        output << "" << "\n";
+        output << "            Foreach( $Boxs_Array[$i] as $Q => $Value )" << "\n";
+        output << "                echo $Q.':'.$Value.',';" << "\n";
+        output << "" << "\n";
+        output << "            echo 'outliers:[]}}';" << "\n";
+        output << "            if( $i != Count( $Boxs_Array )-1 ) echo \",\\n\";" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo '];</script>';" << "\n";
+        output << "    ?>" << "\n";
+        output << "    </body>" << "\n";
+        output << "</html>" << "\n";
+
         output.close();
     }
 };

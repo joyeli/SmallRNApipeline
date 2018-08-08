@@ -330,11 +330,8 @@ class GeneTypeAnalyzerEachtype
                 {
                     std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                    GeneTypeAnalyzerHete53p hete53p_obj;
-                    GeneTypeAnalyzerHete53p::make_hete_table( bed_samples, biotype, hete53p_obj.hete_5p_tables, hete53p_obj.hete_3p_tables, genome_table, token );
-
-                    GeneTypeAnalyzerHete53p::output_heterorgeneity( output_path + hete53p, bed_samples, ano_len_idx, hete53p_obj.hete_5p_tables, "5p" );
-                    GeneTypeAnalyzerHete53p::output_heterorgeneity( output_path + hete53p, bed_samples, ano_len_idx, hete53p_obj.hete_3p_tables, "3p" );
+                    GeneTypeAnalyzerHete53p::make_hete_table( output_path + hete53p, bed_samples, ano_len_idx, genome_table, biotype, token );
+                    GeneTypeAnalyzerHete53p::output_hete53p_visualization( output_path + hete53p );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                     if( is_time_log ) std::cerr << "Hete53p: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
