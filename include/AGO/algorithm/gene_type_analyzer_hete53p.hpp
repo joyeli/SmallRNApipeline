@@ -93,7 +93,7 @@ class GeneTypeAnalyzerHete53p
             ppm_sum = get_ppm_sum( anno.second );
 
             for( auto& end : anno.second )
-                end.second = (double)(std::abs( max_end - end.first )) * end.second;
+                end.second = (double)(std::abs( (int)(max_end) - (int)(end.first) )) * end.second;
 
             anno.second[0] = get_ppm_sum( anno.second ) / ppm_sum;
         }
