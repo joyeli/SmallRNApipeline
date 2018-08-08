@@ -201,28 +201,28 @@ class GeneTypeAnalyzer
             {
                 do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path );
             });
-            ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
-            {
-                do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "Seed" );
-            });
+            // ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+            // {
+            //     do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "Seed" );
+            // });
 
-            for( std::size_t len = min_len; len <= max_len; ++len )
-                ana_parallel_pool.job_post([ len, &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
-                {
-                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, std::to_string( len ));
-                });
+            // for( std::size_t len = min_len; len <= max_len; ++len )
+            //     ana_parallel_pool.job_post([ len, &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+            //     {
+            //         do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, std::to_string( len ));
+            //     });
 
-            if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
-            {
-                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
-                {
-                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "5p" );
-                });
-                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
-                {
-                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "3p" );
-                });
-            }
+            // if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
+            // {
+            //     ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+            //     {
+            //         do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "5p" );
+            //     });
+            //     ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+            //     {
+            //         do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "3p" );
+            //     });
+            // }
 
             ana_parallel_pool.flush_pool();
 
@@ -313,7 +313,7 @@ class GeneTypeAnalyzer
                 , extend_refseq
                 , max_anno_merge_size
                 , webpage_update_only
-                , token == "Seed" ? true : false
+                , token
                 );
     }
 };
