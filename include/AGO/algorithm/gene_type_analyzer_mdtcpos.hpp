@@ -7,27 +7,27 @@ namespace algorithm {
 
 class GeneTypeAnalyzerMDTCpos
 {
-    static bool isT2C;
-    static std::string idx_string;
-    static std::string md_string;
-    static std::string tc_string;
-
   public:
+
+    bool isT2C;
+    std::string idx_string;
+    std::string md_string;
+    std::string tc_string;
 
     GeneTypeAnalyzerMDTCpos()
     {}
 
-    static void make_mdtcpos( std::vector< BedSampleType >& bed_samples, const std::string& biotype )
+    static void make_mdtcpos( std::vector< BedSampleType >& bed_samples, const std::string& biotype, auto& mdtcpos_obj )
     {
         std::size_t len = 0;
         std::size_t max_len = 0;
 
         double sum = 0.0;
 
-        isT2C = false;
-        idx_string = "";
-        md_string = "";
-        tc_string = "";
+        mdtcpos_obj.isT2C = false;
+        mdtcpos_obj.idx_string = "";
+        mdtcpos_obj.md_string = "";
+        mdtcpos_obj.tc_string = "";
 
         std::vector< std::map< std::size_t, double >> md_vecs( bed_samples.size(), std::map< std::size_t, double >() );
         std::vector< std::map< std::size_t, double >> tc_vecs( bed_samples.size(), std::map< std::size_t, double >() );
@@ -63,7 +63,7 @@ class GeneTypeAnalyzerMDTCpos
 
                                 if( raw_bed.tc_set.size() != 0 )
                                 {
-                                    isT2C = true;
+                                    mdtcpos_obj.isT2C = true;
                                     for( auto& pos : raw_bed.tc_set )
                                     {
                                         if( tc_vecs[ smp ].find( pos +1 ) == tc_vecs[ smp ].end() )
@@ -83,35 +83,35 @@ class GeneTypeAnalyzerMDTCpos
         {
             if( smp != 0 )
             {
-                md_string += ",\n";
-                tc_string += ",\n";
+                mdtcpos_obj.md_string += ",\n";
+                mdtcpos_obj.tc_string += ",\n";
             }
 
-            md_string += "                        [ 'MD-" + bed_samples[ smp ].first + "'";
-            tc_string += "                        [ 'TC-" + bed_samples[ smp ].first + "'";
+            mdtcpos_obj.md_string += "                        [ 'MD-" + bed_samples[ smp ].first + "'";
+            mdtcpos_obj.tc_string += "                        [ 'TC-" + bed_samples[ smp ].first + "'";
 
             for( std::size_t pos = 1; pos <= max_len; ++pos )
             {
                 if( md_vecs[ smp ].find( pos ) != md_vecs[ smp ].end() )
-                    md_string += ", " + std::to_string( md_vecs[ smp ][ pos ] );
+                    mdtcpos_obj.md_string += ", " + std::to_string( md_vecs[ smp ][ pos ] );
                 else
-                    md_string += ", 0";
+                    mdtcpos_obj.md_string += ", 0";
 
                 if( tc_vecs[ smp ].find( pos ) != tc_vecs[ smp ].end() )
-                    tc_string += ", " + std::to_string( tc_vecs[ smp ][ pos ] );
+                    mdtcpos_obj.tc_string += ", " + std::to_string( tc_vecs[ smp ][ pos ] );
                 else
-                    tc_string += ", 0";
+                    mdtcpos_obj.tc_string += ", 0";
             }
 
-            md_string += " ]";
-            tc_string += " ]";
+            mdtcpos_obj.md_string += " ]";
+            mdtcpos_obj.tc_string += " ]";
         }
 
         for( std::size_t pos = 1; pos <= max_len; ++pos )
-            idx_string += "'" + std::to_string( pos ) + "'" + ( pos != max_len ? ", " : "" );
+            mdtcpos_obj.idx_string += "'" + std::to_string( pos ) + "'" + ( pos != max_len ? ", " : "" );
     }
 
-    static void output_mdtcpos_visualization( const std::string& output_name )
+    static void output_mdtcpos_visualization( const std::string& output_name, auto& mdtcpos_obj )
     {
         std::ofstream output( output_name + "index.html" );
 
@@ -133,7 +133,7 @@ class GeneTypeAnalyzerMDTCpos
         output << "                }," << "\n";
         output << "                data: {" << "\n";
         output << "                    columns: [" << "\n";
-        output << md_string + ( !isT2C ? "" : ( ",\n" + tc_string )) << "\n";
+        output << mdtcpos_obj.md_string + ( !mdtcpos_obj.isT2C ? "" : ( ",\n" + mdtcpos_obj.tc_string )) << "\n";
         output << "                    ]," << "\n";
         output << "                    type: 'spline'" << "\n";
         output << "                }," << "\n";
@@ -141,7 +141,7 @@ class GeneTypeAnalyzerMDTCpos
         output << "                    x: {" << "\n";
         output << "                        type: 'category'," << "\n";
         output << "                        categories: [" << "\n";
-        output << "                            " << idx_string << "\n";
+        output << "                            " << mdtcpos_obj.idx_string << "\n";
         output << "                        ]" << "\n";
         output << "                    }" << "\n";
         output << "                }" << "\n";
@@ -153,11 +153,6 @@ class GeneTypeAnalyzerMDTCpos
         output.close();
     }
 };
-
-bool GeneTypeAnalyzerMDTCpos::isT2C = false;
-std::string GeneTypeAnalyzerMDTCpos::idx_string = "";
-std::string GeneTypeAnalyzerMDTCpos::md_string = "";
-std::string GeneTypeAnalyzerMDTCpos::tc_string = "";
 
 } // end of namespace algorithm
 } // end of namespace ago

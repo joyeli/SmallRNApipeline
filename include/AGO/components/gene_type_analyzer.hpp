@@ -153,7 +153,7 @@ class GeneTypeAnalyzer
         std::vector< std::vector< algorithm::CountingTableType >> anno_table_tail;
         std::vector< std::map< std::string, std::string >> anno_mark;
 
-        ParaThreadPool smp_parallel_pool( bed_samples.size() );
+        ParaThreadPool ana_parallel_pool( thread_number );
 
         for( std::size_t i = 0; i < analysis_size; ++i )
         {
@@ -180,13 +180,13 @@ class GeneTypeAnalyzer
             {
                 for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
                 {
-                    smp_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &anno_mark, &genome_table, &biotype, this ] ()
+                    ana_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &anno_mark, &genome_table, &biotype, this ] ()
                     {
                         make_anno_table( bed_samples[ smp ].second, anno_table_tail[ smp ], anno_mark[ smp ], genome_table, biotype );
                     });
                 }
 
-                smp_parallel_pool.flush_pool();
+                ana_parallel_pool.flush_pool();
 
                 table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
                 algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
@@ -197,17 +197,34 @@ class GeneTypeAnalyzer
                 // tmm_means.clear();
             }
 
-            do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path );
-            do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "Seed" );
+            ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+            {
+                do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path );
+            });
+            ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+            {
+                do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "Seed" );
+            });
 
             for( std::size_t len = min_len; len <= max_len; ++len )
-                do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, std::to_string( len ));
+                ana_parallel_pool.job_post([ len, &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+                {
+                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, std::to_string( len ));
+                });
 
             if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
             {
-                do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "5p" );
-                do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "3p" );
+                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+                {
+                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "5p" );
+                });
+                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+                {
+                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "3p" );
+                });
             }
+
+            ana_parallel_pool.flush_pool();
 
             monitor.log( "\tBiotype Analysis - " + biotype, "Complete with " + std::to_string( ano_len_idx.first.size() ) + " annotations" );
         }

@@ -9,8 +9,8 @@ class GeneTypeAnalyzerTaildot
 
   public:
 
-    static std::vector< std::map< std::string, std::vector< double >>> anno_tail_table;
-    static std::vector< std::map< std::string, std::vector< double >>> isom_tail_table;
+    std::vector< std::map< std::string, std::vector< double >>> anno_tail_table;
+    std::vector< std::map< std::string, std::vector< double >>> isom_tail_table;
 
     GeneTypeAnalyzerTaildot()
     {}
@@ -20,6 +20,8 @@ class GeneTypeAnalyzerTaildot
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< BedSampleType >& bed_samples,
             auto& genome_table,
+            std::vector< std::map< std::string, std::vector< double >>>& anno_tail_table,
+            std::vector< std::map< std::string, std::vector< double >>>& isom_tail_table,
             const bool& isSeed = false
             )
     {
@@ -154,8 +156,8 @@ class GeneTypeAnalyzerTaildot
             const std::string& output_name,
             const AnnoLengthIndexType& ano_len_idx,
             std::map< std::string, std::string >& anno_mark,
-            const std::string& sample_name,
-            const std::size_t& smp
+            std::map< std::string, std::vector< double >>& tail_table,
+            const std::string& sample_name
             )
     {
         std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
@@ -165,7 +167,7 @@ class GeneTypeAnalyzerTaildot
         {
             output << anno << ( anno_mark.find( anno ) != anno_mark.end() ? anno_mark[ anno ] : "" );
 
-            for( auto& ratio : isom_tail_table[ smp ][ anno ] )
+            for( auto& ratio : tail_table[ anno ] )
                 output << "\t" << std::setprecision( 2 ) << std::fixed << ratio;
 
             output << "\n";
@@ -178,8 +180,8 @@ class GeneTypeAnalyzerTaildot
             const std::string& output_name,
             const AnnoLengthIndexType& ano_len_idx,
             std::map< std::string, std::string >& anno_mark,
-            const std::string& sample_name,
-            const std::size_t& smp
+            std::map< std::string, std::vector< double >>& tail_table,
+            const std::string& sample_name
             )
     {
         std::vector< std::string > split;
@@ -206,7 +208,7 @@ class GeneTypeAnalyzerTaildot
         {
             output << anno << ( anno_mark_set.find( anno ) != anno_mark_set.end() ? "!" : "" );
 
-            for( auto& ratio : anno_tail_table[ smp ][ anno ] )
+            for( auto& ratio : tail_table[ anno ] )
                 output << "\t" << std::setprecision( 2 ) << std::fixed << ratio;
 
             output << "\n";
@@ -852,9 +854,6 @@ class GeneTypeAnalyzerTaildot
         output.close();
     }
 };
-
-std::vector< std::map< std::string, std::vector< double >>> GeneTypeAnalyzerTaildot::anno_tail_table;
-std::vector< std::map< std::string, std::vector< double >>> GeneTypeAnalyzerTaildot::isom_tail_table;
 
 } // end of namespace algorithm
 } // end of namespace ago

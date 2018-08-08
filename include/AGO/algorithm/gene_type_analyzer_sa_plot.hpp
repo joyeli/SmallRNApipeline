@@ -3,26 +3,26 @@
 namespace ago {
 namespace algorithm {
 
-struct SA_Type
-{
-    std::vector< double > GMPM; // GMPM, GM, PM
-    std::vector< double > Tail; // Atail, Ctail, Gtail, Other
-    std::vector< double > tail; // aTail, cTail, gTail, Other is splite in to each Tail
-    std::vector< std::map< char, double >> Ends; // 5'End-NT + Seed + 3'End-NT ( 0 ~ -4 ) + 3'End-4N ( 1 + 7 + 5 + 1 )
-
-    SA_Type()
-        : GMPM( 3, 0.0 )
-        , Tail( 5, 0.0 )
-        , tail( 4, 0.0 )
-        , Ends( 14, std::map< char, double >() )
-    {}
-};
-
 class GeneTypeAnalyzerSA_Plot
 {
+    struct SA_Type
+    {
+        std::vector< double > GMPM; // GMPM, GM, PM
+        std::vector< double > Tail; // Atail, Ctail, Gtail, Other
+        std::vector< double > tail; // aTail, cTail, gTail, Other is splite in to each Tail
+        std::vector< std::map< char, double >> Ends; // 5'End-NT + Seed + 3'End-NT ( 0 ~ -4 ) + 3'End-4N ( 1 + 7 + 5 + 1 )
+    
+        SA_Type()
+            : GMPM( 3, 0.0 )
+            , Tail( 5, 0.0 )
+            , tail( 4, 0.0 )
+            , Ends( 14, std::map< char, double >() )
+        {}
+    };
+
   public:
 
-    static std::vector< std::map< std::string, SA_Type >> anno_sa_table;
+    std::vector< std::map< std::string, SA_Type >> anno_sa_table;
 
     GeneTypeAnalyzerSA_Plot()
     {}
@@ -32,6 +32,7 @@ class GeneTypeAnalyzerSA_Plot
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< BedSampleType >& bed_samples,
             auto& genome_table,
+            std::vector< std::map< std::string, SA_Type >>& anno_sa_table,
             const bool& isSeed = false
             )
     {
@@ -222,122 +223,52 @@ class GeneTypeAnalyzerSA_Plot
     static void output_sa_plot(
             const std::string& output_name,
             const AnnoLengthIndexType& ano_len_idx,
-            const std::string& sample_name,
-            const std::size_t& smp
+            std::map< std::string, SA_Type >& sa_table,
+            const std::string& sample_name
             )
     {
-        std::ofstream outtll( output_name + sample_name + "-tail.tsv" );
-        std::ofstream outtlo( output_name + sample_name + "-tail_with_other.tsv" );
-        std::ofstream outnt0( output_name + sample_name + "-nt_0.tsv" );
-        std::ofstream outnt1( output_name + sample_name + "-nt_1.tsv" );
-        std::ofstream outnt2( output_name + sample_name + "-nt_2.tsv" );
-        std::ofstream outnt3( output_name + sample_name + "-nt_3.tsv" );
-        std::ofstream outnt4( output_name + sample_name + "-nt_4.tsv" );
-        std::ofstream outnt5( output_name + sample_name + "-nt_5.tsv" );
-        std::ofstream outnt6( output_name + sample_name + "-nt_6.tsv" );
-        std::ofstream outnt7( output_name + sample_name + "-nt_7.tsv" );
-        std::ofstream outlt0( output_name + sample_name + "-nt_last_0.tsv" );
-        std::ofstream outlt1( output_name + sample_name + "-nt_last_-1.tsv" );
-        std::ofstream outlt2( output_name + sample_name + "-nt_last_-2.tsv" );
-        std::ofstream outlt3( output_name + sample_name + "-nt_last_-3.tsv" );
-        std::ofstream outlt4( output_name + sample_name + "-nt_last_-4.tsv" );
-        std::ofstream outl4n( output_name + sample_name + "-nt_last_4N.tsv" );
+        std::vector< std::ofstream > outputs( 16 );
 
-        outtll << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outtlo << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT\tO";
-        outnt0 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outnt1 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outnt2 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outnt3 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outnt4 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outnt5 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outnt6 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outnt7 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outlt0 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outlt1 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outlt2 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outlt3 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outlt4 << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
-        outl4n << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+        outputs[ 0].open( output_name + sample_name + "-tail.tsv" );
+        outputs[ 1].open( output_name + sample_name + "-tail_with_other.tsv" );
+        outputs[ 2].open( output_name + sample_name + "-nt_0.tsv" );
+        outputs[ 3].open( output_name + sample_name + "-nt_1.tsv" );
+        outputs[ 4].open( output_name + sample_name + "-nt_2.tsv" );
+        outputs[ 5].open( output_name + sample_name + "-nt_3.tsv" );
+        outputs[ 6].open( output_name + sample_name + "-nt_4.tsv" );
+        outputs[ 7].open( output_name + sample_name + "-nt_5.tsv" );
+        outputs[ 8].open( output_name + sample_name + "-nt_6.tsv" );
+        outputs[ 9].open( output_name + sample_name + "-nt_7.tsv" );
+        outputs[10].open( output_name + sample_name + "-nt_last_0.tsv" );
+        outputs[11].open( output_name + sample_name + "-nt_last_-1.tsv" );
+        outputs[12].open( output_name + sample_name + "-nt_last_-2.tsv" );
+        outputs[13].open( output_name + sample_name + "-nt_last_-3.tsv" );
+        outputs[14].open( output_name + sample_name + "-nt_last_-4.tsv" );
+        outputs[15].open( output_name + sample_name + "-nt_last_4N.tsv" );
+
+        for( std::size_t i = 0; i < outputs.size(); ++i )
+        {
+            outputs[i] << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+            if( i == 1 ) outputs[i] << "\tO";
+        }
 
         for( auto& anno : ano_len_idx.first )
         {
-            if( anno_sa_table[ smp ].find( anno ) == anno_sa_table[ smp ].end() ) continue;
+            if( sa_table.find( anno ) == sa_table.end() ) continue;
 
-            outtll << "\n" << anno;
-            outtlo << "\n" << anno;
-            outnt0 << "\n" << anno;
-            outnt1 << "\n" << anno;
-            outnt2 << "\n" << anno;
-            outnt3 << "\n" << anno;
-            outnt4 << "\n" << anno;
-            outnt5 << "\n" << anno;
-            outnt6 << "\n" << anno;
-            outnt7 << "\n" << anno;
-            outlt0 << "\n" << anno;
-            outlt1 << "\n" << anno;
-            outlt2 << "\n" << anno;
-            outlt3 << "\n" << anno;
-            outlt4 << "\n" << anno;
-            outl4n << "\n" << anno;
+            for( auto& output : outputs ) output << "\n" << anno;
 
             for( std::size_t i = 0; i < 3; ++i )
-            {
-                outtll << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outtlo << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt0 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt1 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt2 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt3 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt4 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt5 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt6 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outnt7 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outlt0 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outlt1 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outlt2 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outlt3 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outlt4 << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-                outl4n << "\t" << anno_sa_table[ smp ][ anno ].GMPM[i];
-            }
+                for( auto& output : outputs ) output << "\t" << sa_table[ anno ].GMPM[i];
 
-            for( std::size_t i = 0; i < 4; ++i ) outtll << "\t" << anno_sa_table[ smp ][ anno ].tail[i];
-            for( std::size_t i = 0; i < 5; ++i ) outtlo << "\t" << anno_sa_table[ smp ][ anno ].Tail[i];
-            for( std::size_t i = 0; i < 14; ++i ) switch( i )
-            {
-                case 0 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt0 << "\t" << nt.second; break;
-                case 1 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt1 << "\t" << nt.second; break;
-                case 2 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt2 << "\t" << nt.second; break;
-                case 3 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt3 << "\t" << nt.second; break;
-                case 4 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt4 << "\t" << nt.second; break;
-                case 5 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt5 << "\t" << nt.second; break;
-                case 6 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt6 << "\t" << nt.second; break;
-                case 7 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outnt7 << "\t" << nt.second; break;
-                case 8 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt0 << "\t" << nt.second; break;
-                case 9 : for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt1 << "\t" << nt.second; break;
-                case 10: for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt2 << "\t" << nt.second; break;
-                case 11: for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt3 << "\t" << nt.second; break;
-                case 12: for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outlt4 << "\t" << nt.second; break;
-                case 13: for( auto& nt : anno_sa_table[ smp ][ anno ].Ends[i] ) outl4n << "\t" << nt.second; break;
-            }
+            for( std::size_t i = 0; i < 4; ++i ) outputs[0] << "\t" << sa_table[ anno ].tail[i];
+            for( std::size_t i = 0; i < 5; ++i ) outputs[1] << "\t" << sa_table[ anno ].Tail[i];
+
+            for( std::size_t i = 0; i < 14; ++i )
+                for( auto& nt : sa_table[ anno ].Ends[i] ) outputs[ i+2 ] << "\t" << nt.second;
         }
 
-        outtll.close();
-        outtlo.close();
-        outnt0.close();
-        outnt1.close();
-        outnt2.close();
-        outnt3.close();
-        outnt4.close();
-        outnt5.close();
-        outnt6.close();
-        outnt7.close();
-        outlt0.close();
-        outlt1.close();
-        outlt2.close();
-        outlt3.close();
-        outlt4.close();
-        outl4n.close();
+        for( auto& output : outputs ) output.close();
     }
 
     static void debug( std::map< std::string, SA_Type >& sa_table )
@@ -1059,8 +990,6 @@ class GeneTypeAnalyzerSA_Plot
     }
 
 };
-
-std::vector< std::map< std::string, SA_Type >> GeneTypeAnalyzerSA_Plot::anno_sa_table;
 
 } // end of namespace algorithm
 } // end of namespace ago
