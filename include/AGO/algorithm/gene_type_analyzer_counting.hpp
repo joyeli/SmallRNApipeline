@@ -374,30 +374,40 @@ class GeneTypeAnalyzerCounting
                     split[1] = split[ split.size() -1 ];
                 }
 
-                if( is_arms && get_arm( split[0] ) != token )
+                if( !is_seed )
+                {
+                    if( is_arms && get_arm( split[0] ) != token )
+                        continue;
+
+                    for( auto& len : name_seed.second )
+                    {
+                        if( is_lens && token != std::to_string( len.first ))
+                            continue;
+
+                        if( anno_table_temp[ tail ][ name_seed.first ].find( len.first ) == anno_table_temp[ tail ][ name_seed.first ].end() )
+                            anno_table_temp[ tail ][ name_seed.first ][ len.first ] = 0.0;
+
+                        anno_table_temp[ tail ][ name_seed.first ][ len.first ] += len.second;
+                    }
+
+                    if( anno_mark.find( name_seed.first ) != anno_mark.end() )
+                        anno_mark_temp[ name_seed.first ] = anno_mark[ name_seed.first ];
+
                     continue;
+                }
 
                 for( auto& len : name_seed.second )
                 {
-                    if( is_lens && token != std::to_string( len.first ))
-                        continue;
-
                     if( anno_table_temp[ tail ][ split[1] ].find( len.first ) == anno_table_temp[ tail ][ split[1] ].end() )
                         anno_table_temp[ tail ][ split[1] ][ len.first ] = 0.0;
 
                     anno_table_temp[ tail ][ split[1] ][ len.first ] += len.second;
 
-                    if( is_seed )
-                    {
-                        if( seed_match_table[ split[1] ].find( split[0] ) == seed_match_table[ split[1] ].end() )
-                            seed_match_table[ split[1] ][ split[0] ] = 0.0;
+                    if( seed_match_table[ split[1] ].find( split[0] ) == seed_match_table[ split[1] ].end() )
+                        seed_match_table[ split[1] ][ split[0] ] = 0.0;
 
-                        seed_match_table[ split[1] ][ split[0] ] += len.second;
-                    }
+                    seed_match_table[ split[1] ][ split[0] ] += len.second;
                 }
-
-                if( !is_seed && anno_mark.find( name_seed.first ) != anno_mark.end() )
-                    anno_mark_temp[ name_seed.first ] = anno_mark[ name_seed.first ];
             }
         }
 

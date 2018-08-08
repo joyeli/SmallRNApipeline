@@ -291,8 +291,16 @@ class GeneTypeAnalyzer
 
             smp_parallel_pool.flush_pool();
 
-            table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
-            if( token == "Seed" ) seed_refinding( ano_len_idx, anno_table_tail, seed_match_table );
+            table_refinding(
+                  ano_len_idx
+                , anno_table_tail
+                , ( token != "Seed" & token != "" ? std::stoi( token ) : min_len )
+                , ( token != "Seed" & token != "" ? std::stoi( token ) : max_len )
+                , sudo_count
+                );
+
+            if( token == "Seed" )
+                seed_refinding( ano_len_idx, anno_table_tail, seed_match_table );
         }
 
         algorithm::GeneTypeAnalyzerEachtype(
@@ -307,8 +315,8 @@ class GeneTypeAnalyzer
                 , thread_number
                 , node_path
                 , heatbub_js
-                , min_len
-                , max_len
+                , ( token != "Seed" & token != "" ? std::stoi( token ) : min_len )
+                , ( token != "Seed" & token != "" ? std::stoi( token ) : max_len )
                 , extend_merge
                 , extend_refseq
                 , max_anno_merge_size
