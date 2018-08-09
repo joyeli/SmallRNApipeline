@@ -88,6 +88,7 @@ class GeneTypeAnalyzerEachtype
             const std::size_t& extend_refseq,
             const std::size_t& max_anno_merge_size,
             const bool& webpage_update_only,
+            const std::string& rnafold_path,
             const std::string& token
             )
         : is_time_log( false )
@@ -343,7 +344,7 @@ class GeneTypeAnalyzerEachtype
                 std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
                 if( !webpage_update_only )
-                    GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table, extend_refseq, max_anno_merge_size );
+                    GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table, extend_refseq, max_anno_merge_size, rnafold_path );
 
                 GeneTypeAnalyzerSqalign::output_sqalign_visualization( output_path + sqalign, extend_refseq );
 

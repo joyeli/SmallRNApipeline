@@ -45,6 +45,7 @@ class GeneTypeAnalyzer
 
     std::string node_path;
     std::string heatbub_js;
+    std::string rnafold_path;
 
     void emplace_list( const bpt::ptree& p, const std::string& tag, std::vector< std::string >& list )
     {
@@ -110,6 +111,7 @@ class GeneTypeAnalyzer
         max_len    = p.get_optional< std::size_t >( "max_len"    ).value_or( 0 );
         node_path  = p.get_optional< std::string >( "node_path"  ).value_or( "/home/joyel/bin/node" );
         heatbub_js = p.get_optional< std::string >( "heatbub_js" ).value_or( "/home/joyel/WorkDir/AgoD3/heatmap_bubble_plot/heatmap_bubble_plot.js" );
+        rnafold_path = p.get_optional< std::string >( "rnafold_path"  ).value_or( "" );
 
         if( p.get_child_optional( "biotype_list"  )) emplace_list( p, "biotype_list", biotype_list );
         if( p.get_child_optional( "analysis_list" )) emplace_list( p, "analysis_list", analysis_list );
@@ -321,6 +323,7 @@ class GeneTypeAnalyzer
                 , extend_refseq
                 , max_anno_merge_size
                 , webpage_update_only
+                , rnafold_path
                 , token
                 );
     }
