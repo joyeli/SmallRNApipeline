@@ -17,6 +17,8 @@ class GeneTypeAnalyzerBubplot
     static void output_bubplot(
             const std::string& output_name,
             std::vector< BedSampleType >& bed_samples,
+            std::vector< std::vector< CountingTableType >>& anno_table_tail,
+            const AnnoLengthIndexType& ano_len_idx,
             const std::string& biotype,
             const std::size_t& thread_number,
             const std::size_t& extend_merge,
@@ -24,8 +26,9 @@ class GeneTypeAnalyzerBubplot
             auto& genome_table
             )
     {
+        std::map< std::string, double > ppm_table = get_ppm_table( ano_len_idx, anno_table_tail );
         std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extend_merge, ppm_filter );
-        std::vector< std::string > out_vec = sequence_formating( chr_mapping, genome_table );
+        std::vector< std::string > out_vec = sequence_formating( chr_mapping, ppm_table, genome_table );
 
         std::ofstream output( output_name + "AnnoSeq.tsv" );
         output << "Annotation\t5P\t3P";
@@ -35,6 +38,45 @@ class GeneTypeAnalyzerBubplot
 
         output << "\n";
         output.close();
+    }
+    
+    static std::map< std::string, double > get_ppm_table(
+            const AnnoLengthIndexType& ano_len_idx,
+            std::vector< std::vector< CountingTableType >>& anno_table_tail
+            )
+    {
+        std::vector< std::string > split; 
+        std::map< std::string, double > ppm_table;
+
+        for( auto& anno : ano_len_idx.first )
+        {
+            boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
+            if( split.size() > 2 ) for( std::size_t i = 1; i < split.size() -2; ++i )
+                split[0] = split[0] + "_" + split[i];
+
+            split[0] = split[0].substr( 0, split[0].length() -3 );
+
+            if( ppm_table.find( split[0] ) == ppm_table.end() )
+                ppm_table[ split[0] ] = 0.0;
+
+            for( auto& anno_table : anno_table_tail )
+            {
+                for( std::size_t i = 0; i < 6; i++ )
+                {
+                    if( anno_table[i].find( anno ) == anno_table[i].end() )
+                        continue;
+
+                    for( auto& len : ano_len_idx.second )
+                        if( anno_table[i][ anno ].find( len ) != anno_table[i][ anno ].end() )
+                            ppm_table[ split[0] ] += anno_table[i][ anno ][ len ];
+                }
+            }
+        }
+
+        for( auto& anno : ppm_table )
+            anno.second = anno.second / (double)( anno_table_tail.size() );
+
+        return ppm_table;
     }
 
     static std::map< std::string, ChrRangeType > get_chrmap_table(
@@ -201,6 +243,7 @@ class GeneTypeAnalyzerBubplot
 
     static std::vector< std::string > sequence_formating(
             const std::map< std::string, ChrRangeType >& chr_mapping,
+            std::map< std::string, double >& ppm_table,
             auto& genome_table
             )
     {
@@ -223,6 +266,7 @@ class GeneTypeAnalyzerBubplot
         {
             res_vec.emplace_back(
                     "\n" + anno.first +
+                    "\t" + std::to_string( ppm_table[ anno.first ]) +
                     "\t" + std::get<0>( anno.second ) +
                     "\t" + std::get<1>( anno.second ) );
         }
@@ -314,6 +358,9 @@ class GeneTypeAnalyzerBubplot
         output << "        $Max_Length = $_POST['Max_Length'];" << "\n";
         output << "        $isLog2 = $_POST['isLog2'];" << "\n";
         output << "" << "\n";
+        output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
+        output << "        echo '<script src=https://code.jquery.com/jquery-3.3.1.min.js ></script>';" << "\n";
+        output << "" << "\n";
         output << "#<!--================== Annotation Select ====================-->" << "\n";
         output << "" << "\n";
         output << "        $inFile = File_get_contents( './AnnoSeq.tsv' );" << "\n";
@@ -323,36 +370,33 @@ class GeneTypeAnalyzerBubplot
         output << "" << "\n";
         output << "        For( $j = 1; $j < Count( $inFile_Lines )-1; ++$j )" << "\n";
         output << "        {" << "\n";
-        output << "            $anno = Explode( \"\t\", $inFile_Lines[$j] );" << "\n";
-        output << "" << "\n";
-        output << "            Array_Push( $Anno_Array, $anno[0] );" << "\n";
+        output << "            $anno = Explode( \"\\t\", $inFile_Lines[$j] );" << "\n";
+        output << "            $Anno_Array[ $anno[0] ] += $anno[1];" << "\n";
         output << "" << "\n";
         output << "            if( $Annotation_Select == $anno[0] )" << "\n";
         output << "            {" << "\n";
-        output << "                for( $k = 1; $k < Count( $anno ); ++$k )" << "\n";
-        output << "                {" << "\n";
+        output << "                for( $k = 2; $k < Count( $anno ); ++$k )" << "\n";
         output << "                    Array_Push( $Arm_Array, $anno[$k] );" << "\n";
-        output << "                }" << "\n";
         output << "            }" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
-        output << "        Sort( $Anno_Array, SORT_STRING );" << "\n";
+        output << "        $Total_PPM = 0.0;" << "\n";
+        output << "" << "\n";
+        output << "        Foreach( $Anno_Array as $anno => $ppm )" << "\n";
+        output << "            if( $Total_PPM < $ppm ) $Total_PPM = $ppm;" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
         output << "        echo '<select name=Annotation_Select onchange=this.form.submit();>';" << "\n";
         output << "        echo \"<option value='' \"; if($Annotation_Select=='') echo 'selected'; echo '>Select Annotations</option>';" << "\n";
         output << "" << "\n";
-        output << "        For( $i = 0; $i < Count( $Anno_Array ); ++$i )" << "\n";
+        output << "        Foreach( $Anno_Array as $anno => $ppm )" << "\n";
         output << "        {" << "\n";
-        output << "            if( $Anno_Array[$i] != '' )" << "\n";
-        output << "            {" << "\n";
-        output << "                echo '<option value='.$Anno_Array[$i].' ';" << "\n";
+        output << "            echo '<option value='.$anno.' ';" << "\n";
         output << "" << "\n";
-        output << "                if( $Annotation_Select == $Anno_Array[$i] ) " << "\n";
-        output << "                    echo 'selected ';" << "\n";
+        output << "            if( $Annotation_Select == $anno ) " << "\n";
+        output << "                echo 'selected ';" << "\n";
         output << "" << "\n";
-        output << "                echo '>'.$Anno_Array[$i].'</option>';" << "\n";
-        output << "            }" << "\n";
+        output << "            echo '>'.$anno.' ('.$ppm.'ppm)</option>';" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
@@ -363,6 +407,20 @@ class GeneTypeAnalyzerBubplot
         output << "            <input type='hidden' name='Max_Length' value='$Max_Length' />" << "\n";
         output << "            <input type='hidden' name='isLog2' value='$isLog2' />" << "\n";
         output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "        $Total_PPM = 100 / $Total_PPM;" << "\n";
+        output << "        echo \"<script>var select_color_map = d3.scale.linear().domain([ 0, 100 ]).range([ 'WhiteSmoke', 'Black' ]);\";" << "\n";
+        output << "" << "\n";
+        output << "        Foreach( $Anno_Array as $anno => $ppm )" << "\n";
+        output << "        {" << "\n";
+        output << "           echo \"$( 'option[value=\\\"$anno\\\"]' ).css(" << "\n";
+        output << "           {" << "\n";
+        output << "               'background-color': select_color_map( '\".( $ppm * $Total_PPM ).\"' )," << "\n";
+        output << "               'color': '\".(( $ppm * $Total_PPM ) > 25 ? 'white' : 'black'  ).\"'" << "\n";
+        output << "           });\";" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo '</script>';" << "\n";
         output << "" << "\n";
         output << "#<!--================== ChartTypes Select ====================-->" << "\n";
         output << "" << "\n";

@@ -483,7 +483,7 @@ class GeneTypeAnalyzerEachtype
                     double ppm_filter = 1;
 
                     if( !webpage_update_only )
-                        algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, biotype, thread_number, extend_merge, ppm_filter, genome_table );
+                        algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, anno_table_tail, ano_len_idx, biotype, thread_number, extend_merge, ppm_filter, genome_table );
 
                     algorithm::GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + bubplot, node_path, heatbub_js, min_len, max_len );
 
