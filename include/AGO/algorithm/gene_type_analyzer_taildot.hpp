@@ -219,6 +219,9 @@ class GeneTypeAnalyzerTaildot
 
     static void output_taildot_visualization( const std::string& output_name, const std::string& biotype, const bool& isSeed )
     {
+        if( !isSeed && ( biotype == "miRNA" || biotype == "miRNA_mirtron" || biotype == "mirtron" ) && !boost::filesystem::exists( output_name + "heterorgeneity.tsv" ))
+            boost::filesystem::create_symlink( "../Hete53p/heterorgeneity.tsv", ( output_name + "heterorgeneity.tsv" ).c_str() );
+
         std::ofstream output( output_name + "index.php" );
 
         output << "<!DOCTYPE html>" << "\n";
