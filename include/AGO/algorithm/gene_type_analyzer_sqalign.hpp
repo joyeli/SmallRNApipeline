@@ -297,6 +297,8 @@ class GeneTypeAnalyzerSqalign
 
         for( auto& mir : chr_mapping )
         {
+            if( rnafolds.find( mir.first ) == rnafolds.end() ) continue;
+
             start = std::stoi( mir.second.strand == '+' ? rnafolds[ mir.first ][1] : rnafolds[ mir.first ][2] );
             shift = start > mir.second.refstart ? ( start - mir.second.refstart ) : ( mir.second.refstart - start );
 
