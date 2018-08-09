@@ -225,33 +225,33 @@ class GeneTypeAnalyzerSqalign
     GeneTypeAnalyzerSqalign()
     {}
 
-    static double get_region_ppm( SeqType& seqs )
-    {
-        double ppm = 0.0;
-        for( auto& seq : seqs.reads_vec )
-            ppm += std::get<2>( seq );
-        return ppm;
-    }
-
     static void output_sqalign(
             const std::string& output_name,
             std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
             auto& genome_table,
             const std::size_t& extend_refseq,
-            const std::size_t& max_anno_merge_size
+            const std::size_t& max_anno_merge_size,
+            const std::string& rnafold_path
             )
     {
         std::ofstream outidx, outtsv;
         std::map< std::string, SeqType > chr_mapping;
+        std::map< std::string, std::vector< std::string >> rnafolds;
 
         std::size_t idx;
         double ppm = 0.0;
+
+        if(( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" ) && rnafold_path != "" )
+            get_rnafold( rnafold_path, rnafolds );
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             idx = 0;
             chr_mapping = get_chrmap_table( bed_samples[ smp ].second, biotype, genome_table, extend_refseq, max_anno_merge_size );
+
+            if(( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" ) && rnafold_path != "" )
+                apply_rnafold( chr_mapping, rnafolds );
 
             outidx.open( output_name + bed_samples[ smp ].first + ".idx" );
             outtsv.open( output_name + bed_samples[ smp ].first + ".tsv" );
@@ -266,6 +266,45 @@ class GeneTypeAnalyzerSqalign
 
             outidx.close();
             outtsv.close();
+        }
+    }
+
+    static double get_region_ppm( SeqType& seqs )
+    {
+        double ppm = 0.0;
+        for( auto& seq : seqs.reads_vec )
+            ppm += std::get<2>( seq );
+        return ppm;
+    }
+
+    static void get_rnafold( const std::string& rnafold_path, std::map< std::string, std::vector< std::string >>& rnafolds )
+    {
+        std::fstream file( rnafold_path, std::ios::in );
+        std::vector< std::string > split;
+        std::string line;
+
+        while( std::getline( file, line ))
+        {
+            boost::iter_split( split, line, boost::algorithm::first_finder( "\t" ));
+            rnafolds[ split[0] ] = split;
+        }
+    }
+
+    static void apply_rnafold( std::map< std::string, SeqType >& chr_mapping, std::map< std::string, std::vector< std::string >>& rnafolds )
+    {
+        double shift;
+        std::size_t start;
+
+        for( auto& mir : chr_mapping )
+        {
+            start = std::stoi( mir.second.strand == '+' ? rnafolds[ mir.first ][1] : rnafolds[ mir.first ][2] );
+            shift = start > mir.second.refstart ? ( start - mir.second.refstart ) : ( mir.second.refstart - start );
+
+            mir.second.refstart = start;
+            mir.second.fullseq = rnafolds[ mir.first ][4];
+
+            for( auto& seq : mir.second.reads_vec )
+                std::get<0>( seq ) = std::get<0>( seq ) + shift;
         }
     }
 
