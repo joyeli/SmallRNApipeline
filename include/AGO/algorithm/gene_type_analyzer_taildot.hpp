@@ -20,6 +20,7 @@ class GeneTypeAnalyzerTaildot
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< BedSampleType >& bed_samples,
             auto& genome_table,
+            const std::size_t& filter_ppm,
             std::vector< std::map< std::string, std::vector< double >>>& anno_tail_table,
             std::vector< std::map< std::string, std::vector< double >>>& isom_tail_table,
             const bool& isSeed = false
@@ -43,10 +44,10 @@ class GeneTypeAnalyzerTaildot
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             anno_tail_table.emplace_back( anno_map );
-            make_tail_counting_table( biotype, bed_samples[ smp ], anno_tail_table[ smp ], genome_table, false, isSeed );
+            make_tail_counting_table( biotype, bed_samples[ smp ], anno_tail_table[ smp ], genome_table, filter_ppm, false, isSeed );
 
             isom_tail_table.emplace_back( isom_map );
-            make_tail_counting_table( biotype, bed_samples[ smp ], isom_tail_table[ smp ], genome_table, true, isSeed );
+            make_tail_counting_table( biotype, bed_samples[ smp ], isom_tail_table[ smp ], genome_table, filter_ppm, true, isSeed );
         }
     }
 
@@ -55,6 +56,7 @@ class GeneTypeAnalyzerTaildot
             BedSampleType& bed_sample,
             std::map< std::string, std::vector< double >>& tail_table,
             auto& genome_table,
+            const std::size_t& filter_ppm,
             bool is_isomir = false,
             const bool& isSeed = false
             )
@@ -74,6 +76,7 @@ class GeneTypeAnalyzerTaildot
 
         for( auto& raw_bed : bed_sample.second )
         {
+            if( raw_bed.ppm_ < filter_ppm ) continue;
             // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
             {
                 std::size_t i = 0; // do first priority

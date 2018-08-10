@@ -173,7 +173,8 @@ class GeneTypeAnalyzerCounting
     static std::set< std::pair< std::string, std::string >> make_anno_trimming(
             std::vector< ago::format::MDRawBed >& annotations,
             std::map< std::string, std::string >& genome_table,
-            const std::string biotype
+            const std::size_t& filter_ppm,
+            const std::string& biotype
             )
     {
         std::set< std::pair< std::string, std::string >> anno_trimmed;
@@ -191,6 +192,7 @@ class GeneTypeAnalyzerCounting
 
         for( auto& raw_bed : annotations )
         {
+            if( raw_bed.ppm_ < filter_ppm ) continue;
             isbiotype = ( biotype == "" ? true : false );
             if( 0 < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[0].empty() )
             {
@@ -269,7 +271,7 @@ class GeneTypeAnalyzerCounting
         bool isbiotype = false;
 
         std::set< std::pair< std::string, std::string >> anno_trimmed;
-        if( trimming ) anno_trimmed = make_anno_trimming( annotations, genome_table, biotype );
+        if( trimming ) anno_trimmed = make_anno_trimming( annotations, genome_table, filter_ppm, biotype );
 
         for( auto& raw_bed : annotations )
         {

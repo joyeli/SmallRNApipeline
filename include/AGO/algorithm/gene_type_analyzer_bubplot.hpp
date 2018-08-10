@@ -22,12 +22,12 @@ class GeneTypeAnalyzerBubplot
             const std::string& biotype,
             const std::size_t& thread_number,
             const std::size_t& extend_merge,
-            const double& ppm_filter,
+            const std::size_t& filter_ppm,
             auto& genome_table
             )
     {
         std::map< std::string, double > ppm_table = get_ppm_table( ano_len_idx, anno_table_tail );
-        std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extend_merge, ppm_filter );
+        std::map< std::string, ChrRangeType > chr_mapping = get_chrmap_table( bed_samples, biotype, thread_number, extend_merge, filter_ppm );
         std::vector< std::string > out_vec = sequence_formating( chr_mapping, ppm_table, genome_table );
 
         std::ofstream output( output_name + "AnnoSeq.tsv" );
@@ -84,7 +84,7 @@ class GeneTypeAnalyzerBubplot
             const std::string& biotype,
             const std::size_t& thread_number,
             const std::size_t& extend_merge,
-            const double& ppm_filter
+            const std::size_t& filter_ppm
             )
     {
         ChrRangeType range_temp;
@@ -94,6 +94,7 @@ class GeneTypeAnalyzerBubplot
         {
             for( auto& raw_bed : bed_samples[ smp ].second )
             {
+                if( raw_bed.ppm_ < filter_ppm ) continue;
                 // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
                 {
                     std::size_t i = 0; // do first priority
@@ -102,7 +103,6 @@ class GeneTypeAnalyzerBubplot
                         if(( raw_bed.annotation_info_[i][0] == biotype ) ||
                            ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" ))) 
                         {
-                            if( raw_bed.ppm_ < ppm_filter ) continue;
                             for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                             {
                                 range_temp = std::make_tuple(

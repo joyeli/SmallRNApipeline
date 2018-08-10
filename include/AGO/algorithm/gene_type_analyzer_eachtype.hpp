@@ -86,6 +86,7 @@ class GeneTypeAnalyzerEachtype
             const std::size_t& max_len,
             const std::size_t& extend_merge,
             const std::size_t& extend_refseq,
+            const std::size_t& filter_ppm,
             const std::size_t& max_anno_merge_size,
             const bool& webpage_update_only,
             const std::string& rnafold_path,
@@ -147,10 +148,10 @@ class GeneTypeAnalyzerEachtype
             std::chrono::time_point< std::chrono::system_clock > make_table_start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
             GeneTypeAnalyzerTaildot taildot_obj;
-            GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table, taildot_obj.anno_tail_table, taildot_obj.isom_tail_table, is_seed );
+            GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table, filter_ppm, taildot_obj.anno_tail_table, taildot_obj.isom_tail_table, is_seed );
 
             GeneTypeAnalyzerSA_Plot sa_plot_obj;
-            GeneTypeAnalyzerSA_Plot::make_sa_plot_table( biotype, ano_len_idx, bed_samples, genome_table, sa_plot_obj.anno_sa_table, is_seed );
+            GeneTypeAnalyzerSA_Plot::make_sa_plot_table( biotype, ano_len_idx, bed_samples, genome_table, filter_ppm, sa_plot_obj.anno_sa_table, is_seed );
 
             std::chrono::time_point< std::chrono::system_clock > make_table_end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
             if( is_time_log ) std::cerr << "make_table: " << std::chrono::duration< double >( make_table_end_time - make_table_start_time ).count() << "\n";
@@ -320,7 +321,7 @@ class GeneTypeAnalyzerEachtype
                     std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
                     GeneTypeAnalyzerMDTCpos mdtcpos_obj;
-                    GeneTypeAnalyzerMDTCpos::make_mdtcpos( bed_samples, biotype, mdtcpos_obj );
+                    GeneTypeAnalyzerMDTCpos::make_mdtcpos( bed_samples, biotype, filter_ppm, mdtcpos_obj );
                     GeneTypeAnalyzerMDTCpos::output_mdtcpos_visualization( output_path + mdtcpos, mdtcpos_obj );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -331,7 +332,7 @@ class GeneTypeAnalyzerEachtype
                 {
                     std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                    GeneTypeAnalyzerHete53p::make_hete_table( output_path + hete53p, bed_samples, ano_len_idx, genome_table, biotype, token );
+                    GeneTypeAnalyzerHete53p::make_hete_table( output_path + hete53p, bed_samples, ano_len_idx, genome_table, filter_ppm, biotype, token );
                     GeneTypeAnalyzerHete53p::output_hete53p_visualization( output_path + hete53p );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -344,7 +345,7 @@ class GeneTypeAnalyzerEachtype
                 std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
                 if( !webpage_update_only )
-                    GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table, extend_refseq, max_anno_merge_size, rnafold_path );
+                    GeneTypeAnalyzerSqalign::output_sqalign( output_path + sqalign, bed_samples, biotype, genome_table, filter_ppm, extend_refseq, max_anno_merge_size, rnafold_path );
 
                 GeneTypeAnalyzerSqalign::output_sqalign_visualization( output_path + sqalign, extend_refseq );
 
@@ -481,10 +482,8 @@ class GeneTypeAnalyzerEachtype
                 {
                     std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                    double ppm_filter = 1;
-
                     if( !webpage_update_only )
-                        algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, anno_table_tail, ano_len_idx, biotype, thread_number, extend_merge, ppm_filter, genome_table );
+                        algorithm::GeneTypeAnalyzerBubplot::output_bubplot( output_path + bubplot, bed_samples, anno_table_tail, ano_len_idx, biotype, thread_number, extend_merge, filter_ppm, genome_table );
 
                     algorithm::GeneTypeAnalyzerBubplot::output_bubplot_visualization( output_path + bubplot, node_path, heatbub_js, min_len, max_len );
 

@@ -240,7 +240,7 @@ class GeneTypeAnalyzer
                 for( size_t smp = 0; smp < bed_samples.size(); ++smp )
                 {
                     std::ofstream annobed_output( output_path + bed_samples[ smp ].first + "_analyzedbed.text" );
-                    annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second );
+                    annobed_outputing( annobed_output, genome_table, bed_samples[ smp ].second, filter_ppm );
                     annobed_output.close();
                 }
             }
@@ -323,6 +323,7 @@ class GeneTypeAnalyzer
                 , ( token != "Seed" & token != "" ? std::stoi( token ) : max_len )
                 , extend_merge
                 , extend_refseq
+                , filter_ppm
                 , max_anno_merge_size
                 , webpage_update_only
                 , rnafold_path

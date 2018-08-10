@@ -12,12 +12,13 @@ class GeneTypeAnalyzerAnnobed
     GeneTypeAnalyzerAnnobed()
     {}
 
-    void annobed_outputing( auto& output, auto& genome, auto& sample_beds )
+    void annobed_outputing( auto& output, auto& genome, auto& sample_beds, const auto& filter_ppm )
     {
         output << "Chr\tStart\tEnd\tStrand\tAlignCounts\tRawCounts\tReadCounts\tPPM\tRMSK\tLength\tTailLen\tSeq\tTail\tMM\tT2C\tType\tAnnoSeedMD\n";
     
         for( auto& anno : sample_beds )
         {
+            if( anno.ppm_ < filter_ppm ) continue;
             // for( std::size_t i = 0; i < anno.annotation_info_.size(); ++i )
             {
                 std::size_t i = 0; // do first priority

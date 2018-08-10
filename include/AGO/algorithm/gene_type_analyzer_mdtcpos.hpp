@@ -17,7 +17,7 @@ class GeneTypeAnalyzerMDTCpos
     GeneTypeAnalyzerMDTCpos()
     {}
 
-    static void make_mdtcpos( std::vector< BedSampleType >& bed_samples, const std::string& biotype, auto& mdtcpos_obj )
+    static void make_mdtcpos( std::vector< BedSampleType >& bed_samples, const std::string& biotype, const std::size_t filter_ppm, auto& mdtcpos_obj )
     {
         std::size_t len = 0;
         std::size_t max_len = 0;
@@ -36,6 +36,7 @@ class GeneTypeAnalyzerMDTCpos
         {
             for( auto& raw_bed : bed_samples[ smp ].second )
             {
+                if( raw_bed.ppm_ < filter_ppm ) continue;
                 len = (int)(raw_bed.length_) - (int)(raw_bed.tail_length_);
 
                 if( len > max_len ) max_len = len;

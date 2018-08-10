@@ -17,6 +17,7 @@ class GeneTypeAnalyzerHete53p
             std::vector< BedSampleType >& bed_samples,
             AnnoLengthIndexType& ano_len_idx,
             auto& genome_table,
+            const std::size_t& filter_ppm,
             const std::string& biotype,
             const std::string& token = ""
             )
@@ -39,6 +40,7 @@ class GeneTypeAnalyzerHete53p
         {
             for( auto& raw_bed : bed_samples[ smp ].second )
             {
+                if( raw_bed.ppm_ < filter_ppm ) continue;
                 if( raw_bed.annotation_info_.empty() || raw_bed.annotation_info_[0].empty() ) continue;
                 if( biotype == "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != "miRNA" && raw_bed.annotation_info_[0][0] != "mirtron" ) continue;
                 if( biotype != "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != biotype ) continue;

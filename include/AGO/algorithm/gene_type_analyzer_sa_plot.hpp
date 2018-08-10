@@ -32,6 +32,7 @@ class GeneTypeAnalyzerSA_Plot
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< BedSampleType >& bed_samples,
             auto& genome_table,
+            const std::size_t filter_ppm,
             std::vector< std::map< std::string, SA_Type >>& anno_sa_table,
             const bool& isSeed = false
             )
@@ -45,7 +46,7 @@ class GeneTypeAnalyzerSA_Plot
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             anno_sa_table.emplace_back( anno_map );
-            make_sa_counting_table( biotype, bed_samples[ smp ], anno_sa_table[ smp ], genome_table, isSeed );
+            make_sa_counting_table( biotype, bed_samples[ smp ], anno_sa_table[ smp ], genome_table, filter_ppm, isSeed );
             // debug( anno_sa_table[ smp ] );
             formation_sa_table( anno_sa_table[ smp ] );
         }
@@ -148,6 +149,7 @@ class GeneTypeAnalyzerSA_Plot
             BedSampleType& bed_sample,
             std::map< std::string, SA_Type >& sa_table,
             auto& genome_table,
+            const std::size_t filter_ppm,
             const bool& isSeed = false
             )
     {
@@ -161,6 +163,7 @@ class GeneTypeAnalyzerSA_Plot
 
         for( auto& raw_bed : bed_sample.second )
         {
+            if( raw_bed.ppm_ < filter_ppm ) continue;
             if( !raw_bed.annotation_info_.empty() && !raw_bed.annotation_info_[0].empty() )
             {
                 if( !check_biotype( raw_bed, biotype )) continue;

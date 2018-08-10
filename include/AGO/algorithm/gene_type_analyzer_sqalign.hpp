@@ -230,6 +230,7 @@ class GeneTypeAnalyzerSqalign
             std::vector< BedSampleType >& bed_samples,
             const std::string& biotype,
             auto& genome_table,
+            const std::size_t& filter_ppm,
             const std::size_t& extend_refseq,
             const std::size_t& max_anno_merge_size,
             const std::string& rnafold_path
@@ -243,12 +244,16 @@ class GeneTypeAnalyzerSqalign
         double ppm = 0.0;
 
         if(( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" ) && rnafold_path != "" )
+        {
             get_rnafold( rnafold_path, rnafolds );
+            if( !boost::filesystem::exists( output_name + "rnafold.tsv" ))
+                boost::filesystem::create_symlink( rnafold_path, ( output_name + "rnafold.tsv" ).c_str() );
+        }
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             idx = 0;
-            chr_mapping = get_chrmap_table( bed_samples[ smp ].second, biotype, genome_table, extend_refseq, max_anno_merge_size );
+            chr_mapping = get_chrmap_table( bed_samples[ smp ].second, biotype, genome_table, filter_ppm, extend_refseq, max_anno_merge_size );
 
             if(( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" ) && rnafold_path != "" )
                 apply_rnafold( chr_mapping, rnafolds );
@@ -315,6 +320,7 @@ class GeneTypeAnalyzerSqalign
             std::vector< ago::format::MDRawBed >& smp_anno,
             const std::string& biotype,
             auto& genome_table,
+            const std::size_t& filter_ppm,
             const std::size_t& extend_refseq,
             const std::size_t& max_anno_merge_size
             )
@@ -325,6 +331,7 @@ class GeneTypeAnalyzerSqalign
 
         for( auto& raw_bed : smp_anno )
         {
+            if( raw_bed.ppm_ < filter_ppm ) continue;
             if( !raw_bed.annotation_info_.empty() && !raw_bed.annotation_info_[0].empty() && raw_bed.start_ > extend_refseq )
             {
                 if( biotype != "miRNA" && biotype != "mirtron" && biotype != "miRNA_mirtron" && biotype == raw_bed.annotation_info_[0][0] )
@@ -501,18 +508,25 @@ class GeneTypeAnalyzerSqalign
         output << "        if( $Color_Low == '' ) $Color_Low = 'WhiteSmoke';" << "\n";
         output << "" << "\n";
         output << "#<!--================== TSV File ====================-->" << "\n";
-        output << "                " << "\n";
+        output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
         output << "" << "\n";
         output << "        $TSV = Shell_Exec( 'ls | grep .tsv' );" << "\n";
         output << "        $TSV_List = Explode( \"\\n\", $TSV );" << "\n";
         output << "        $List_Size = Count( $TSV_List );" << "\n";
+        output << "        $isRNAfold = false;" << "\n";
         output << "" << "\n";
         output << "        echo '<select name=TSV_File onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '; if($TSV_File=='') echo 'selected'; echo '>Select TSV</option>';" << "\n";
         output << "" << "\n";
         output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n";
         output << "        {" << "\n";
+        output << "            if( $TSV_List[$i] == 'rnafold.tsv' )" << "\n";
+        output << "            {" << "\n";
+        output << "                $isRNAfold = true;" << "\n";
+        output << "                continue;" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
         output << "            echo '<option value='.$TSV_List[$i].' ';" << "\n";
         output << "" << "\n";
         output << "            if( $TSV_File == $TSV_List[$i] ) " << "\n";
@@ -630,6 +644,38 @@ class GeneTypeAnalyzerSqalign
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        echo '</script>';" << "\n";
+        output << "" << "\n";
+        output << "#<!--=================== RNA-Fold Datas ======================-->" << "\n";
+        output << "" << "\n";
+        output << "        $RNAfold = Array();" << "\n";
+        output << "" << "\n";
+        output << "        if( $isRNAfold && $Annotation_Select != '' )" << "\n";
+        output << "        {" << "\n";
+        output << "            $inFile = new SplFileObject( 'rnafold.tsv' );" << "\n";
+        output << "" << "\n";
+        output << "            while( !$inFile->eof() )" << "\n";
+        output << "            {" << "\n";
+        output << "                $inFile_Lines = $inFile->fgets();" << "\n";
+        output << "                $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
+        output << "                if( $inFile_Line[0] != $Annotation_Select ) continue;" << "\n";
+        output << "" << "\n";
+        output << "                $Entropy = '';" << "\n";
+        output << "                $Entropy_Max = 0;" << "\n";
+        output << "                $Entropy_Array = Array_Slice( $inFile_Line, 6 );" << "\n";
+        output << "" << "\n";
+        output << "                for( $i = 0; $i < Count( $Entropy_Array ); ++$i )" << "\n";
+        output << "                    if( $Entropy_Array[$i] > $Entropy_Max ) $Entropy_Max = $Entropy_Array[$i];" << "\n";
+        output << "" << "\n";
+        output << "                for( $i = 0; $i < Count( $Entropy_Array ); ++$i )" << "\n";
+        output << "                    $Entropy = $Entropy.(( $i * 18 ) + 9 ).','.( 100 - ( $Entropy_Array[$i] * 100 / $Entropy_Max )).' ';" << "\n";
+        output << "" << "\n";
+        output << "                $RNAfold[ 'MFE' ][0] = $inFile_Line[3];" << "\n";
+        output << "                $RNAfold[ 'Fold' ][0] = $inFile_Line[5];" << "\n";
+        output << "                $RNAfold[ 'EtpLine' ][0] = $Entropy;" << "\n";
+        output << "                $RNAfold[ 'EtpMax' ][0] = $Entropy_Max;" << "\n";
+        output << "                $RNAfold[ 'Entropy' ] = $Entropy_Array;" << "\n";
+        output << "            }" << "\n";
+        output << "        }" << "\n";
         output << "" << "\n";
         output << "#<!--=================== Select Segment ======================-->" << "\n";
         output << "" << "\n";
@@ -771,6 +817,8 @@ class GeneTypeAnalyzerSqalign
         output << "            <input type='submit' value='Submit' /> " << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
+        output << "        echo 'MFE: '.$RNAfold[ 'MFE' ][0];" << "\n";
+        output << "" << "\n";
         output << "#<!--==================== Make TempFile ======================-->" << "\n";
         output << "" << "\n";
         output << "        $TSV_File_Name = Substr( $TSV_File, 0, ( Strlen( $TSV_File ) -4 ));" << "\n";
@@ -789,6 +837,18 @@ class GeneTypeAnalyzerSqalign
         output << "                        : Substr( $Full_Sequc, $Seg_Start, ( $Seg_End - $Seg_Start ))" << "\n";
         output << "                    )" << "\n";
         output << "                ).\"\\\",\\n\" );" << "\n";
+        output << "" << "\n";
+        output << "            if( $isRNAfold )" << "\n";
+        output << "            {" << "\n";
+        output << "                Fwrite( $Ftemp, \"  \\\"Fold\\\"       : \\\"\".$RNAfold[ 'Fold' ][0].\"\\\",\\n\" );" << "\n";
+        output << "                Fwrite( $Ftemp, \"  \\\"MFE\\\"        : \".$RNAfold[ 'MFE' ][0].\",\\n\" );" << "\n";
+        output << "                Fwrite( $Ftemp, \"  \\\"EtpMax\\\"     : \".$RNAfold[ 'EtpMax' ][0].\",\\n\" );" << "\n";
+        output << "                Fwrite( $Ftemp, \"  \\\"EtpLine\\\"    : \\\"\".$RNAfold[ 'EtpLine' ][0].\"\\\",\\n\" );" << "\n";
+        output << "" << "\n";
+        output << "                Fwrite( $Ftemp, \"  \\\"Entropy\\\"    : [\" );" << "\n";
+        output << "                for( $i = 0; $i < Count( $RNAfold[ 'Entropy' ] ); ++$i )" << "\n";
+        output << "                    Fwrite( $Ftemp, $RNAfold[ 'Entropy' ][$i].( $i < Count( $RNAfold[ 'Entropy' ] )-1 ? ',' : \"],\\n\" ));" << "\n";
+        output << "            }" << "\n";
         output << "" << "\n";
         output << "            Fwrite( $Ftemp, \"  \\\"RefChr\\\"     : \\\"\".$Ref_Chr.\"\\\",\\n\" );" << "\n";
         output << "            Fwrite( $Ftemp, \"  \\\"RefStart\\\"   : \".$Ref_Start.\",\\n\" );" << "\n";
@@ -856,7 +916,8 @@ class GeneTypeAnalyzerSqalign
         output << "                var read_height = 20;" << "\n";
         output << "                var spc_num = 18;" << "\n";
         output << "                var expr_max = 0;" << "\n";
-        output << "                var shift_top = 33;" << "\n";
+        output << "                var shift_top1 = 30;" << "\n";
+        output << "                var shift_top2 = 38;" << "\n";
         output << "" << "\n";
         output << "                var seg_start = $Seg_Start;" << "\n";
         output << "                var seg_end   = $Seg_End;" << "\n";
@@ -1001,6 +1062,20 @@ class GeneTypeAnalyzerSqalign
         output << "                        'width': (( json[ 'Sequence' ].length + extra + lb_width )* spc_num ) + 'px'," << "\n";
         output << "                        });" << "\n";
         output << "" << "\n";
+        output << "                    $( '#expression' ).append( $(\\\"<svg id='etpchart' xmlns='http://www.w3.org/2000/svg'><polyline id='etpLine' points='\\\" + json[ 'EtpLine' ] + \\\"'/></svg>\\\"))" << "\n";
+        output << "                    $( '#etpchart' ).css({" << "\n";
+        output << "                        'position': 'absolute'," << "\n";
+        output << "                        'height': '100px'," << "\n";
+        output << "                        'width': (( json[ 'Sequence' ].length + extra + lb_width )* spc_num ) + 'px'," << "\n";
+        output << "                        'top': 7 + shift_top1 + 'px'," << "\n";
+        output << "                        });" << "\n";
+        output << "" << "\n";
+        output << "                    $( '#etpLine' ).css({" << "\n";
+        output << "                        'fill': 'none'," << "\n";
+        output << "                        'stroke': 'Paleturquoise'," << "\n";
+        output << "                        'stroke-width': 2" << "\n";
+        output << "                        });" << "\n";
+        output << "" << "\n";
         output << "                    $.each( expr_array, function( idx, expr )" << "\n";
         output << "                    {" << "\n";
         output << "                        exprs[ idx ] = expr;" << "\n";
@@ -1042,30 +1117,31 @@ class GeneTypeAnalyzerSqalign
         output << "                        'float': 'left'" << "\n";
         output << "                        });" << "\n";
         output << "" << "\n";
-        output << "                    $( '#exprlabel' ).append( \\\"<div id='exprlabeltop'>-\\\" + expr_max.toFixed(2) + '</div>' );" << "\n";
+        // output << "                    $( '#exprlabel' ).append( \\\"<div id='exprlabeltop'>-\\\" + expr_max.toFixed(2) + '</div>' );" << "\n";
+        output << "                    $( '#exprlabel' ).append( \\\"<div id='exprlabeltop'>-\\\" + json[ 'EtpMax' ].toFixed(2) + '</div>' );" << "\n";
         output << "                    $( '#exprlabeltop' ).css({" << "\n";
         output << "                        'font-family': 'Source Code Pro, monospace'," << "\n";
         output << "                        'font-size': '15px'," << "\n";
         output << "                        'position': 'absolute'," << "\n";
-        output << "                        'top': 0 + shift_top + 'px'," << "\n";
+        output << "                        'top': 0 + shift_top1 + 'px'," << "\n";
         output << "                        'float': 'left'" << "\n";
         output << "                        });" << "\n";
         output << "" << "\n";
-        output << "                    $( '#exprlabel' ).append( \\\"<div id='exprlabelmid'>-\\\" + ( expr_max /2 ).toFixed(2) + '</div>' );" << "\n";
-        output << "                    $( '#exprlabelmid' ).css({" << "\n";
-        output << "                        'font-family': 'Source Code Pro, monospace'," << "\n";
-        output << "                        'font-size': '15px'," << "\n";
-        output << "                        'position': 'absolute'," << "\n";
-        output << "                        'top': 50 + shift_top + 'px'," << "\n";
-        output << "                        'float': 'left'" << "\n";
-        output << "                        });" << "\n";
-        output << "" << "\n";
+        // output << "                    $( '#exprlabel' ).append( \\\"<div id='exprlabelmid'>-\\\" + ( expr_max /2 ).tofixed(2) + '</div>' );" << "\n";
+        // output << "                    $( '#exprlabelmid' ).css({" << "\n";
+        // output << "                        'font-family': 'Source Code Pro, monospace'," << "\n";
+        // output << "                        'font-size': '15px'," << "\n";
+        // output << "                        'position': 'absolute'," << "\n";
+        // output << "                        'top': 50 + shift_top1 + 'px'," << "\n";
+        // output << "                        'float': 'left'" << "\n";
+        // output << "                        });" << "\n";
+        // output << "" << "\n";
         output << "                    $( '#exprlabel' ).append( \\\"<div id='exprlabeldown'>-0.00</div>\\\" );" << "\n";
         output << "                    $( '#exprlabeldown' ).css({" << "\n";
         output << "                        'font-family': 'Source Code Pro, monospace'," << "\n";
         output << "                        'font-size': '15px'," << "\n";
         output << "                        'position': 'absolute'," << "\n";
-        output << "                        'top': 100 + shift_top + 'px'," << "\n";
+        output << "                        'top': 100 + shift_top1 + 'px'," << "\n";
         output << "                        'float': 'left'" << "\n";
         output << "                        });" << "\n";
         output << "" << "\n";
@@ -1095,7 +1171,7 @@ class GeneTypeAnalyzerSqalign
         output << "                        'border-radius': '12px'," << "\n";
         output << "                        'position': 'absolute'," << "\n";
         output << "                        'pointer-events': 'none'," << "\n";
-        output << "                        'height': '25px'," << "\n";
+        output << "                        'height': '68px'," << "\n";
         output << "                        'display': 'none'" << "\n";
         output << "                        });" << "\n";
         output << "" << "\n";
@@ -1161,6 +1237,20 @@ class GeneTypeAnalyzerSqalign
         output << "                            $( '#seq' + i ).css({ 'float': 'left' });" << "\n";
         output << "                    }" << "\n";
         output << "" << "\n";
+        output << "                    $( '#sequence' ).append( \\\"<div id='folds'></div>\\\" );" << "\n";
+        output << "" << "\n";
+        output << "                    $( '#folds' ).css({" << "\n";
+        output << "                        'font-family': 'Source Code Pro, monospace'," << "\n";
+        output << "                        'font-size': '30px'," << "\n";
+        output << "                        });" << "\n";
+        output << "" << "\n";
+        output << "                    for( var i = 0; i < json[ 'Fold' ].length; ++i )" << "\n";
+        output << "                    {" << "\n";
+        output << "                        $( '#folds' ).append( \\\"<div id='fold\\\" + i + \\\"' title='seqs\\\" + ( i + 1 ) + \\\"'>\\\" + json[ 'Fold' ].charAt(i) + '</div>' );" << "\n";
+        output << "                        if( i != json[ 'Fold' ].length-1 )" << "\n";
+        output << "                            $( '#fold' + i ).css({ 'float': 'left' });" << "\n";
+        output << "                    }" << "\n";
+        output << "" << "\n";
         output << "                    $( '#sequence' ).append( \\\"<div id='basecount2'></div>\\\" );" << "\n";
         output << "                    $( '#basecount2' ).css({ 'height': '10px' });" << "\n";
         output << "" << "\n";
@@ -1200,7 +1290,7 @@ class GeneTypeAnalyzerSqalign
         output << "                        'font-family': 'Source Code Pro, monospace'," << "\n";
         output << "                        'font-size': '15px'," << "\n";
         output << "                        'position': 'absolute'," << "\n";
-        output << "                        'top': seq_height + exp_height + shift_top + 'px'," << "\n";
+        output << "                        'top': seq_height + exp_height + shift_top1 + shift_top2 + 'px'," << "\n";
         output << "                        'float': 'left'" << "\n";
         output << "                        });" << "\n";
         output << "" << "\n";
@@ -1211,7 +1301,7 @@ class GeneTypeAnalyzerSqalign
         output << "                            'font-family': 'Source Code Pro, monospace'," << "\n";
         output << "                            'font-size': '15px'," << "\n";
         output << "                            'position': 'absolute'," << "\n";
-        output << "                            'top': ( datas.filter( Boolean ).length * read_height * 0.25 ) + seq_height + exp_height + shift_top + 'px'," << "\n";
+        output << "                            'top': ( datas.filter( Boolean ).length * read_height * 0.25 ) + seq_height + exp_height + shift_top1 + shift_top2 + 'px'," << "\n";
         output << "                            'float': 'left'" << "\n";
         output << "                            });" << "\n";
         output << "                    }" << "\n";
@@ -1223,7 +1313,7 @@ class GeneTypeAnalyzerSqalign
         output << "                            'font-family': 'Source Code Pro, monospace'," << "\n";
         output << "                            'font-size': '15px'," << "\n";
         output << "                            'position': 'absolute'," << "\n";
-        output << "                            'top': ( datas.filter( Boolean ).length * read_height * 0.5 ) + seq_height + exp_height + shift_top + 'px'," << "\n";
+        output << "                            'top': ( datas.filter( Boolean ).length * read_height * 0.5 ) + seq_height + exp_height + shift_top1 + shift_top2 + 'px'," << "\n";
         output << "                            'float': 'left'" << "\n";
         output << "                            });" << "\n";
         output << "                    }" << "\n";
@@ -1235,7 +1325,7 @@ class GeneTypeAnalyzerSqalign
         output << "                            'font-family': 'Source Code Pro, monospace'," << "\n";
         output << "                            'font-size': '15px'," << "\n";
         output << "                            'position': 'absolute'," << "\n";
-        output << "                            'top': ( datas.filter( Boolean ).length * read_height * 0.75 ) + seq_height + exp_height + shift_top + 'px'," << "\n";
+        output << "                            'top': ( datas.filter( Boolean ).length * read_height * 0.75 ) + seq_height + exp_height + shift_top1 + shift_top2 + 'px'," << "\n";
         output << "                            'float': 'left'" << "\n";
         output << "                            });" << "\n";
         output << "                    }" << "\n";
@@ -1245,7 +1335,7 @@ class GeneTypeAnalyzerSqalign
         output << "                        'font-family': 'Source Code Pro, monospace'," << "\n";
         output << "                        'font-size': '15px'," << "\n";
         output << "                        'position': 'absolute'," << "\n";
-        output << "                        'top': ( datas.filter( Boolean ).length * read_height ) + seq_height + exp_height + shift_top + 'px'," << "\n";
+        output << "                        'top': ( datas.filter( Boolean ).length * read_height ) + seq_height + exp_height + shift_top1 + shift_top2 + 'px'," << "\n";
         output << "                        'float': 'left'" << "\n";
         output << "                        });" << "\n";
         output << "" << "\n";
@@ -1447,7 +1537,7 @@ class GeneTypeAnalyzerSqalign
         output << "                    $( '#chart' ).append( \\\"<div id='line'></div>\\\" );" << "\n";
         output << "" << "\n";
         output << "                    $( '#line' ).css({" << "\n";
-        output << "                        'height': $( '#chart' ).height() + 2 + 'px'," << "\n";
+        output << "                        'height': $( '#chart' ).height() + shift_top2 + 'px'," << "\n";
         output << "                        'width': '1px'," << "\n";
         output << "                        'position': 'absolute'," << "\n";
         output << "                        'top': '40px'," << "\n";
