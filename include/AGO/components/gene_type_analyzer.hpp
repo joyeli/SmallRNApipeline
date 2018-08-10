@@ -42,6 +42,7 @@ class GeneTypeAnalyzer
     std::size_t max_anno_merge_size;
     std::size_t min_len;
     std::size_t max_len;
+    std::size_t filter_ppm;
 
     std::string node_path;
     std::string heatbub_js;
@@ -109,6 +110,7 @@ class GeneTypeAnalyzer
         max_anno_merge_size = p.get_optional< std::size_t >( "max_anno_merge_size" ).value_or( 2500000 );
         min_len    = p.get_optional< std::size_t >( "min_len"    ).value_or( 0 );
         max_len    = p.get_optional< std::size_t >( "max_len"    ).value_or( 0 );
+        filter_ppm = p.get_optional< std::size_t >( "filter_ppm" ).value_or( 5 );
         node_path  = p.get_optional< std::string >( "node_path"  ).value_or( "/home/joyel/bin/node" );
         heatbub_js = p.get_optional< std::string >( "heatbub_js" ).value_or( "/home/joyel/WorkDir/AgoD3/heatmap_bubble_plot/heatmap_bubble_plot.js" );
         rnafold_path = p.get_optional< std::string >( "rnafold_path"  ).value_or( "" );
@@ -148,7 +150,7 @@ class GeneTypeAnalyzer
         monitor.log( "Component GeneTypeAnalyzer", "Outputing ... Biotypes" );
 
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "Biotypes" ));
-        algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, sudo_count, webpage_update_only );
+        algorithm::GeneTypeAnalyzerBiotype( output_path + "Biotypes/", genome_table, bed_samples, biotype_list, min_len, max_len, filter_ppm, sudo_count, webpage_update_only );
 
         algorithm::AnnoLengthIndexType ano_len_idx;
 
@@ -170,7 +172,7 @@ class GeneTypeAnalyzer
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>( bed_samples.size(), std::vector< algorithm::CountingTableType >( 6 ));
             anno_mark = std::vector< std::map< std::string, std::string >>( bed_samples.size() );
-            ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype );
+            ano_len_idx = get_ano_len_idx( genome_table, bed_samples, filter_ppm, biotype );
 
             if( ano_len_idx.first.empty() )
             {
@@ -184,7 +186,7 @@ class GeneTypeAnalyzer
                 {
                     ana_parallel_pool.job_post([ smp, &bed_samples, &anno_table_tail, &anno_mark, &genome_table, &biotype, this ] ()
                     {
-                        make_anno_table( bed_samples[ smp ].second, anno_table_tail[ smp ], anno_mark[ smp ], genome_table, biotype );
+                        make_anno_table( bed_samples[ smp ].second, anno_table_tail[ smp ], anno_mark[ smp ], genome_table, filter_ppm, biotype );
                     });
                 }
 
@@ -201,28 +203,28 @@ class GeneTypeAnalyzer
 
             ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
             {
-                do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path );
+                do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path );
             });
             ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
             {
-                do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "Seed" );
+                do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path, "Seed" );
             });
 
             for( std::size_t len = min_len; len <= max_len; ++len )
                 ana_parallel_pool.job_post([ len, &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
                 {
-                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, std::to_string( len ));
+                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path, std::to_string( len ));
                 });
 
             if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
             {
                 ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
                 {
-                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "5p" );
+                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path, "5p" );
                 });
                 ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
                 {
-                    do_analysis( biotype, bed_samples, genome_table, anno_table_tail, ano_len_idx, anno_mark, output_path, "3p" );
+                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path, "3p" );
                 });
             }
 
@@ -264,7 +266,7 @@ class GeneTypeAnalyzer
         monitor.log( "Component GeneTypeAnalyzer", "Complete" );
     }
 
-    void do_analysis( auto& biotype, auto& bed_samples, auto& genome_table, auto anno_table_tail, auto ano_len_idx, auto anno_mark, auto output_path, const std::string& token = "" )
+    void do_analysis( auto& biotype, auto& bed_samples, auto& genome_table, const auto& filter_ppm, auto anno_table_tail, auto ano_len_idx, auto anno_mark, auto output_path, const std::string& token = "" )
     {
         output_path = output_path + "Genetype" + ( token == "" ? "" : ( "_" + token )) + "/";
 
@@ -278,9 +280,9 @@ class GeneTypeAnalyzer
         {
             ParaThreadPool smp_parallel_pool( bed_samples.size() +1 );
 
-            smp_parallel_pool.job_post([ &ano_len_idx, &genome_table, &bed_samples, &biotype, &token, this ] ()
+            smp_parallel_pool.job_post([ &ano_len_idx, &genome_table, &bed_samples, &biotype, &token, &filter_ppm, this ] ()
             {
-                ano_len_idx = get_ano_len_idx( genome_table, bed_samples, biotype, token );
+                ano_len_idx = get_ano_len_idx( genome_table, bed_samples, filter_ppm, biotype, token );
             });
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )

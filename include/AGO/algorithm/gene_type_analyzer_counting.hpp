@@ -15,6 +15,7 @@ class GeneTypeAnalyzerCounting
     static AnnoLengthIndexType get_ano_len_idx(
             std::map< std::string, std::string >& genome_table,
             std::vector< BedSampleType >& bed_samples,
+            const std::size_t& filter_ppm,
             const std::string& biotype = "", // default annotation type
             const std::string& token = ""
             )
@@ -27,7 +28,7 @@ class GeneTypeAnalyzerCounting
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
-            smp_parallel_pool.job_post( [ smp, &genome_table, &biotype, &bed_samples, &smp_ano_idx, &anno_ppm_check, &smp_len_idx, token ] () mutable
+            smp_parallel_pool.job_post( [ smp, &genome_table, &biotype, &bed_samples, &smp_ano_idx, &anno_ppm_check, &smp_len_idx, &filter_ppm, token ] () mutable
             {
                 std::string gene_name;
                 std::string gene_seed;
@@ -36,6 +37,7 @@ class GeneTypeAnalyzerCounting
 
                 for( auto& raw_bed : bed_samples[ smp ].second )
                 {
+                    if( raw_bed.ppm_ < filter_ppm ) continue;
                     isbiotype = biotype == "" ? true : false;
                     smp_len_idx[ smp ].emplace( raw_bed.length_ - raw_bed.tail_length_ );
 
@@ -240,6 +242,7 @@ class GeneTypeAnalyzerCounting
             std::vector< CountingTableType >& anno_table,
             std::map< std::string, std::string >& anno_mark,
             std::map< std::string, std::string >& genome_table,
+            const std::size_t filter_ppm,
             const std::string biotype = "", // default annotation type
             const bool trimming = false
             )
@@ -270,6 +273,7 @@ class GeneTypeAnalyzerCounting
 
         for( auto& raw_bed : annotations )
         {
+            if( raw_bed.ppm_ < filter_ppm ) continue;
             isbiotype = ( biotype == "" ? true : false );
             read_len = raw_bed.length_ - raw_bed.tail_length_;
             tail = which_tail( raw_bed.getTail() );

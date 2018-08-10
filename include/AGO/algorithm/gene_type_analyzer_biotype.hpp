@@ -46,12 +46,13 @@ class GeneTypeAnalyzerBiotype
             std::vector< std::string >& biotype_list,
             const std::size_t& min_len,
             const std::size_t& max_len,
+            const std::size_t& filter_ppm,
             const double& sudo_count,
             const bool& webpage_update_only
             )
         : output_path( output_path_ + ( output_path_.at( output_path_.length() -1 ) != '/' ? "/" : "" ))
         , smp_parallel_pool( bed_samples.size() )
-        , ano_len_idx( GeneTypeAnalyzerCounting::get_ano_len_idx( genome_table, bed_samples ))
+        , ano_len_idx( GeneTypeAnalyzerCounting::get_ano_len_idx( genome_table, bed_samples, filter_ppm ))
         , anno_table_tail( bed_samples.size(), std::vector< CountingTableType >( 6, CountingTableType() ))
         , anno_table_trim( bed_samples.size(), std::vector< CountingTableType >( 6, CountingTableType() ))
         , anno_mark( 1, std::map< std::string, std::string >() )
@@ -69,12 +70,12 @@ class GeneTypeAnalyzerBiotype
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                smp_parallel_pool.job_post([ smp, &bed_samples, &genome_table, this ] ()
+                smp_parallel_pool.job_post([ smp, &bed_samples, &genome_table, &filter_ppm, this ] ()
                 {
                     std::string biotype = "";
                     bool trimming = true; // trimming about top 15% and last 15%
-                    GeneTypeAnalyzerCounting::make_anno_table( bed_samples[ smp ].second, anno_table_tail[ smp ], anno_mark[0], genome_table );
-                    GeneTypeAnalyzerCounting::make_anno_table( bed_samples[ smp ].second, anno_table_trim[ smp ], anno_mark[0], genome_table, biotype, trimming );
+                    GeneTypeAnalyzerCounting::make_anno_table( bed_samples[ smp ].second, anno_table_tail[ smp ], anno_mark[0], genome_table, filter_ppm );
+                    GeneTypeAnalyzerCounting::make_anno_table( bed_samples[ smp ].second, anno_table_trim[ smp ], anno_mark[0], genome_table, filter_ppm, biotype, trimming );
                 });
             }
 
