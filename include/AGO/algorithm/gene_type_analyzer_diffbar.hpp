@@ -158,6 +158,12 @@ class GeneTypeAnalyzerDiffBar
             )
     {
         std::ofstream output;
+
+        //                      s1           s2                    type
+        std::map< std::pair< std::string, std::string >, std::map< char,
+            std::map< std::string, std::pair< double, double >>>> diffs;
+        //               miR                   fold   pvalue
+
         for( auto& compare : get_smp_compare( bed_samples ))
         {
             auto& s1 = compare[0];
@@ -228,6 +234,14 @@ class GeneTypeAnalyzerDiffBar
                 diff_vec.emplace_back( get_differential(    tt1    + 1,    tt2     + 1 ));
                 diff_vec.emplace_back( get_differential(    ot1    + 1,    ot2     + 1 ));
 
+                diffs[{ s1.second, s2.second }][ 'S' ][ anno ] = diff_vec[ diff_vec.size() - 8 ];
+                diffs[{ s1.second, s2.second }][ 'M' ][ anno ] = diff_vec[ diff_vec.size() - 7 ];
+                diffs[{ s1.second, s2.second }][ 'P' ][ anno ] = diff_vec[ diff_vec.size() - 6 ];
+                diffs[{ s1.second, s2.second }][ 'A' ][ anno ] = diff_vec[ diff_vec.size() - 5 ];
+                diffs[{ s1.second, s2.second }][ 'C' ][ anno ] = diff_vec[ diff_vec.size() - 4 ];
+                diffs[{ s1.second, s2.second }][ 'G' ][ anno ] = diff_vec[ diff_vec.size() - 3 ];
+                diffs[{ s1.second, s2.second }][ 'T' ][ anno ] = diff_vec[ diff_vec.size() - 2 ];
+
                 diff_vec.emplace_back( get_differential( gm2 + pm2 + 1, gm1 + pm1  + 1 ));
                 diff_vec.emplace_back( get_differential( gm2       + 1, gm1        + 1 ));
                 diff_vec.emplace_back( get_differential(       pm2 + 1,       pm1  + 1 ));
@@ -254,6 +268,85 @@ class GeneTypeAnalyzerDiffBar
  
             output << "\n";
             output.close();
+        }
+
+        output_preference( output_path, is_isomir, diffs );
+    }
+
+    static void output_preference(
+            const std::string& output_path,
+            const bool& is_isomir,
+            auto& diffs
+            )
+    {
+        std::vector< std::pair< char, std::string >> types(
+        {
+              { 'S', "GMPM/" }
+            , { 'M', "GM/" }
+            , { 'P', "PM/" }
+            , { 'A', "Atail/" }
+            , { 'C', "Ctail/" }
+            , { 'G', "Gtail/" }
+            , { 'T', "Ttail/" }
+        });
+
+        boost::filesystem::create_directory( boost::filesystem::path( output_path + "../Preference/" ));
+
+        for( auto& type : types )
+            boost::filesystem::create_directory( boost::filesystem::path( output_path + "../Preference/" + type.second ));
+
+        std::size_t smpidx = 0;
+        std::set< std::string > samples;
+
+        std::ofstream out_unilike;
+        std::ofstream out_dislike;
+
+        std::map< std::string, std::set< std::string >> mir_unilike;
+        std::map< std::string, std::set< std::string >> mir_dislike;
+
+        for( auto& smp : diffs )
+        {
+            samples.emplace( smp.first.first );
+            samples.emplace( smp.first.second );
+        }
+
+        for( auto& smp : samples ) for( auto& type : types )
+        {
+            out_unilike.open( output_path + "../Preference/" + type.second + smp + "_UniLike" + ( is_isomir ? "-isomiRs" : "" ) + ".text" );
+            out_dislike.open( output_path + "../Preference/" + type.second + smp + "_DisLike" + ( is_isomir ? "-isomiRs" : "" ) + ".text" );
+
+            for( auto& compare : diffs )
+            {
+                if( compare.first.first  == smp ) smpidx = 1;
+                if( compare.first.second == smp ) smpidx = 2;
+            }
+
+            if( smpidx == 0 ) continue;
+
+            for( auto& compare : diffs )
+            {
+                for( auto& mir : compare.second[ type.first ])
+                {
+                    if( mir.second.second > 0.05 ) continue;
+                    if( mir.second.first < 2 && mir.second.first > 0.5 ) continue;
+
+                    if( smpidx == 1 && mir.second.first >= 2   ) mir_unilike[ mir.first ].emplace( compare.first.second );
+                    if( smpidx == 2 && mir.second.first <= 0.5 ) mir_unilike[ mir.first ].emplace( compare.first.first  );
+                    if( smpidx == 2 && mir.second.first >= 2   ) mir_dislike[ mir.first ].emplace( compare.first.first  );
+                    if( smpidx == 1 && mir.second.first <= 0.5 ) mir_dislike[ mir.first ].emplace( compare.first.second );
+                }
+            }
+
+            for( auto& mir : mir_unilike ) if( mir.second.size() == samples.size() -1 ) out_unilike << mir.first << "\n";
+            for( auto& mir : mir_dislike ) if( mir.second.size() == samples.size() -1 ) out_dislike << mir.first << "\n";
+
+            mir_unilike.clear();
+            mir_dislike.clear();
+
+            out_unilike.close();
+            out_dislike.close();
+
+            smpidx = 0;
         }
     }
 
