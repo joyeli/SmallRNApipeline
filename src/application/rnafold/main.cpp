@@ -8,6 +8,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/map.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
 
 std::vector< std::string > explode( const std::string& in, const std::string& spliter )
@@ -72,10 +73,9 @@ void get_gtf( const auto& gencode, auto& genome_table, auto& miRs )
         end   = std::stoi( split1[4] );
 
         miRs[ ">" + split2[0] + "\t" + std::to_string( start ) + "\t" + split1[4] ]
-            = split1[6] == "-"
+            = boost::to_upper_copy< std::string >( split1[6] == "-"
             ? reverse( genome_table[ split1[0] ].substr( start, end - start ))
-            : genome_table[ split1[0] ].substr( start, end - start );
-
+            : genome_table[ split1[0] ].substr( start, end - start ));
     }
 
     file.close();
@@ -96,7 +96,7 @@ void get_mirtron( const auto& mirtron, auto& genome_table, auto& miRs  )
         start = std::stoi( split[1] );
         end   = std::stoi( split[2] );
 
-        miRs[ ">" + split[4] + "\t" + split[1] + "\t" + split[2] ] = genome_table[ split[0] ].substr( start, end - start );
+        miRs[ ">" + split[4] + "\t" + split[1] + "\t" + split[2] ] = boost::to_upper_copy< std::string >( genome_table[ split[0] ].substr( start, end - start ));
     }
 
     file.close();
