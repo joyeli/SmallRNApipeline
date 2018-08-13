@@ -307,15 +307,15 @@ class GeneTypeAnalyzerSqalign
             start = std::stoi( mir.second.strand == '+' ? rnafolds[ mir.first ][1] : rnafolds[ mir.first ][2] ) + 1;
             shift = start > mir.second.refstart ? ( start - mir.second.refstart ) : ( mir.second.refstart - start );
 
+            for( auto& seq : mir.second.reads_vec )
+                std::get<0>( seq ) 
+                    = mir.second.strand == '+'
+                    ? ( start > mir.second.refstart ? ( std::get<0>( seq ) - shift ) : ( std::get<0>( seq ) + shift ))
+                    : ( start > mir.second.refstart ? ( std::get<0>( seq ) + shift ) : ( std::get<0>( seq ) - shift ))
+                    ;
+
             mir.second.refstart = start;
             mir.second.fullseq = rnafolds[ mir.first ][4];
-
-            for( auto& seq : mir.second.reads_vec )
-                std::get<0>( seq )
-                    = start > mir.second.refstart
-                    ? ( mir.second.strand == '+' ? ( std::get<0>( seq ) + shift ) : ( std::get<0>( seq ) - shift ))
-                    : ( mir.second.strand == '+' ? ( std::get<0>( seq ) - shift ) : ( std::get<0>( seq ) + shift ))
-                    ;
         }
     }
 
