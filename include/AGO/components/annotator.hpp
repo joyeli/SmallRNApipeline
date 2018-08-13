@@ -93,6 +93,7 @@ class Annotator : public engine::NamedComponent
                     {
                         if( info[i].substr( 0, 5 ) == "miRNA" || info[i] == "mirtron" )
                         {
+                            if( info[i+1].substr( info[i+1].length() -3 ) == "-5p" || info[i+1].substr( info[i+1].length() -3 ) == "-3p" ) continue;
                             size_t db_mid  = std::get<1>( db_bed.data ) + (( std::get<2>( db_bed.data ) - std::get<1>( db_bed.data )) /2 );
                             size_t ann_mid = ann_bed.start_ + (( ann_bed.end_ - ann_bed.start_ ) /2 );
 

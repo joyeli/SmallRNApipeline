@@ -333,6 +333,7 @@ class GeneTypeAnalyzerEachtype
                     std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
                     GeneTypeAnalyzerHete53p::make_hete_table( output_path + hete53p, bed_samples, ano_len_idx, genome_table, filter_ppm, biotype, token );
+                    GeneTypeAnalyzerHete53p::make_rnafold_table( output_path + hete53p, bed_samples, ano_len_idx, genome_table, filter_ppm, rnafold_path, biotype, token );
                     GeneTypeAnalyzerHete53p::output_hete53p_visualization( output_path + hete53p );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );

@@ -135,6 +135,7 @@ class GeneTypeAnalyzerHete53p
     {
         std::vector< std::string > split;
         std::set< std::string > anno_idx;
+        std::ofstream output;
 
         for( auto& anno : ano_len_idx.first )
         {
@@ -145,10 +146,10 @@ class GeneTypeAnalyzerHete53p
             anno_idx.emplace( split[0] );
         }
 
-        std::ofstream output( output_path + "heterorgeneity.tsv" );
-        output << "heterorgeneity" << token;
+        output.open( output_path + "Heterorgeneity_5p.tsv" );
+        output << "Heterorgeneity_5p_" << token;
 
-        for( auto& smp  : bed_samples ) output << "\t" << smp.first << "-5p" << "\t" << smp.first << "-3p";
+        for( auto& smp  : bed_samples ) output << "\t" << smp.first;
         for( auto& anno : anno_idx )
         {
             output << "\n" << anno;
@@ -160,7 +161,21 @@ class GeneTypeAnalyzerHete53p
                     output << "\t" << hete_tables[ smp ].first[ anno ][0];
                 }
                 else output << "\t0";
+            }
+        }
 
+        output.close();
+
+        output.open( output_path + "Heterorgeneity_3p.tsv" );
+        output << "Heterorgeneity_3p_" << token;
+
+        for( auto& smp  : bed_samples ) output << "\t" << smp.first;
+        for( auto& anno : anno_idx )
+        {
+            output << "\n" << anno;
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
                 if( hete_tables[ smp ].second[ anno ].find( 0 ) != hete_tables[ smp ].second[ anno ].end() )
                 {
                     output << "\t" << hete_tables[ smp ].second[ anno ][0];
@@ -170,6 +185,145 @@ class GeneTypeAnalyzerHete53p
         }
 
         output.close();
+    }
+
+    static void make_rnafold_table(
+            const std::string& output_path,
+            std::vector< BedSampleType >& bed_samples,
+            AnnoLengthIndexType& ano_len_idx,
+            auto& genome_table,
+            const std::size_t& filter_ppm,
+            const std::string& rnafold_path,
+            const std::string& biotype,
+            const std::string& token = ""
+            )
+    {
+        if(( biotype != "miRNA_mirtron" && biotype != "miRNA" && biotype != "mirtron" ) || rnafold_path == "" )
+            return;
+
+        std::set< std::string > annos;
+        std::map< std::string, std::vector< std::string >> rnafolds;
+        std::map< std::string, std::vector< std::map< std::string, double >>> entropies;
+
+        GeneTypeAnalyzerSqalign::get_rnafold( rnafold_path, rnafolds );
+
+        entropies[ "5p"  ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
+        entropies[ "mid" ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
+        entropies[ "3p"  ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
+        entropies[ "3pTailOnly" ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
+
+        bool is_arms = token == "3p" || token == "5p" ? true : false;
+        bool is_lens = token != "" && !is_arms ? true : false;
+
+        std::string arm;
+        std::string mir;
+
+        std::string gene_name;
+        std::string gene_seed;
+
+        std::size_t strpos;
+        std::size_t midpos;
+        std::size_t endpos;
+
+        std::ofstream output;
+
+        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+        {
+            for( auto& raw_bed : bed_samples[ smp ].second )
+            {
+                if( raw_bed.ppm_ < filter_ppm ) continue;
+                for( int i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
+                {
+                    if( raw_bed.annotation_info_[0][i] != "miRNA" &&
+                        raw_bed.annotation_info_[0][i] != "mirtron" &&
+                        raw_bed.annotation_info_[0][i] != "miRNA_mirtron" )
+                        continue;
+
+                    gene_name = raw_bed.annotation_info_[0][ i+1 ];
+                    arm = std::stoi( GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 ));
+
+                    gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                            + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+
+                    mir = gene_name.substr( 0, raw_bed.annotation_info_[0][1].length() -3 );
+                    gene_name = gene_name + "_" + gene_seed;
+
+                    if( is_arms && token != ( std::to_string( arm ) + "p"     )) continue;
+                    if( is_lens && token !=   std::to_string( raw_bed.length_ )) continue;
+
+                    if( raw_bed.start_ < std::stoi( rnafolds[ mir ][1] )) continue;
+                    if( raw_bed.end_   > std::stoi( rnafolds[ mir ][2] )) continue;
+
+                    if( entropies[ "5p"  ][ smp ].find( gene_name ) == entropies[ "5p"  ][ smp ].end() ) entropies[ "5p"  ][ smp ][ gene_name ] = 0.0;
+                    if( entropies[ "mid" ][ smp ].find( gene_name ) == entropies[ "mid" ][ smp ].end() ) entropies[ "mid" ][ smp ][ gene_name ] = 0.0;
+                    if( entropies[ "3p"  ][ smp ].find( gene_name ) == entropies[ "3p"  ][ smp ].end() ) entropies[ "3p"  ][ smp ][ gene_name ] = 0.0;
+
+                    switch( raw_bed.strand_ )
+                    {
+                        case '+' : strpos = raw_bed.start_ - ( std::stoi( rnafolds[ mir ][1] ) + 1 ); break;
+                        case '-' : strpos = ( std::stoi( rnafolds[ mir ][2] ) + 1 ) - raw_bed.end_  ; break;
+                    }
+
+                    annos.emplace( gene_name );
+                    endpos = strpos + 1 + (int)raw_bed.length_ - (int)raw_bed.tail_length_;
+                    std::vector< std::string > entropy( rnafolds[ mir ].begin() + 6, rnafolds[ mir ].begin() + rnafolds[ mir ].size() );
+
+                    std::cerr << gene_name;
+
+                    entropies[ "5p"  ][ smp ][ gene_name ] += get_entropy( strpos,     8, entropy );
+                    entropies[ "mid" ][ smp ][ gene_name ] += get_entropy( strpos + 8, 4, entropy );
+                    entropies[ "3p"  ][ smp ][ gene_name ] += get_entropy( endpos - 8, 8, entropy );
+
+                    if( raw_bed.getTail() != "" )
+                    {
+                        if( entropies[ "3pTailOnly" ][ smp ].find( gene_name ) == entropies[ "3pTailOnly" ][ smp ].end() ) entropies[ "3pTailOnly" ][ smp ][ gene_name ] = 0.0;
+                        entropies[ "3pTailOnly"  ][ smp ][ gene_name ] += get_entropy( endpos - 8, 8, entropy );
+                    }
+
+                    std::cerr << "\n";
+                }
+            }
+        }
+
+        for( auto& type : entropies )
+        {
+            output.open( output_path + "Entropy_" + type.first + ".tsv" );
+            output << "Entropy_" << type.first;
+
+            for( std::size_t smp = 0; smp < type.second.size(); ++smp )
+                output << "\t" << bed_samples[ smp ].first;
+
+            for( auto& anno : annos )
+            {
+                output << "\n" << anno;
+
+                for( std::size_t smp = 0; smp < type.second.size(); ++smp )
+                {
+                    if( type.second[ smp ].find( anno ) != type.second[ smp ].end() )
+                         output << "\t" << type.second[ smp ][ anno ];
+                    else output << "\t0";
+                }
+            }
+
+            output.close();
+        }
+    }
+
+    static double get_entropy(
+            std::size_t strpos,
+            const std::size_t& length,
+            const std::vector< std::string >& entropies
+            )
+    {
+        double entropy;
+
+        std::cerr << "\t" << entropies[ strpos ];
+
+        if( strpos + length > entropies.size() )
+            strpos = strpos - ( strpos + length - entropies.size() );
+
+        for( std::size_t i = 0; i < length; i++ ) entropy += std::stod( entropies[ strpos + i ]);
+        return entropy / (double)length;
     }
 
     static void debug( std::map< std::string, std::map< std::size_t, double >>& hete_table )
@@ -193,11 +347,40 @@ class GeneTypeAnalyzerHete53p
         output << "" << "\n";
         output << "    <? " << "\n";
         output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
+        output << "    <? " << "\n";
+        output << "        $ForceY = $_POST['ForceY'];" << "\n";
+        output << "        $TSV_File = $_POST['TSV_File'];" << "\n";
         output << "        $isTrimmed = $_POST['isTrimmed'];" << "\n";
         output << "" << "\n";
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
         output << "        echo '<script src=https://cdn.rawgit.com/novus/nvd3/v1.8.6/build/nv.d3.min.js></script>';" << "\n";
         output << "        echo '<link href=https://cdn.rawgit.com/novus/nvd3/v1.8.6/build/nv.d3.css rel=stylesheet type=text/css>';" << "\n";
+        output << "" << "\n";
+        output << "#<!--================== TSV File ====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "" << "\n";
+        output << "        $TSV = Shell_Exec( 'ls | grep .tsv' );" << "\n";
+        output << "        $TSV_List = Explode( \"\\n\", $TSV );" << "\n";
+        output << "        $List_Size = Count( $TSV_List );" << "\n";
+        output << "" << "\n";
+        output << "        echo '<select name=TSV_File onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($TSV_File=='') echo 'selected'; echo '>Select TSV</option>';" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < $List_Size; ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            if( $TSV_List[$i] != '' )" << "\n";
+        output << "            {" << "\n";
+        output << "                echo '<option value='.$TSV_List[$i].' ';" << "\n";
+        output << "                if( $TSV_File == $TSV_List[$i] ) echo 'selected ';" << "\n";
+        output << "                echo '>'.$TSV_List[$i].'</option>';" << "\n";
+        output << "            }" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='isTrimmed' value='$isTrimmed' />" << "\n";
+        output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--================= isTrimmed ===================-->" << "\n";
         output << "" << "\n";
@@ -218,7 +401,27 @@ class GeneTypeAnalyzerHete53p
         output << "            echo '>±'.$Trim_List[$i].'％</option>';" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
-        output << "        echo '</select></form><br/>';" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+        output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--================== ForceY ====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<input type=text name=ForceY size=3 value=';" << "\n";
+        output << "" << "\n";
+        output << "        if( $ForceY=='' )" << "\n";
+        output << "            echo 'Hight';" << "\n";
+        output << "        else" << "\n";
+        output << "            echo $ForceY;" << "\n";
+        output << "" << "\n";
+        output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+        output << "            <input type='hidden' name='isTrimmed' value='$isTrimmed' />" << "\n";
+        output << "            <input type='submit' value='Submit' /> " << "\n";
+        output << "            </form><br/>\";" << "\n";
         output << "" << "\n";
         output << "#<!--=================== Read File =====================-->" << "\n";
         output << "" << "\n";
@@ -228,7 +431,7 @@ class GeneTypeAnalyzerHete53p
         output << "        $Hete_Array = Array();" << "\n";
         output << "        $Boxs_Array = Array();" << "\n";
         output << "" << "\n";
-        output << "        $inFile = new SplFileObject( 'heterorgeneity.tsv' );" << "\n";
+        output << "        $inFile = new SplFileObject( $TSV_File );" << "\n";
         output << "        $isHeader = true;" << "\n";
         output << "" << "\n";
         output << "        while( !$inFile->eof() )" << "\n";
@@ -252,7 +455,10 @@ class GeneTypeAnalyzerHete53p
         output << "            }" << "\n";
         output << "" << "\n";
         output << "            For( $i = 1; $i < Count( $inFile_Line ); ++$i )" << "\n";
+        output << "            {" << "\n";
+        output << "                if( $inFile_Line[$i] == 0 ) continue;" << "\n";
         output << "                Array_Push( $Hete_Array[ $i-1 ], $inFile_Line[$i] );" << "\n";
+        output << "            }" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        For( $i = 0; $i < Count( $Hete_Array ); ++$i )" << "\n";
