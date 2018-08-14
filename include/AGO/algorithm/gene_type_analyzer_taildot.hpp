@@ -222,8 +222,13 @@ class GeneTypeAnalyzerTaildot
 
     static void output_taildot_visualization( const std::string& output_name, const std::string& biotype, const bool& isSeed )
     {
-        if( !isSeed && ( biotype == "miRNA" || biotype == "miRNA_mirtron" || biotype == "mirtron" ) && !boost::filesystem::exists( output_name + "heterorgeneity.tsv" ))
-            boost::filesystem::create_symlink( "../Hete53p/heterorgeneity.tsv", ( output_name + "heterorgeneity.tsv" ).c_str() );
+        if( !isSeed && ( biotype == "miRNA" || biotype == "miRNA_mirtron" || biotype == "mirtron" ))
+        {
+            if( !boost::filesystem::exists( output_name + "Heterorgeneity_5p.tsv" ))
+                 boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_5p.tsv", ( output_name + "Heterorgeneity_5p.tsv" ).c_str() );
+            if( !boost::filesystem::exists( output_name + "Heterorgeneity_3p.tsv" ))
+                 boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_3p.tsv", ( output_name + "Heterorgeneity_3p.tsv" ).c_str() );
+        }
 
         std::ofstream output( output_name + "index.php" );
 
@@ -246,6 +251,9 @@ class GeneTypeAnalyzerTaildot
         output << "        $RatioType = $_POST['RatioType'];" << "\n";
         output << "        $Color_Low = $_POST['Color_Low'];" << "\n";
         output << "        $Color_Hight = $_POST['Color_Hight'];" << "\n";
+        output << "        $Filter_Type = $_POST['Filter_Type'];" << "\n";
+        output << "        $Filter_Samp = $_POST['Filter_Samp'];" << "\n";
+        output << "        $Filter_Pref = $_POST['Filter_Pref'];" << "\n";
         output << "" << "\n";
         output << "        $isAbundant = $IsomiRs == 'No' ? 'AllmiRNA' : $_POST['isAbundant'];" << "\n";
         output << "" << "\n";
@@ -321,19 +329,24 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
         output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Type' value='$Filter_Type' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Samp' value='$Filter_Samp' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--=============== ReadHeterFile ==================-->" << "\n";
         output << "" << "\n";
+        output << "        $Heter_TSV = '';" << "\n";
         output << "        $Heter_Sample = 0;" << "\n";
         output << "        $Heter_Array = Array();" << "\n";
-        output << "        $HeterType = Substr( $XaxisType, 0, 2 );" << "\n";
         output << "" << "\n";
-        output << "        if( $XaxisType == '5pHeterorgeneity' || $XaxisType == '3pHeterorgeneity' )" << "\n";
+        output << "        if( $XaxisType == '5pHeterorgeneity' ) $Heter_TSV = 'Heterorgeneity_5p.tsv';" << "\n";
+        output << "        if( $XaxisType == '3pHeterorgeneity' ) $Heter_TSV = 'Heterorgeneity_3p.tsv';" << "\n";
+        output << "" << "\n";
+        output << "        if( $Heter_TSV != '' )" << "\n";
         output << "        {" << "\n";
-        output << "" << "\n";
         output << "            $isHeader = true;" << "\n";
-        output << "            $inFile = new SplFileObject( 'heterorgeneity.tsv' );" << "\n";
+        output << "            $inFile = new SplFileObject( $Heter_TSV );" << "\n";
         output << "" << "\n";
         output << "            while( !$inFile->eof() )" << "\n";
         output << "            {" << "\n";
@@ -345,7 +358,7 @@ class GeneTypeAnalyzerTaildot
         output << "                    For( $i = 1; $i < Count( $inFile_Line ); ++$i )" << "\n";
         output << "                    {" << "\n";
         output << "                        $Sample = Explode( '-', $inFile_Line[$i] );" << "\n";
-        output << "                        if( $Sample[0] == $TSV_File && $Sample[1] == $HeterType ) $Heter_Sample = $i;" << "\n";
+        output << "                        if( $Sample[0] == $TSV_File ) $Heter_Sample = $i;" << "\n";
         output << "                    }" << "\n";
         output << "" << "\n";
         output << "                    $isHeader = false;" << "\n";
@@ -389,6 +402,9 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
         output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Type' value='$Filter_Type' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Samp' value='$Filter_Samp' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
 
@@ -424,6 +440,9 @@ class GeneTypeAnalyzerTaildot
             output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
             output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
             output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+            output << "            <input type='hidden' name='Filter_Type' value='$Filter_Type' />" << "\n";
+            output << "            <input type='hidden' name='Filter_Samp' value='$Filter_Samp' />" << "\n";
+            output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
             output << "            </form>\";" << "\n";
         }
         else
@@ -443,7 +462,7 @@ class GeneTypeAnalyzerTaildot
         output << "" << "\n";
         output << "        For( $i = 0; $i < $List_Size-1; ++$i )" << "\n";
         output << "        {" << "\n";
-        output << "            if( $TSV_List[$i] == 'heterorgeneity.tsv' ) continue;" << "\n";
+        output << "            if( Substr( $TSV_List[$i], 0, 5 ) == 'Heter' ) continue;" << "\n";
         output << "            $TSV_Temp = Explode( '-isomiRs', $TSV_List[$i] );" << "\n";
         output << "" << "\n";
         output << "            if( $IsomiRs == 'Yes' )" << "\n";
@@ -490,6 +509,9 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
         output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Type' value='$Filter_Type' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Samp' value='$Filter_Samp' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
 
@@ -529,6 +551,9 @@ class GeneTypeAnalyzerTaildot
             output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
             output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
             output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+            output << "            <input type='hidden' name='Filter_Type' value='$Filter_Type' />" << "\n";
+            output << "            <input type='hidden' name='Filter_Samp' value='$Filter_Samp' />" << "\n";
+            output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
             output << "            </form>\";" << "\n";
         }
         else
@@ -570,6 +595,9 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
         output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Type' value='$Filter_Type' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Samp' value='$Filter_Samp' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--================== ForceMin&Max ====================-->" << "\n";
@@ -621,7 +649,59 @@ class GeneTypeAnalyzerTaildot
         output << "        if( $Filter == '' ) $Filter = 'FilterGMPM';" << "\n";
         output << "        echo '<input type=text name=Filter size=7 value='.$Filter;" << "\n";
         output << "" << "\n";
-        output << "        echo \" onfocus=\\\"{this.value='';}\\\">" << "\n";
+        output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--================== Filter ====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "" << "\n";
+        output << "        $TSV = Shell_Exec( 'ls ../SqAlign/*.idx' );" << "\n";
+        output << "        $TSV_List = Explode( \"\\n\", $TSV );" << "\n";
+        output << "        $Sample_List = Array();" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $TSV_List ) -1; ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            $Sample = Explode( '/', $TSV_List[$i] );" << "\n";
+        output << "            $Sample = Explode( '.', $Sample[ Count( $Sample ) -1 ] );" << "\n";
+        output << "            $Sample_List[ $i ] = $Sample[0];" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        $Type_List = array( 'GMPM', 'GM', 'PM', 'Atail', 'Ctail', 'Gtail', 'Ttail' );" << "\n";
+        output << "        $Pref_List = array( 'UniLike', 'DisLike' );" << "\n";
+        output << "" << "\n";
+        output << "        echo '<select name=Filter_Samp>';" << "\n";
+        output << "        echo '<option value=\"\"'; if($Filter_Samp=='') echo 'selected'; echo '>Filter Sample</option>';" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Sample_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Sample_List[$i].' ';" << "\n";
+        output << "            if( $Filter_Samp == $Sample_List[$i] ) echo 'selected ';" << "\n";
+        output << "            echo '>'.$Sample_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo '</select>';" << "\n";
+        output << "        echo '<select name=Filter_Type>';" << "\n";
+        output << "        echo '<option value=\"\"'; if($Filter_Type=='') echo 'selected'; echo '>Filter Types</option>';" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Type_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Type_List[$i].' ';" << "\n";
+        output << "            if( $Filter_Type == $Type_List[$i] ) echo 'selected ';" << "\n";
+        output << "            echo '>'.$Type_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo '</select>';" << "\n";
+        output << "        echo '<select name=Filter_Pref>';" << "\n";
+        output << "        echo '<option value=\"\"'; if($Filter_Pref=='') echo 'selected'; echo '>Filter Preference</option>';" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Pref_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Pref_List[$i].' ';" << "\n";
+        output << "            if( $Filter_Pref == $Pref_List[$i] ) echo 'selected ';" << "\n";
+        output << "            echo '>'.$Pref_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -630,6 +710,23 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
         output << "            <input type='submit' value='Submit' /> " << "\n";
         output << "            </form><br/>\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--================== Read Filter ====================-->" << "\n";
+        output << "" << "\n";
+        output << "        $Filter_Anno = Array();" << "\n";
+        output << "        $Filter_TSV = '../Preference/'.$Filter_Type.'/'.$Filter_Samp.'_'.$Filter_Pref;" << "\n";
+        output << "        $Filter_TSV = $Filter_TSV.( $IsomiRs == 'No' ? '' : '-isomiRs' ).'.text';" << "\n";
+        output << "" << "\n";
+        output << "        if( $Filter_Samp != '' && $Filter_Type != '' && $Filter_Pref != '' )" << "\n";
+        output << "        {" << "\n";
+        output << "            $inFile = new SplFileObject( $Filter_TSV );" << "\n";
+        output << "            while( !$inFile->eof() )" << "\n";
+        output << "            {" << "\n";
+        output << "                $inFile_Lines = $inFile->fgets();" << "\n";
+        output << "                if( $inFile_Lines == '' ) continue;" << "\n";
+        output << "                Array_Push( $Filter_Anno, Rtrim( $inFile_Lines ));" << "\n";
+        output << "            }" << "\n";
+        output << "        }" << "\n";
         output << "" << "\n";
         output << "#<!--===================== Read File ======================-->" << "\n";
         output << "" << "\n";
@@ -689,6 +786,7 @@ class GeneTypeAnalyzerTaildot
         output << "            {" << "\n";
         output << "                if( $isLog != '' && $inFile_Line[ $TColumn ] != 0 ) $inFile_Line[ $TColumn ] = Log( $inFile_Line[ $TColumn ]) / Log( $isLog );" << "\n";
         output << "" << "\n";
+        output << "                if( !Empty( $Filter_Anno ) && !In_Array( $miRNA_Seed[0], $Filter_Anno )) continue;" << "\n";
         output << "                if( $isAbundant == 'MostAbundant' && $IsomiRs == 'Yes' && Count( $miRNA_Seed ) == 1 ) continue;" << "\n";
         output << "                if( $Filter != 'FilterGMPM' && $inFile_Line[ $TColumn ] < $Filter ) continue;" << "\n";
         output << "" << "\n";
