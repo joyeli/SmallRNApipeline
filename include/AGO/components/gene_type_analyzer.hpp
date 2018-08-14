@@ -298,8 +298,8 @@ class GeneTypeAnalyzer
             table_refinding(
                   ano_len_idx
                 , anno_table_tail
-                , ( token != "Seed" & token != "" ? std::stoi( token ) : min_len )
-                , ( token != "Seed" & token != "" ? std::stoi( token ) : max_len )
+                , ( token != "Seed" && token != "5p" && token != "3p" && token != "" ? std::stoi( token ) : min_len )
+                , ( token != "Seed" && token != "5p" && token != "3p" && token != "" ? std::stoi( token ) : max_len )
                 , sudo_count
                 );
 
@@ -319,8 +319,8 @@ class GeneTypeAnalyzer
                 , thread_number
                 , node_path
                 , heatbub_js
-                , ( token != "Seed" & token != "" ? std::stoi( token ) : min_len )
-                , ( token != "Seed" & token != "" ? std::stoi( token ) : max_len )
+                , ( token != "Seed" && token != "5p" && token != "3p" && token != "" ? std::stoi( token ) : min_len )
+                , ( token != "Seed" && token != "5p" && token != "3p" && token != "" ? std::stoi( token ) : max_len )
                 , extend_merge
                 , extend_refseq
                 , filter_ppm
