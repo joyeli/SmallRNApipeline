@@ -204,6 +204,7 @@ class GeneTypeAnalyzerBoxPlot
         std::set< std::string > annos;
         std::map< std::string, std::vector< std::string >> rnafolds;
         std::map< std::string, std::vector< std::map< std::string, double >>> entropies;
+        std::map< std::string, std::vector< std::map< std::string, double >>> counts;
 
         GeneTypeAnalyzerSqalign::get_rnafold( rnafold_path, rnafolds );
 
@@ -211,6 +212,11 @@ class GeneTypeAnalyzerBoxPlot
         entropies[ "mid" ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
         entropies[ "3p"  ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
         entropies[ "3pTailOnly" ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
+
+        counts[ "5p"  ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
+        counts[ "mid" ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
+        counts[ "3p"  ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
+        counts[ "3pTailOnly" ] = std::vector< std::map< std::string, double >>( bed_samples.size() );
 
         bool is_arms = token == "3p" || token == "5p" ? true : false;
         bool is_lens = token != "" && !is_arms ? true : false;
@@ -258,6 +264,10 @@ class GeneTypeAnalyzerBoxPlot
                     if( entropies[ "mid" ][ smp ].find( gene_name ) == entropies[ "mid" ][ smp ].end() ) entropies[ "mid" ][ smp ][ gene_name ] = 0.0;
                     if( entropies[ "3p"  ][ smp ].find( gene_name ) == entropies[ "3p"  ][ smp ].end() ) entropies[ "3p"  ][ smp ][ gene_name ] = 0.0;
 
+                    if( counts[ "5p"  ][ smp ].find( gene_name ) == counts[ "5p"  ][ smp ].end() ) counts[ "5p"  ][ smp ][ gene_name ] = 0.0;
+                    if( counts[ "mid" ][ smp ].find( gene_name ) == counts[ "mid" ][ smp ].end() ) counts[ "mid" ][ smp ][ gene_name ] = 0.0;
+                    if( counts[ "3p"  ][ smp ].find( gene_name ) == counts[ "3p"  ][ smp ].end() ) counts[ "3p"  ][ smp ][ gene_name ] = 0.0;
+
                     switch( raw_bed.strand_ )
                     {
                         case '+' : strpos = raw_bed.start_ - ( std::stoi( rnafolds[ mir ][1] ) + 1 ); break;
@@ -272,10 +282,17 @@ class GeneTypeAnalyzerBoxPlot
                     entropies[ "mid" ][ smp ][ gene_name ] += get_entropy( strpos + 8, 4, entropy );
                     entropies[ "3p"  ][ smp ][ gene_name ] += get_entropy( endpos - 8, 8, entropy );
 
+                    counts[ "5p"  ][ smp ][ gene_name ] += 1;
+                    counts[ "mid" ][ smp ][ gene_name ] += 1;
+                    counts[ "3p"  ][ smp ][ gene_name ] += 1;
+
                     if( raw_bed.getTail() != "" )
                     {
                         if( entropies[ "3pTailOnly" ][ smp ].find( gene_name ) == entropies[ "3pTailOnly" ][ smp ].end() ) entropies[ "3pTailOnly" ][ smp ][ gene_name ] = 0.0;
+                        if( counts[ "3pTailOnly" ][ smp ].find( gene_name ) == counts[ "3pTailOnly" ][ smp ].end() ) counts[ "3pTailOnly" ][ smp ][ gene_name ] = 0.0;
+
                         entropies[ "3pTailOnly"  ][ smp ][ gene_name ] += get_entropy( endpos - 8, 8, entropy );
+                        counts[ "3pTailOnly"  ][ smp ][ gene_name ] += 1;
                     }
                 }
             }
@@ -296,7 +313,7 @@ class GeneTypeAnalyzerBoxPlot
                 for( std::size_t smp = 0; smp < type.second.size(); ++smp )
                 {
                     if( type.second[ smp ].find( anno ) != type.second[ smp ].end() )
-                         output << "\t" << type.second[ smp ][ anno ];
+                         output << "\t" << type.second[ smp ][ anno ] / counts[ type.first ][ smp ][ anno ];
                     else output << "\t0";
                 }
             }
