@@ -4,12 +4,12 @@
 namespace ago {
 namespace algorithm {
 
-class GeneTypeAnalyzerHete53p
+class GeneTypeAnalyzerBoxPlot
 {
 
   public:
 
-    GeneTypeAnalyzerHete53p()
+    GeneTypeAnalyzerBoxPlot()
     {}
 
     static void make_hete_table(
@@ -330,7 +330,7 @@ class GeneTypeAnalyzerHete53p
         output.close();
     }
 
-    static void output_hete53p_visualization( const std::string& output_name )
+    static void output_boxplot_visualization( const std::string& output_name )
     {
         std::ofstream output( output_name + "index.php" );
 
@@ -536,7 +536,7 @@ class GeneTypeAnalyzerHete53p
         output << "            For( $i = 1; $i < Count( $inFile_Line ); ++$i )" << "\n";
         output << "            {" << "\n";
         output << "                if( $inFile_Line[$i] == 0 ) continue;" << "\n";
-        output << "                if( !In_Array( $inFile_Line[0], $Filter_Anno )) continue;" << "\n";
+        output << "                if( !Empty( $Filter_Anno ) && !In_Array( $inFile_Line[0], $Filter_Anno )) continue;" << "\n";
         output << "                Array_Push( $Hete_Array[ $i-1 ], $inFile_Line[$i] );" << "\n";
         output << "            }" << "\n";
         output << "        }" << "\n";
@@ -563,7 +563,7 @@ class GeneTypeAnalyzerHete53p
         output << "" << "\n";
         output << "        if( $ForceY != '' ) $yMax = $ForceY;" << "\n";
         output << "" << "\n";
-        output << "#<!--================== Hete53p ====================-->" << "\n";
+        output << "#<!--================== BoxPlot ====================-->" << "\n";
         output << "" << "\n";
         output << "        echo \"<script>" << "\n";
         output << "            var svg_width  = window.innerWidth;" << "\n";

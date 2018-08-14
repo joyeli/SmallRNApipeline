@@ -14,7 +14,7 @@
 #include <AGO/algorithm/gene_type_analyzer_seedmap.hpp>
 #include <AGO/algorithm/gene_type_analyzer_seedpie.hpp>
 #include <AGO/algorithm/gene_type_analyzer_mdtcpos.hpp>
-#include <AGO/algorithm/gene_type_analyzer_hete53p.hpp>
+#include <AGO/algorithm/gene_type_analyzer_boxplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
 #include <AGO/algorithm/gene_type_analyzer_diffbar.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
@@ -42,7 +42,7 @@ class GeneTypeAnalyzerEachtype
     std::string mdtcpos;
     std::string seedmap;
     std::string seedpie;
-    std::string hete53p;
+    std::string boxplot;
     std::string diffbar;
     std::string difference;
 
@@ -65,7 +65,7 @@ class GeneTypeAnalyzerEachtype
         , mdtcpos( "MDTCpos/" )
         , seedmap( "SeedMap/" )
         , seedpie( "SeedPie/" )
-        , hete53p( "Hete53p/" )
+        , boxplot( "BoxPlot/" )
         , diffbar( "DiffBar/" )
         , difference( "Difference/" )
     {}
@@ -112,7 +112,7 @@ class GeneTypeAnalyzerEachtype
         , mdtcpos( "MDTCpos/" )
         , seedmap( "SeedMap/" )
         , seedpie( "SeedPie/" )
-        , hete53p( "Hete53p/" )
+        , boxplot( "BoxPlot/" )
         , diffbar( "DiffBar/" )
         , difference( "Difference/" )
     {
@@ -142,7 +142,7 @@ class GeneTypeAnalyzerEachtype
             {
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + mdtcpos ));
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + sqalign ));
-                boost::filesystem::create_directory( boost::filesystem::path( output_path + hete53p ));
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + boxplot ));
             }
 
             std::chrono::time_point< std::chrono::system_clock > make_table_start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -332,12 +332,12 @@ class GeneTypeAnalyzerEachtype
                 {
                     std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                    GeneTypeAnalyzerHete53p::make_hete_table( output_path + hete53p, bed_samples, ano_len_idx, genome_table, filter_ppm, biotype, token );
-                    GeneTypeAnalyzerHete53p::make_rnafold_table( output_path + hete53p, bed_samples, ano_len_idx, genome_table, filter_ppm, rnafold_path, biotype, token );
-                    GeneTypeAnalyzerHete53p::output_hete53p_visualization( output_path + hete53p );
+                    GeneTypeAnalyzerBoxPlot::make_hete_table( output_path + boxplot, bed_samples, ano_len_idx, genome_table, filter_ppm, biotype, token );
+                    GeneTypeAnalyzerBoxPlot::make_rnafold_table( output_path + boxplot, bed_samples, ano_len_idx, genome_table, filter_ppm, rnafold_path, biotype, token );
+                    GeneTypeAnalyzerBoxPlot::output_boxplot_visualization( output_path + boxplot );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-                    if( is_time_log ) std::cerr << "Hete53p: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+                    if( is_time_log ) std::cerr << "BoxPlot: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
                 }// );
             }
 
