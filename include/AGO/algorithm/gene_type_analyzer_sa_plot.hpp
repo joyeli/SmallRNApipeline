@@ -10,13 +10,13 @@ class GeneTypeAnalyzerSA_Plot
         std::vector< double > GMPM; // GMPM, GM, PM
         std::vector< double > Tail; // Atail, Ctail, Gtail, Other
         std::vector< double > tail; // aTail, cTail, gTail, Other is splite in to each Tail
-        std::vector< std::map< char, double >> Ends; // 5'End-NT + Seed + 3'End-NT ( 0 ~ -4 ) + 3'End-4N ( 1 + 7 + 5 + 1 )
+        std::vector< std::map< char, double >> Ends; // 5'End-NT + Seed + 3'End-NT ( 0 ~ -4 ) + 3'End-4N-tail + 3'End-4N-notail ( 1 + 7 + 5 + 1 + 1 )
     
         SA_Type()
             : GMPM( 3, 0.0 )
             , Tail( 5, 0.0 )
             , tail( 4, 0.0 )
-            , Ends( 14, std::map< char, double >() )
+            , Ends( 15, std::map< char, double >() )
         {}
     };
 
@@ -70,7 +70,8 @@ class GeneTypeAnalyzerSA_Plot
             )
     {
         char nt = ' ';
-        std::string last4n = "";
+        std::string last4n_tail = "";
+        std::string last4n_notail = "";
 
         sa_it->second.GMPM[0] += ppm;
 
@@ -113,11 +114,11 @@ class GeneTypeAnalyzerSA_Plot
                 sa_it->second.Ends[ 8 + i ][ nt ] += ppm;
             }
 
-            last4n = sequence.substr( sequence.length() -1 -4, 4 );
+            last4n_tail = sequence.substr( sequence.length() -1 -4, 4 );
 
             for( std::size_t i = 0; i < 4; ++i )
             {
-                nt = last4n.at(i);
+                nt = last4n_tail.at(i);
 
                 if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
                 if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
@@ -128,7 +129,25 @@ class GeneTypeAnalyzerSA_Plot
                 sa_it->second.Ends[13][ nt ] += ppm;
             }
         }
-        else sa_it->second.GMPM[1] += ppm;
+        else
+        {
+            last4n_notail = sequence.substr( sequence.length() -1 -4, 4 );
+
+            for( std::size_t i = 0; i < 4; ++i )
+            {
+                nt = last4n_notail.at(i);
+
+                if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
+                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
+
+                if( sa_it->second.Ends[14].find( nt ) == sa_it->second.Ends[14].end() )
+                    sa_it->second.Ends[14][ nt ] = 0;
+
+                sa_it->second.Ends[14][ nt ] += ppm;
+            }
+
+            sa_it->second.GMPM[1] += ppm;
+        }
 
         for( std::size_t i = 0; i < 8; ++i )
         {
@@ -191,13 +210,13 @@ class GeneTypeAnalyzerSA_Plot
     {
         SA_Type sum;
 
-        for( std::size_t i = 0; i < 14; ++i ) sum.Ends[i]['S'] = 0.0;
+        for( std::size_t i = 0; i < 15; ++i ) sum.Ends[i]['S'] = 0.0;
 
         for( auto& sa : sa_table )
         {
             for( std::size_t i = 0; i < 5; ++i ) sum.Tail[i] += sa.second.Tail[i];
             for( std::size_t i = 0; i < 4; ++i ) sum.tail[i] += sa.second.tail[i];
-            for( std::size_t i = 0; i < 14; ++i )
+            for( std::size_t i = 0; i < 15; ++i )
             for( auto & nt : sa.second.Ends[i] ) sum.Ends[i]['S'] += nt.second;
         }
 
@@ -212,7 +231,7 @@ class GeneTypeAnalyzerSA_Plot
         {
             // for( std::size_t i = 0; i < 5; ++i ) sa.second.Tail[i] = sa.second.Tail[i] / sum.Tail[i];
             // for( std::size_t i = 0; i < 4; ++i ) sa.second.tail[i] = sa.second.tail[i] / sum.tail[i];
-            for( std::size_t i = 0; i < 14; ++i )
+            for( std::size_t i = 0; i < 15; ++i )
             {
                 // for( auto & nt : sa.second.Ends[i] ) nt.second = nt.second / sum.Ends[i]['S'];
                 if( sa.second.Ends[i].find( 'A' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'A' ] = 0.0;
@@ -230,7 +249,7 @@ class GeneTypeAnalyzerSA_Plot
             const std::string& sample_name
             )
     {
-        std::vector< std::ofstream > outputs( 16 );
+        std::vector< std::ofstream > outputs( 17 );
 
         outputs[ 0].open( output_name + sample_name + "-tail.tsv" );
         outputs[ 1].open( output_name + sample_name + "-tail_with_other.tsv" );
@@ -247,7 +266,8 @@ class GeneTypeAnalyzerSA_Plot
         outputs[12].open( output_name + sample_name + "-nt_last_-2.tsv" );
         outputs[13].open( output_name + sample_name + "-nt_last_-3.tsv" );
         outputs[14].open( output_name + sample_name + "-nt_last_-4.tsv" );
-        outputs[15].open( output_name + sample_name + "-nt_last_4N.tsv" );
+        outputs[15].open( output_name + sample_name + "-nt_last_4N-tail.tsv" );
+        outputs[16].open( output_name + sample_name + "-nt_last_4N-notail.tsv" );
 
         for( std::size_t i = 0; i < outputs.size(); ++i )
         {
@@ -267,7 +287,7 @@ class GeneTypeAnalyzerSA_Plot
             for( std::size_t i = 0; i < 4; ++i ) outputs[0] << "\t" << sa_table[ anno ].tail[i];
             for( std::size_t i = 0; i < 5; ++i ) outputs[1] << "\t" << sa_table[ anno ].Tail[i];
 
-            for( std::size_t i = 0; i < 14; ++i )
+            for( std::size_t i = 0; i < 15; ++i )
                 for( auto& nt : sa_table[ anno ].Ends[i] ) outputs[ i+2 ] << "\t" << nt.second;
         }
 
@@ -284,7 +304,7 @@ class GeneTypeAnalyzerSA_Plot
             for( std::size_t i = 0; i < 3; ++i ) std::cerr << "\t" << sa.GMPM[i];
             for( std::size_t i = 0; i < 5; ++i ) std::cerr << "\t" << sa.Tail[i];
             for( std::size_t i = 0; i < 4; ++i ) std::cerr << "\t" << sa.tail[i];
-            for( std::size_t i = 0; i < 14; ++i )
+            for( std::size_t i = 0; i < 15; ++i )
             {
                 std::cerr << ( sa.Ends[i].find( 'A' ) == sa.Ends[i].end() ? "\tAnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'A' ] )));
                 std::cerr << ( sa.Ends[i].find( 'C' ) == sa.Ends[i].end() ? "\tCnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'C' ] )));
@@ -327,7 +347,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "        echo '<select name=Type onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '; if($Type=='') echo 'selected'; echo 'value= >Select Type</option>';" << "\n";
         output << "" << "\n";
-        output << "        $Type_List = array('5’End','Seed0','Seed1','Seed2','Seed3','Seed4','Seed5','Seed6','3’End-4','3’End-3','3’End-2','3’End-1','3’End','3’End4N','Tail','TailwithOther');" << "\n";
+        output << "        $Type_List = array('5’End','Seed0','Seed1','Seed2','Seed3','Seed4','Seed5','Seed6','3’End-4_Tailed','3’End-3_Tailed','3’End-2_Tailed','3’End-1_Tailed','3’End-0_Tailed','3’End4N_Tailed','3’End4N_NoTail','Tail','TailwithOther');" << "\n";
         output << "        $Type_Size = Count( $Type_List );" << "\n";
         output << "        $Type_Name = '';" << "\n";
         output << "" << "\n";
@@ -343,22 +363,23 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "        switch( $Type )" << "\n";
         output << "        {" << "\n";
-        output << "            case '5’End'         : $Type_Name = '-nt_0.tsv'           ; break;" << "\n";
-        output << "            case 'Seed0'         : $Type_Name = '-nt_1.tsv'           ; break;" << "\n";
-        output << "            case 'Seed1'         : $Type_Name = '-nt_2.tsv'           ; break;" << "\n";
-        output << "            case 'Seed2'         : $Type_Name = '-nt_3.tsv'           ; break;" << "\n";
-        output << "            case 'Seed3'         : $Type_Name = '-nt_4.tsv'           ; break;" << "\n";
-        output << "            case 'Seed4'         : $Type_Name = '-nt_5.tsv'           ; break;" << "\n";
-        output << "            case 'Seed5'         : $Type_Name = '-nt_6.tsv'           ; break;" << "\n";
-        output << "            case 'Seed6'         : $Type_Name = '-nt_7.tsv'           ; break;" << "\n";
-        output << "            case '3’End-4'       : $Type_Name = '-nt_last_-4.tsv'     ; break;" << "\n";
-        output << "            case '3’End-3'       : $Type_Name = '-nt_last_-3.tsv'     ; break;" << "\n";
-        output << "            case '3’End-2'       : $Type_Name = '-nt_last_-2.tsv'     ; break;" << "\n";
-        output << "            case '3’End-1'       : $Type_Name = '-nt_last_-1.tsv'     ; break;" << "\n";
-        output << "            case '3’End'         : $Type_Name = '-nt_last_0.tsv'      ; break;" << "\n";
-        output << "            case '3’End4N'       : $Type_Name = '-nt_last_4N.tsv'     ; break;" << "\n";
-        output << "            case 'Tail'          : $Type_Name = '-tail.tsv'           ; break;" << "\n";
-        output << "            case 'TailwithOther' : $Type_Name = '-tail_with_other.tsv'; break;" << "\n";
+        output << "            case '5’End'          : $Type_Name = '-nt_0.tsv'              ; break;" << "\n";
+        output << "            case 'Seed0'          : $Type_Name = '-nt_1.tsv'              ; break;" << "\n";
+        output << "            case 'Seed1'          : $Type_Name = '-nt_2.tsv'              ; break;" << "\n";
+        output << "            case 'Seed2'          : $Type_Name = '-nt_3.tsv'              ; break;" << "\n";
+        output << "            case 'Seed3'          : $Type_Name = '-nt_4.tsv'              ; break;" << "\n";
+        output << "            case 'Seed4'          : $Type_Name = '-nt_5.tsv'              ; break;" << "\n";
+        output << "            case 'Seed5'          : $Type_Name = '-nt_6.tsv'              ; break;" << "\n";
+        output << "            case 'Seed6'          : $Type_Name = '-nt_7.tsv'              ; break;" << "\n";
+        output << "            case '3’End-4_Tailed' : $Type_Name = '-nt_last_-4.tsv'        ; break;" << "\n";
+        output << "            case '3’End-3_Tailed' : $Type_Name = '-nt_last_-3.tsv'        ; break;" << "\n";
+        output << "            case '3’End-2_Tailed' : $Type_Name = '-nt_last_-2.tsv'        ; break;" << "\n";
+        output << "            case '3’End-1_Tailed' : $Type_Name = '-nt_last_-1.tsv'        ; break;" << "\n";
+        output << "            case '3’End-0_Tailed' : $Type_Name = '-nt_last_0.tsv'         ; break;" << "\n";
+        output << "            case '3’End4N_Tailed' : $Type_Name = '-nt_last_4N-tail.tsv'   ; break;" << "\n";
+        output << "            case '3’End4N_NoTail' : $Type_Name = '-nt_last_4N-notail.tsv' ; break;" << "\n";
+        output << "            case 'Tail'           : $Type_Name = '-tail.tsv'              ; break;" << "\n";
+        output << "            case 'TailwithOther'  : $Type_Name = '-tail_with_other.tsv'   ; break;" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
@@ -444,6 +465,8 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "                if( $Filter != '' && $Filter != 'FilterGMPM' && $inFile_Line[1] < $Filter  ) continue;" << "\n";
         output << "                if( $Ranking == 'Tailing％' && $inFile_Line[3] == 0 ) continue;" << "\n";
+        output << "                if( $Ranking == 'GM' && $inFile_Line[2] == 0 ) continue;" << "\n";
+        output << "                if( $Ranking == 'PM' && $inFile_Line[3] == 0 ) continue;" << "\n";
         output << "                if( $inFile_Line[1] == 0 ) continue;" << "\n";
         output << "" << "\n";
         output << "                switch( $Ranking )" << "\n";
@@ -477,6 +500,10 @@ class GeneTypeAnalyzerSA_Plot
         output << "        echo '<option '; if($Ranking=='') echo 'selected'; echo 'value= >Select Ranking</option>';" << "\n";
         output << "" << "\n";
         output << "        $Rank_List = array( 'GMPM', 'GM', 'PM', 'Tailing％' );" << "\n";
+        output << "" << "\n";
+        output << "        if( $Type == '3’End4N_NoTail' )" << "\n";
+        output << "            $Rank_List = array( 'GM' );" << "\n";
+        output << "" << "\n";
         output << "        $Rank_Size = Count( $Rank_List );" << "\n";
         output << "" << "\n";
         output << "        For( $i = 0; $i < $Rank_Size; ++$i )" << "\n";
@@ -625,7 +652,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "        $M_Array = Array();" << "\n";
         output << "        $R_Array = Array();" << "\n";
         output << "" << "\n";
-        output << "        For( $i = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $i < Count( $Header ); ++$i )" << "\n";
+        output << "        For( $i = 0; $i < Count( $Header ); ++$i )" << "\n";
         output << "        {" << "\n";
         output << "            $Sum_Array[$i] = 0.0;" << "\n";
         output << "            $L_Array[ $Header[$i] ] = Array();" << "\n";
@@ -649,17 +676,17 @@ class GeneTypeAnalyzerSA_Plot
         output << "                {" << "\n";
         output << "                    $PM = 0.0;" << "\n";
         output << "" << "\n";
-        output << "                    if( $isRatio == 'Yes' ) For( $k = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    if( $isRatio == 'Yes' ) For( $k = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $PM += $Temp_Array[$j][$k];" << "\n";
         output << "" << "\n";
-        output << "                    For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    For( $k = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $SumArray[$k] += $Temp_Array[$j][$k] / ( $isRatio == 'Yes' ? $PM : 1 );" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $L_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $L_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
         output << "" << "\n";
         output << "                $Temp_Array = Array();" << "\n";
         output << "            }" << "\n";
@@ -684,18 +711,18 @@ class GeneTypeAnalyzerSA_Plot
         output << "                {" << "\n";
         output << "                    $PM = 0.0;" << "\n";
         output << "" << "\n";
-        output << "                    if( $isRatio == 'Yes' ) For( $k = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    if( $isRatio == 'Yes' ) For( $k = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $PM += $Temp_Array[$j][$k];" << "\n";
         output << "" << "\n";
-        output << "                    For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    For( $k = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $SumArray[$k] += $Temp_Array[$j][$k] / ( $isRatio == 'Yes' ? $PM : 1 );" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][0]  = $SumArray[$j];" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][0]  = $SumArray[$j];" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $M_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
         output << "" << "\n";
         output << "                $Temp_Array = Array();" << "\n";
         output << "                $Trimmedn = $N;" << "\n";
@@ -719,17 +746,17 @@ class GeneTypeAnalyzerSA_Plot
         output << "                {" << "\n";
         output << "                    $PM = 0.0;" << "\n";
         output << "" << "\n";
-        output << "                    if( $isRatio == 'Yes' ) For( $k = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    if( $isRatio == 'Yes' ) For( $k = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $PM += $Temp_Array[$j][$k];" << "\n";
         output << "" << "\n";
-        output << "                    For( $k = 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
+        output << "                    For( $k = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $k < Count( $Temp_Array[$j] ); ++$k )" << "\n";
         output << "                        $SumArray[$k] += $Temp_Array[$j][$k] / ( $isRatio == 'Yes' ? $PM : 1 );" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
-        output << "                For( $j = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $R_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / Count( $Temp_Array );" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $Sum += $SumArray[$j];" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $SumArray[$j] = $SumArray[$j] / $Sum;" << "\n";
+        output << "                For( $j = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? 1 : 0; $j < Count( $SumArray ); ++$j ) $R_Array[ $Header[$j] ][$N] = $SumArray[$j];" << "\n";
         output << "" << "\n";
         output << "                $Temp_Array = Array();" << "\n";
         output << "            }" << "\n";
@@ -767,7 +794,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "#<!--=================== TempFile ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $Order = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? [ 'A', 'T', 'C', 'G' ] : [ 'GM', 'A', 'T', 'C', 'G' ];" << "\n";
+        output << "        $Order = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? [ 'A', 'T', 'C', 'G' ] : [ 'GM', 'A', 'T', 'C', 'G' ];" << "\n";
         output << "" << "\n";
         output << "        $JsonL = Tempnam( '/tmp', 'Json_L_'.$TSV_File.$Type_Name );" << "\n";
         output << "        $JsonM = Tempnam( '/tmp', 'Json_M_'.$TSV_File.$Type_Name );" << "\n";
@@ -866,7 +893,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "#<!--================== SA_Plot ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $Color_Array = Substr( $Type, 0, 1 ) == '5' || Substr( $Type, 0, 1 ) == 'S' ? \"['#FF0000','#088A08','#0000FF','#FFBF00']\" : \"['#000000','#FF0000','#088A08','#0000FF','#FFBF00']\";" << "\n";
+        output << "        $Color_Array = $Type == '5’End' || $Type == '3’End4N_NoTail' || Substr( $Type, 0, 1 ) == 'S' ? \"['#FF0000','#088A08','#0000FF','#FFBF00']\" : \"['#000000','#FF0000','#088A08','#0000FF','#FFBF00']\";" << "\n";
         output << "" << "\n";
         output << "        echo \"<script>" << "\n";
         output << "            var svg_width  = window.innerWidth;" << "\n";
