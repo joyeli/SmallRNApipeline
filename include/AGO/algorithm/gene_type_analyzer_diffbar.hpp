@@ -251,6 +251,14 @@ class GeneTypeAnalyzerDiffBar
                 diff_vec.emplace_back( get_differential(    tt2    + 1,    tt1     + 1 ));
                 diff_vec.emplace_back( get_differential(    ot2    + 1,    ot1     + 1 ));
 
+                diffs[{ s2.second, s1.second }][ 'S' ][ anno ] = diff_vec[ diff_vec.size() - 8 ];
+                diffs[{ s2.second, s1.second }][ 'M' ][ anno ] = diff_vec[ diff_vec.size() - 7 ];
+                diffs[{ s2.second, s1.second }][ 'P' ][ anno ] = diff_vec[ diff_vec.size() - 6 ];
+                diffs[{ s2.second, s1.second }][ 'A' ][ anno ] = diff_vec[ diff_vec.size() - 5 ];
+                diffs[{ s2.second, s1.second }][ 'C' ][ anno ] = diff_vec[ diff_vec.size() - 4 ];
+                diffs[{ s2.second, s1.second }][ 'G' ][ anno ] = diff_vec[ diff_vec.size() - 3 ];
+                diffs[{ s2.second, s1.second }][ 'T' ][ anno ] = diff_vec[ diff_vec.size() - 2 ];
+
                 out_temp.emplace_back( std::make_tuple(
                         gm1 + pm1 + gm2 + pm2,
                         get_smallest_pvalue( diff_vec ),
@@ -319,21 +327,18 @@ class GeneTypeAnalyzerDiffBar
             {
                 if( compare.first.first  == smp ) smpidx = 1;
                 if( compare.first.second == smp ) smpidx = 2;
-            }
 
-            if( smpidx == 0 ) continue;
+                if( smpidx == 0 ) continue;
 
-            for( auto& compare : diffs )
-            {
                 for( auto& mir : compare.second[ type.first ])
                 {
                     if( mir.second.second > 0.05 ) continue;
                     if( mir.second.first < 2 && mir.second.first > 0.5 ) continue;
 
                     if( smpidx == 1 && mir.second.first >= 2   ) mir_unilike[ mir.first ].emplace( compare.first.second );
-                    if( smpidx == 2 && mir.second.first <= 0.5 ) mir_unilike[ mir.first ].emplace( compare.first.first  );
-                    if( smpidx == 2 && mir.second.first >= 2   ) mir_dislike[ mir.first ].emplace( compare.first.first  );
                     if( smpidx == 1 && mir.second.first <= 0.5 ) mir_dislike[ mir.first ].emplace( compare.first.second );
+                    if( smpidx == 2 && mir.second.first >= 2   ) mir_dislike[ mir.first ].emplace( compare.first.first  );
+                    if( smpidx == 2 && mir.second.first <= 0.5 ) mir_unilike[ mir.first ].emplace( compare.first.first  );
                 }
             }
 
