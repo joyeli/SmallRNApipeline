@@ -25,8 +25,13 @@ class GeneTypeAnalyzerVolcano
             if( !boost::filesystem::exists( p + file ))
                  boost::filesystem::create_symlink(( "../DiffBar/" + file ).c_str(), ( p + file ).c_str() );
 
-        if( !isSeed && !boost::filesystem::exists( p + "heterorgeneity.tsv" ))
-            boost::filesystem::create_symlink( "../Hete53p/heterorgeneity.tsv", ( p + "heterorgeneity.tsv" ).c_str() );
+        if( !isSeed )
+        {
+            if( !boost::filesystem::exists( p + "Heterorgeneity_5p.tsv" ))
+                 boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_5p.tsv", ( p + "Heterorgeneity_5p.tsv" ).c_str() );
+            if( !boost::filesystem::exists( p + "Heterorgeneity_3p.tsv" ))
+                 boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_3p.tsv", ( p + "Heterorgeneity_3p.tsv" ).c_str() );
+        }
     }
 
     static void output_volcano_visualization( const std::string& output_name, const std::string& biotype, const bool& isSeed )
@@ -305,7 +310,7 @@ class GeneTypeAnalyzerVolcano
             output << "                <input type='hidden' name='Gradients_Type' value='$Gradients_Type' />" << "\n";
             output << "                </form>\";" << "\n";
             output << "        }" << "\n";
-            output << "        else $Gradients_Type == 'GMPM';" << "\n";
+            output << "        else $Gradients_Type = 'GMPM';" << "\n";
             output << "" << "\n";
             output << "#<!--=============== ReadHeterFile ==================-->" << "\n";
             output << "" << "\n";
@@ -441,6 +446,8 @@ class GeneTypeAnalyzerVolcano
         output << "" << "\n";
         output << "        if( File_Exists( './LoadingDifferential_'.$Sample2.'_'.$Sample1.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text' ))" << "\n";
         output << "            $TSV_File =  './LoadingDifferential_'.$Sample2.'_'.$Sample1.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.text';" << "\n";
+        output << "" << "\n";
+        output << "        if( $IsomiRs == '' || $Gradients_Type == '' ) $TSV_File = '';" << "\n";
         output << "" << "\n";
         output << "        $Temp = Tempnam( '/tmp', $TSV_File.'_'.$GMPM.'_'.$Filter );" << "\n";
         output << "        $Ftemp = Fopen( $Temp, 'w' );" << "\n";
