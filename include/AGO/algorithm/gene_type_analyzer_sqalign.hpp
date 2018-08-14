@@ -1930,10 +1930,10 @@ class GeneTypeAnalyzerSqalign
         output << "            }" << "\n";
         output << "" << "\n";
         output << "            echo \"" << "\n";
-        output << "                                if( data[ 'A' ] > 0.001 ) tip += '</br>A: ' + ( data[ 'A' ] * 100 ).toFixed(2) + '%';" << "\n";
-        output << "                                if( data[ 'C' ] > 0.001 ) tip += '</br>C: ' + ( data[ 'C' ] * 100 ).toFixed(2) + '%';" << "\n";
-        output << "                                if( data[ 'G' ] > 0.001 ) tip += '</br>G: ' + ( data[ 'G' ] * 100 ).toFixed(2) + '%';" << "\n";
-        output << "                                if( data[ 'T' ] > 0.001 ) tip += '</br>T: ' + ( data[ 'T' ] * 100 ).toFixed(2) + '%';" << "\n";
+        output << "                                if( data[ 'A' ] != 0 ) tip += '</br>A: ' + ( data[ 'A' ] * 100 ).toFixed(3) + '%';" << "\n";
+        output << "                                if( data[ 'C' ] != 0 ) tip += '</br>C: ' + ( data[ 'C' ] * 100 ).toFixed(3) + '%';" << "\n";
+        output << "                                if( data[ 'G' ] != 0 ) tip += '</br>G: ' + ( data[ 'G' ] * 100 ).toFixed(3) + '%';" << "\n";
+        output << "                                if( data[ 'T' ] != 0 ) tip += '</br>T: ' + ( data[ 'T' ] * 100 ).toFixed(3) + '%';" << "\n";
         output << "                            }" << "\n";
         output << "" << "\n";
         output << "                            if( selectedread.attr( 'title' ).substr( 0, 4 ) == 'Read' )" << "\n";
