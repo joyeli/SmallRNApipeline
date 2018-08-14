@@ -268,8 +268,6 @@ class GeneTypeAnalyzerHete53p
                     endpos = strpos + 1 + (int)raw_bed.length_ - (int)raw_bed.tail_length_;
                     std::vector< std::string > entropy( rnafolds[ mir ].begin() + 6, rnafolds[ mir ].begin() + rnafolds[ mir ].size() );
 
-                    std::cerr << gene_name;
-
                     entropies[ "5p"  ][ smp ][ gene_name ] += get_entropy( strpos,     8, entropy );
                     entropies[ "mid" ][ smp ][ gene_name ] += get_entropy( strpos + 8, 4, entropy );
                     entropies[ "3p"  ][ smp ][ gene_name ] += get_entropy( endpos - 8, 8, entropy );
@@ -279,8 +277,6 @@ class GeneTypeAnalyzerHete53p
                         if( entropies[ "3pTailOnly" ][ smp ].find( gene_name ) == entropies[ "3pTailOnly" ][ smp ].end() ) entropies[ "3pTailOnly" ][ smp ][ gene_name ] = 0.0;
                         entropies[ "3pTailOnly"  ][ smp ][ gene_name ] += get_entropy( endpos - 8, 8, entropy );
                     }
-
-                    std::cerr << "\n";
                 }
             }
         }
@@ -317,8 +313,6 @@ class GeneTypeAnalyzerHete53p
     {
         double entropy;
 
-        std::cerr << "\t" << entropies[ strpos ];
-
         if( strpos + length > entropies.size() )
             strpos = strpos - ( strpos + length - entropies.size() );
 
@@ -347,7 +341,7 @@ class GeneTypeAnalyzerHete53p
         output << "" << "\n";
         output << "    <? " << "\n";
         output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
-        output << "    <? " << "\n";
+        output << "" << "\n";
         output << "        $ForceY = $_POST['ForceY'];" << "\n";
         output << "        $TSV_File = $_POST['TSV_File'];" << "\n";
         output << "        $isTrimmed = $_POST['isTrimmed'];" << "\n";
@@ -480,6 +474,8 @@ class GeneTypeAnalyzerHete53p
         output << "" << "\n";
         output << "            if( $Boxs_Array[$i][ 'whisker_high' ] > $yMax ) $yMax = $Boxs_Array[$i][ 'whisker_high' ];" << "\n";
         output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        if( $ForceY != '' ) $yMax = $ForceY;" << "\n";
         output << "" << "\n";
         output << "#<!--================== Hete53p ====================-->" << "\n";
         output << "" << "\n";
