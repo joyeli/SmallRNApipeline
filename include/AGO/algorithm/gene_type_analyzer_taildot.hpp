@@ -755,6 +755,7 @@ class GeneTypeAnalyzerTaildot
         output << "" << "\n";
         output << "        For( $i = 0; $i < Count( $inFile_Lines )-1; ++$i )" << "\n";
         output << "        {" << "\n";
+        output << "            if( $RatioType == '' || $RatioType == 'RatioType' ) continue;" << "\n";
         output << "            $inFile_Line = Explode( \"\\t\", $inFile_Lines[$i] );" << "\n";
         output << "            $miRNA_Seed  = Explode( '*', $inFile_Line[ $AColumn ]);" << "\n";
         output << "" << "\n";
