@@ -328,7 +328,7 @@ class GeneTypeAnalyzerBoxPlot
             const std::vector< std::string >& entropies
             )
     {
-        double entropy;
+        double entropy = 0.0;
 
         if( strpos + length > entropies.size() )
             strpos = strpos - ( strpos + length - entropies.size() );
