@@ -43,7 +43,7 @@ class GeneTypeAnalyzerHisGram
                 else
                 {
                     is_skip = true;
-                    headers.emplace( i, split[i] );
+                    headers.emplace( i-1, split[i] );
                 }
             }
 

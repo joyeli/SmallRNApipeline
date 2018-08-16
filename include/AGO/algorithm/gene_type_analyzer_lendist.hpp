@@ -467,6 +467,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        Foreach( $Anno_Array as $anno => $ppm )" << "\n";
         output << "        {" << "\n";
+        output << "            if( $anno == 'All' || $anno == 'Alltrim' ) continue;" << "\n";
         output << "            if( $PPMFilter != 'PPM Filter' && $PPMFilter != '' && $PPMFilter > $ppm )" << "\n";
         output << "                Unset( $Anno_Array[ $anno ] );" << "\n";
         output << "            else if( $Total_PPM < $ppm ) $Total_PPM = $ppm;" << "\n";

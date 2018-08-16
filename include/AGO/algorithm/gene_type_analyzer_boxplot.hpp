@@ -27,7 +27,7 @@ class GeneTypeAnalyzerBoxPlot
             std::map< std::string, std::map< std::size_t, double >>  // 3p
         >> hete_tables( bed_samples.size() );
 
-        std::size_t arm;
+        std::string arm;
         std::string gene_name;
 
         bool is_arms = token == "3p" || token == "5p" ? true : false;
@@ -48,10 +48,10 @@ class GeneTypeAnalyzerBoxPlot
                 for( int i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
                 {
                     gene_name = raw_bed.annotation_info_[0][ i+1 ];
-                    arm = std::stoi( GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 ));
+                    arm = GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 );
 
-                    if( is_arms && token != ( std::to_string( arm ) + "p"     )) continue;
-                    if( is_lens && token !=   std::to_string( raw_bed.length_ )) continue;
+                    if( is_arms && token != arm + "p" ) continue;
+                    if( is_lens && token != std::to_string( raw_bed.length_ )) continue;
 
                     switch( raw_bed.strand_ )
                     {
@@ -246,7 +246,7 @@ class GeneTypeAnalyzerBoxPlot
                         continue;
 
                     gene_name = raw_bed.annotation_info_[0][ i+1 ];
-                    arm = std::stoi( GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 ));
+                    arm = GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 );
 
                     gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
                             + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
@@ -254,8 +254,8 @@ class GeneTypeAnalyzerBoxPlot
                     mir = gene_name.substr( 0, raw_bed.annotation_info_[0][1].length() -3 );
                     gene_name = gene_name + "_" + gene_seed;
 
-                    if( is_arms && token != ( std::to_string( arm ) + "p"     )) continue;
-                    if( is_lens && token !=   std::to_string( raw_bed.length_ )) continue;
+                    if( is_arms && token != arm + "p" ) continue;
+                    if( is_lens && token != std::to_string( raw_bed.length_ )) continue;
 
                     if( raw_bed.start_ < std::stoi( rnafolds[ mir ][1] )) continue;
                     if( raw_bed.end_   > std::stoi( rnafolds[ mir ][2] )) continue;
