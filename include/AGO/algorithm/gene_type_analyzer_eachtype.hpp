@@ -15,6 +15,7 @@
 #include <AGO/algorithm/gene_type_analyzer_seedpie.hpp>
 #include <AGO/algorithm/gene_type_analyzer_mdtcpos.hpp>
 #include <AGO/algorithm/gene_type_analyzer_boxplot.hpp>
+#include <AGO/algorithm/gene_type_analyzer_hisgram.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
 #include <AGO/algorithm/gene_type_analyzer_diffbar.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
@@ -43,6 +44,7 @@ class GeneTypeAnalyzerEachtype
     std::string seedmap;
     std::string seedpie;
     std::string boxplot;
+    std::string hisgram;
     std::string diffbar;
     std::string difference;
 
@@ -66,6 +68,7 @@ class GeneTypeAnalyzerEachtype
         , seedmap( "SeedMap/" )
         , seedpie( "SeedPie/" )
         , boxplot( "BoxPlot/" )
+        , hisgram( "HisGram/" )
         , diffbar( "DiffBar/" )
         , difference( "Difference/" )
     {}
@@ -114,6 +117,7 @@ class GeneTypeAnalyzerEachtype
         , seedmap( "SeedMap/" )
         , seedpie( "SeedPie/" )
         , boxplot( "BoxPlot/" )
+        , hisgram( "HisGram/" )
         , diffbar( "DiffBar/" )
         , difference( "Difference/" )
     {
@@ -144,6 +148,7 @@ class GeneTypeAnalyzerEachtype
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + mdtcpos ));
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + sqalign ));
                 boost::filesystem::create_directory( boost::filesystem::path( output_path + boxplot ));
+                boost::filesystem::create_directory( boost::filesystem::path( output_path + hisgram ));
             }
 
             std::chrono::time_point< std::chrono::system_clock > make_table_start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -340,6 +345,17 @@ class GeneTypeAnalyzerEachtype
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                     if( is_time_log ) std::cerr << "BoxPlot: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
                 }// );
+
+                { // must do after boxplot done
+                    std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+
+                    GeneTypeAnalyzerHisGram::output_hisgram_from_heter( output_path + hisgram );
+                    GeneTypeAnalyzerHisGram::output_hisgram_from_entro( output_path + hisgram );
+                    GeneTypeAnalyzerHisGram::output_hisgram_visualization( output_path + hisgram );
+
+                    std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+                    if( is_time_log ) std::cerr << "HisGram: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
+                }
             }
 
             // parallel_pool.job_post([ &bed_samples, &biotype, &genome_table, &extend_refseq, &max_anno_merge_size, &webpage_update_only, this ] ()

@@ -147,7 +147,7 @@ class GeneTypeAnalyzerBoxPlot
         }
 
         output.open( output_path + "Heterorgeneity_5p.tsv" );
-        output << "Heterorgeneity_5p_" << token;
+        output << "Heterorgeneity_5p" << ( token == "" ? "" : ( "_" + token ));
 
         for( auto& smp  : bed_samples ) output << "\t" << smp.first;
         for( auto& anno : anno_idx )
@@ -167,7 +167,7 @@ class GeneTypeAnalyzerBoxPlot
         output.close();
 
         output.open( output_path + "Heterorgeneity_3p.tsv" );
-        output << "Heterorgeneity_3p_" << token;
+        output << "Heterorgeneity_3p" << ( token == "" ? "" : ( "_" + token ));
 
         for( auto& smp  : bed_samples ) output << "\t" << smp.first;
         for( auto& anno : anno_idx )
