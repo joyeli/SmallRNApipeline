@@ -154,10 +154,12 @@ class GeneTypeAnalyzer
 
         algorithm::AnnoLengthIndexType ano_len_idx;
 
-        std::vector< std::vector< algorithm::CountingTableType >> anno_table_tail;
+        ParaThreadPool ana_parallel_pool( thread_number );
+
         std::vector< std::map< std::string, std::string >> anno_mark;
 
-        ParaThreadPool ana_parallel_pool( thread_number );
+        std::vector< std::vector< algorithm::CountingTableType >> anno_table_tail;
+        std::vector< std::vector< algorithm::CountingTableType >> anno_table_trim;
 
         for( std::size_t i = 0; i < analysis_size; ++i )
         {
@@ -171,6 +173,8 @@ class GeneTypeAnalyzer
             monitor.log( "\tBiotype Analysis - " + biotype, "Start" );
 
             anno_table_tail = std::vector< std::vector< algorithm::CountingTableType >>( bed_samples.size(), std::vector< algorithm::CountingTableType >( 6 ));
+            anno_table_trim = std::vector< std::vector< algorithm::CountingTableType >>( bed_samples.size(), std::vector< algorithm::CountingTableType >( 6 ));
+
             anno_mark = std::vector< std::map< std::string, std::string >>( bed_samples.size() );
             ano_len_idx = get_ano_len_idx( genome_table, bed_samples, filter_ppm, biotype );
 
@@ -195,36 +199,38 @@ class GeneTypeAnalyzer
                 table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
                 algorithm::GeneTypeAnalyzerQuantile( ano_len_idx, anno_table_tail );
 
+                get_trimming( anno_table_tail, anno_table_trim, 15 ); // 15%
+
                 // algorithm::GeneTypeAnalyzerTmm( ano_len_idx, anno_table_tail, tmm_means, 30, 5, 2000 ); // Mg / Ag / mean
                 // table_refinding( ano_len_idx, anno_table_tail, min_len, max_len, sudo_count );
                 // trim_means.emplace_back( std::make_pair( biotype, tmm_means ));
                 // tmm_means.clear();
             }
 
-            ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+            ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &anno_mark, &output_path, this ] ()
             {
-                do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path );
+                do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, ano_len_idx, anno_mark, output_path );
             });
-            ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+            ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &anno_mark, &output_path, this ] ()
             {
-                do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path, "Seed" );
+                do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, ano_len_idx, anno_mark, output_path, "Seed" );
             });
 
             for( std::size_t len = min_len; len <= max_len; ++len )
-                ana_parallel_pool.job_post([ len, &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+                ana_parallel_pool.job_post([ len, &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &anno_mark, &output_path, this ] ()
                 {
-                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path, std::to_string( len ));
+                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, ano_len_idx, anno_mark, output_path, std::to_string( len ));
                 });
 
             if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
             {
-                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &anno_mark, &output_path, this ] ()
                 {
-                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path, "5p" );
+                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, ano_len_idx, anno_mark, output_path, "5p" );
                 });
-                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &ano_len_idx, &anno_mark, &output_path, this ] ()
+                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &anno_mark, &output_path, this ] ()
                 {
-                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, ano_len_idx, anno_mark, output_path, "3p" );
+                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, ano_len_idx, anno_mark, output_path, "3p" );
                 });
             }
 
@@ -266,7 +272,18 @@ class GeneTypeAnalyzer
         monitor.log( "Component GeneTypeAnalyzer", "Complete" );
     }
 
-    void do_analysis( auto& biotype, auto& bed_samples, auto& genome_table, const auto& filter_ppm, auto anno_table_tail, auto ano_len_idx, auto anno_mark, auto output_path, const std::string& token = "" )
+    void do_analysis(
+            auto& biotype,
+            auto& bed_samples,
+            auto& genome_table,
+            const auto& filter_ppm,
+            auto anno_table_tail,
+            auto anno_table_trim,
+            auto ano_len_idx,
+            auto anno_mark,
+            auto output_path,
+            const std::string& token = ""
+            )
     {
         output_path = output_path + "Genetype" + ( token == "" ? "" : ( "_" + token )) + "/";
 
@@ -291,6 +308,11 @@ class GeneTypeAnalyzer
                 {
                     make_ana_table( anno_table_tail[ smp ], anno_mark[ smp ], seed_match_table[ smp ], token );
                 });
+
+                smp_parallel_pool.job_post([ smp, &anno_table_trim, &seed_match_table, &anno_mark, &genome_table, &biotype, &token, this ] ()
+                {
+                    make_ana_table( anno_table_trim[ smp ], anno_mark[ smp ], seed_match_table[ smp ], token );
+                });
             }
 
             smp_parallel_pool.flush_pool();
@@ -298,6 +320,14 @@ class GeneTypeAnalyzer
             table_refinding(
                   ano_len_idx
                 , anno_table_tail
+                , ( token != "Seed" && token != "5p" && token != "3p" && token != "" ? std::stoi( token ) : min_len )
+                , ( token != "Seed" && token != "5p" && token != "3p" && token != "" ? std::stoi( token ) : max_len )
+                , sudo_count
+                );
+
+            table_refinding(
+                  ano_len_idx
+                , anno_table_trim
                 , ( token != "Seed" && token != "5p" && token != "3p" && token != "" ? std::stoi( token ) : min_len )
                 , ( token != "Seed" && token != "5p" && token != "3p" && token != "" ? std::stoi( token ) : max_len )
                 , sudo_count
@@ -313,6 +343,7 @@ class GeneTypeAnalyzer
                 , bed_samples 
                 , ano_len_idx
                 , anno_table_tail
+                , anno_table_trim
                 , seed_match_table
                 , anno_mark
                 , genome_table

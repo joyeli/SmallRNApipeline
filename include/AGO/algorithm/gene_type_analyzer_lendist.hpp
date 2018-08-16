@@ -86,6 +86,7 @@ class GeneTypeAnalyzerLendist
             const std::string& output_name,
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< CountingTableType >& anno_table_tail, // 0-A / 1-C / 2-G / 3-T / 4-O / 5-GM
+            std::vector< CountingTableType >& anno_table_trim, // 0-A / 1-C / 2-G / 3-T / 4-O / 5-GM
             std::map< std::string, std::string >& anno_mark,
             const std::string& sample_name
             )
@@ -97,7 +98,9 @@ class GeneTypeAnalyzerLendist
         std::set< std::string > anno_mark_set;
         std::set< std::string > anno_names;
 
-        std::vector< CountingTableType > annos = std::vector< CountingTableType >( anno_table_tail.size(), CountingTableType() );
+        std::vector< CountingTableType > annos = std::vector< CountingTableType >( anno_table_tail.size() );
+        std::vector< CountingTableType > whole = std::vector< CountingTableType >( anno_table_tail.size() );
+        std::vector< CountingTableType > trims = std::vector< CountingTableType >( anno_table_tail.size() );
 
         for( auto& anno : ano_len_idx.first )
         {
@@ -112,11 +115,46 @@ class GeneTypeAnalyzerLendist
             {
                 for( std::size_t i = 0; i < anno_table_tail.size(); ++i )
                 {
-                    if( annos[i][ split[0] ].find( len ) == annos[i][ split[0] ].end() )
-                        annos[i][ split[0] ][ len ] = 0.0;
+                    if( annos[i][ split[0] ].find( len ) == annos[i][ split[0] ].end() ) annos[i][ split[0] ][ len ] = 0.0;
+                    if( whole[i][ "allmir" ].find( len ) == whole[i][ "allmir" ].end() ) whole[i][ "allmir" ][ len ] = 0.0;
+                    if( trims[i][ "allmir" ].find( len ) == trims[i][ "allmir" ].end() ) trims[i][ "allmir" ][ len ] = 0.0;
 
                     annos[i][ split[0] ][ len ] += anno_table_tail[i][ anno ][ len ];
+                    whole[i][ "allmir" ][ len ] += anno_table_tail[i][ anno ][ len ];
+                    trims[i][ "allmir" ][ len ] += anno_table_trim[i][ anno ][ len ];
                 }
+            }
+        }
+
+        for( auto& len : ano_len_idx.second )
+        {
+            output << "\n" << "All:" << len;
+
+            for( auto& anno_table : whole )
+            {
+                if( anno_table.find( "allmir" ) != anno_table.end() )
+                {
+                    if( anno_table[ "allmir" ].find( len ) != anno_table[ "allmir" ].end() )
+                        output << "\t" << std::setprecision( 0 ) << std::fixed << anno_table[ "allmir" ][ len ];
+                    else output << "\t0";
+                }
+                else output << "\t0";
+            }
+        }
+
+        for( auto& len : ano_len_idx.second )
+        {
+            output << "\n" << "Alltrim:" << len;
+
+            for( auto& anno_table : trims )
+            {
+                if( anno_table.find( "allmir" ) != anno_table.end() )
+                {
+                    if( anno_table[ "allmir" ].find( len ) != anno_table[ "allmir" ].end() )
+                        output << "\t" << std::setprecision( 0 ) << std::fixed << anno_table[ "allmir" ][ len ];
+                    else output << "\t0";
+                }
+                else output << "\t0";
             }
         }
 

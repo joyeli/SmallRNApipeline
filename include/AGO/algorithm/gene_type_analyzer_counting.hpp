@@ -169,7 +169,7 @@ class GeneTypeAnalyzerCounting
 
         return abundance;
     }
-
+    
     static std::set< std::pair< std::string, std::string >> make_anno_trimming(
             std::vector< ago::format::MDRawBed >& annotations,
             std::map< std::string, std::string >& genome_table,
@@ -236,6 +236,74 @@ class GeneTypeAnalyzerCounting
             anno_trimmed.emplace( anno_vec[i].first );
 
         return anno_trimmed;
+    }
+
+    static void get_trimming( auto& anno_table_tail, auto& anno_table_trim, const double& percentage )
+    {
+        std::size_t trim_top;
+        std::size_t trim_last;
+        double smallest = 9999.99;
+
+        std::set< std::string > trims_set;
+        std::map< std::string, double > trims_map;
+        std::vector< std::pair< std::string, double >> trims_vec;
+
+        for( std::size_t smp = 0; smp < anno_table_tail.size(); ++smp )
+        {
+            for( std::size_t i = 0; i < anno_table_tail[ smp ].size(); ++i )
+            {
+                for( auto& anno : anno_table_tail[ smp ][i] )
+                {
+                    if( trims_map.find( anno.first ) == trims_map.end() ) trims_map[ anno.first ] = 0.0;
+                    for( auto& len : anno.second ) trims_map[ anno.first ] += len.second;
+                }
+            }
+
+            for( auto& anno : trims_map )
+                if( anno.second < smallest )
+                    smallest = anno.second;
+
+            for( auto& anno : trims_map )
+                if( anno.second > smallest )
+                    trims_vec.emplace_back( anno );
+
+            smallest = 9999.99;
+            trims_map.clear();
+
+            std::sort( trims_vec.begin(), trims_vec.end(),
+                []( const std::pair< std::string, double >& a, const std::pair< std::string, double >& b )
+                {
+                    if( a.second == b.second )
+                        return a.first > b.first;
+                    else
+                        return a.second > b.second;
+                });
+
+            trim_top  = trims_vec.size() * 15 / 100;
+            trim_last = trims_vec.size() * 85 / 100;
+
+            for( std::size_t i = trim_top -1; i < trim_last; ++i )
+                trims_set.emplace( trims_vec[i].first );
+
+            trims_vec.clear();
+
+            for( std::size_t i = 0; i < anno_table_tail[ smp ].size(); ++i )
+            {
+                for( auto& anno : anno_table_tail[ smp ][i] )
+                {
+                    if( trims_set.find( anno.first ) == trims_set.end() ) continue;
+
+                    for( auto& len : anno.second )
+                    {
+                        if( anno_table_trim[ smp ][ i ][ anno.first ].find( len.first ) == anno_table_trim[ smp ][ i ][ anno.first ].end() )
+                            anno_table_trim[ smp ][ i ][ anno.first ][ len.first ] = 0.0;
+                            anno_table_trim[ smp ][ i ][ anno.first ][ len.first ] += len.second;
+                    }
+                }
+            }
+
+            trims_set.clear();
+        }
     }
 
     static void make_anno_table(

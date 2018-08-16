@@ -76,6 +76,7 @@ class GeneTypeAnalyzerEachtype
             std::vector< BedSampleType >& bed_samples,
             AnnoLengthIndexType& ano_len_idx,
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
+            std::vector< std::vector< CountingTableType >>& anno_table_trim,
             std::vector< std::map< std::string, std::map< std::string, double >>>& seed_match_table,
             std::vector< std::map< std::string, std::string >>& anno_mark,
             std::map< std::string, std::string >& genome_table,
@@ -173,7 +174,7 @@ class GeneTypeAnalyzerEachtype
 
                     GeneTypeAnalyzerDotplot::output_dotplot( output_path + dotplot, ano_len_idx, anno_table_tail[ smp ], anno_mark[ smp ], sample_name );
                     GeneTypeAnalyzerTaildot::output_taildot( output_path + taildot, ano_len_idx, anno_mark[ smp ], taildot_obj.anno_tail_table[ smp ], sample_name );
-                    GeneTypeAnalyzerLendist::output_lendist( output_path + lendist, ano_len_idx, anno_table_tail[ smp ], anno_mark[ smp ], sample_name );
+                    GeneTypeAnalyzerLendist::output_lendist( output_path + lendist, ano_len_idx, anno_table_tail[ smp ], anno_table_trim[ smp ], anno_mark[ smp ], sample_name );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                     if( is_time_log ) std::cerr << "LenDist & DotPlot & TailDot" << smp << ": " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
