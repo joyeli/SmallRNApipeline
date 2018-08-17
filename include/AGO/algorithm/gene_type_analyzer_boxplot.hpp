@@ -238,6 +238,7 @@ class GeneTypeAnalyzerBoxPlot
             for( auto& raw_bed : bed_samples[ smp ].second )
             {
                 if( raw_bed.ppm_ < filter_ppm ) continue;
+                if( raw_bed.annotation_info_.empty() || raw_bed.annotation_info_[0].empty() ) continue;
                 for( int i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
                 {
                     if( raw_bed.annotation_info_[0][i] != "miRNA" &&
@@ -248,17 +249,17 @@ class GeneTypeAnalyzerBoxPlot
                     gene_name = raw_bed.annotation_info_[0][ i+1 ];
                     arm = GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 );
 
-                    gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                            + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                    // gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                    //         + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
 
                     mir = gene_name.substr( 0, raw_bed.annotation_info_[0][1].length() -3 );
-                    gene_name = gene_name + "_" + gene_seed;
+                    // gene_name = gene_name + "_" + gene_seed;
 
                     if( is_arms && token != arm + "p" ) continue;
                     if( is_lens && token != std::to_string( raw_bed.length_ )) continue;
 
-                    if( raw_bed.start_ < std::stoi( rnafolds[ mir ][1] )) continue;
-                    if( raw_bed.end_   > std::stoi( rnafolds[ mir ][2] )) continue;
+                    if( raw_bed.start_ < std::stoll( rnafolds[ mir ][1] ) + 1 ) continue;
+                    if( raw_bed.end_   > std::stoll( rnafolds[ mir ][2] ) + 1 ) continue;
 
                     if( entropies[ "5p"  ][ smp ].find( gene_name ) == entropies[ "5p"  ][ smp ].end() ) entropies[ "5p"  ][ smp ][ gene_name ] = 0.0;
                     if( entropies[ "mid" ][ smp ].find( gene_name ) == entropies[ "mid" ][ smp ].end() ) entropies[ "mid" ][ smp ][ gene_name ] = 0.0;
@@ -270,8 +271,8 @@ class GeneTypeAnalyzerBoxPlot
 
                     switch( raw_bed.strand_ )
                     {
-                        case '+' : strpos = raw_bed.start_ - ( std::stoi( rnafolds[ mir ][1] ) + 1 ); break;
-                        case '-' : strpos = ( std::stoi( rnafolds[ mir ][2] ) + 1 ) - raw_bed.end_  ; break;
+                        case '+' : strpos = raw_bed.start_ - ( std::stoll( rnafolds[ mir ][1] ) + 1 ); break;
+                        case '-' : strpos = ( std::stoll( rnafolds[ mir ][2] ) + 1 ) - raw_bed.end_  ; break;
                     }
 
                     annos.emplace( gene_name );
