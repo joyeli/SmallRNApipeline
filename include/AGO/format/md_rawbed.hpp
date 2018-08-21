@@ -51,6 +51,7 @@ struct MDRawBed : public RawBedBase
         if( this->tail_length_ > max_tail_len )
         {
             tail = "";
+            this->length_ = this->length_ - this->tail_length_;
             this->tail_length_ = (uint8_t)( tail.length() );
         }
     }
