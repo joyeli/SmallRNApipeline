@@ -197,6 +197,7 @@ class GeneTypeAnalyzerLendist
         output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
         output << "" << "\n";
         output << "        $ForceY = $_POST['ForceY'];" << "\n";
+        output << "        $Dvided = $_POST['Dvided'];" << "\n";
         output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $Trimmed = $_POST['Trimmed'];" << "\n";
         output << "        $PPMFilter = $_POST['PPMFilter'];" << "\n";
@@ -242,6 +243,7 @@ class GeneTypeAnalyzerLendist
             output << "" << "\n";
             output << "        echo \"</select>" << "\n";
             output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+            output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
             output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
             output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
@@ -274,6 +276,7 @@ class GeneTypeAnalyzerLendist
             output << "" << "\n";
             output << "        echo \"</select>" << "\n";
             output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+            output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
             output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
             output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
@@ -360,6 +363,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
@@ -392,6 +396,7 @@ class GeneTypeAnalyzerLendist
             output << "" << "\n";
             output << "        echo \"</select>" << "\n";
             output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+            output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
             output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
             output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
             output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
@@ -420,6 +425,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -494,6 +500,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -526,7 +533,18 @@ class GeneTypeAnalyzerLendist
         output << "            echo $ForceY;" << "\n";
         output << "" << "\n";
         output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
-        output << "        echo \"</select>" << "\n";
+        output << "" << "\n";
+        output << "#<!--================== Dvided ====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<input type=text name=Dvided size=3 value=';" << "\n";
+        output << "" << "\n";
+        output << "        if( $Dvided == '' || $Dvided == 1 )" << "\n";
+        output << "            echo 'Dvided';" << "\n";
+        output << "        else" << "\n";
+        output << "            echo $Dvided;" << "\n";
+        output << "" << "\n";
+        output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
+        output << "        echo \"" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -535,6 +553,9 @@ class GeneTypeAnalyzerLendist
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
         output << "            <input type='submit' value='Submit' /> " << "\n";
         output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "        if( $Dvided == ''&& $Dvided == 'Hight' && $Dvided == 1 )" << "\n";
+        output << "            $Dvided = 1;" << "\n";
         output << "" << "\n";
         
         if( !is_biotype && !isSeed )
@@ -576,7 +597,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        For( $i = 0; $i < Count( $Annotation_Keys ); $i++ )" << "\n";
         output << "        {" << "\n";
-        output << "            Fwrite( $Ftemp, \"\\t\".$Annotation_Array[ $Annotation_Keys[$i] ][5] );" << "\n";
+        output << "            Fwrite( $Ftemp, \"\\t\".( $Annotation_Array[ $Annotation_Keys[$i] ][5] / $Dvided ));" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        Fwrite( $Ftemp, \"\\n\" );" << "\n";
@@ -587,7 +608,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "            For( $i = 0; $i < Count( $Annotation_Keys ); $i++ )" << "\n";
         output << "            {" << "\n";
-        output << "                Fwrite( $Ftemp, \"\\t\".$Annotation_Array[ $Annotation_Keys[$i] ][$j-1] );" << "\n";
+        output << "                Fwrite( $Ftemp, \"\\t\".( $Annotation_Array[ $Annotation_Keys[$i] ][$j-1] / $Dvided ));" << "\n";
         output << "            }" << "\n";
         output << "" << "\n";
         output << "            Fwrite( $Ftemp, \"\\n\" );" << "\n";
