@@ -554,7 +554,7 @@ class GeneTypeAnalyzerLendist
         output << "            <input type='submit' value='Submit' /> " << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
-        output << "        if( $Dvided == ''&& $Dvided == 'Hight' && $Dvided == 1 )" << "\n";
+        output << "        if( $Dvided == '' || $Dvided == 'Dvided' || $Dvided == 1 )" << "\n";
         output << "            $Dvided = 1;" << "\n";
         output << "" << "\n";
         

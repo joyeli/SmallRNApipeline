@@ -345,17 +345,17 @@ class GeneTypeAnalyzerEachtype
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                     if( is_time_log ) std::cerr << "BoxPlot: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
                 }// );
+            }
 
-                { // must do after boxplot done
-                    std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+            { // must do after boxplot done
+                std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                    GeneTypeAnalyzerHisGram::output_hisgram_from_heter( output_path + hisgram );
-                    GeneTypeAnalyzerHisGram::output_hisgram_from_entro( output_path + hisgram );
-                    GeneTypeAnalyzerHisGram::output_hisgram_visualization( output_path + hisgram );
+                GeneTypeAnalyzerHisGram::output_hisgram_from_heter( output_path + hisgram );
+                GeneTypeAnalyzerHisGram::output_hisgram_from_entro( output_path + hisgram );
+                GeneTypeAnalyzerHisGram::output_hisgram_visualization( output_path + hisgram );
 
-                    std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
-                    if( is_time_log ) std::cerr << "HisGram: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
-                }
+                std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
+                if( is_time_log ) std::cerr << "HisGram: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
             }
 
             // parallel_pool.job_post([ &bed_samples, &biotype, &genome_table, &extend_refseq, &max_anno_merge_size, &webpage_update_only, this ] ()
