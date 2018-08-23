@@ -22,10 +22,9 @@ class GeneTypeAnalyzerBoxPlot
             const std::string& token = ""
             )
     {
-        std::vector< std::pair< 
-            std::map< std::string, std::map< std::size_t, double >>, // 5p
-            std::map< std::string, std::map< std::size_t, double >>  // 3p
-        >> hete_tables( bed_samples.size() );
+        std::vector< std::vector< 
+            std::map< std::string, std::map< std::size_t, double >> // 5p / 3p / tail
+        >> hete_tables( bed_samples.size(), std::vector< std::map< std::string, std::map< std::size_t, double >>>( 3 ));
 
         std::string arm;
         std::string gene_name;
@@ -35,6 +34,7 @@ class GeneTypeAnalyzerBoxPlot
 
         std::size_t* end_5p;
         std::size_t* end_3p;
+        std::size_t  tailed;
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
@@ -51,34 +51,41 @@ class GeneTypeAnalyzerBoxPlot
                     arm = GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 );
 
                     if( is_arms && token != arm + "p" ) continue;
-                    if( is_lens && token != std::to_string( raw_bed.length_ )) continue;
+                    if( is_lens && token != std::to_string( raw_bed.length_ - raw_bed.tail_length_ )) continue;
 
                     switch( raw_bed.strand_ )
                     {
                         case '+' :
                             end_5p = &raw_bed.start_;
                             end_3p = &raw_bed.end_;
+                            tailed = *end_3p + raw_bed.tail_length_;
                             break;
 
                         case '-' :
                             end_5p = &raw_bed.end_;
                             end_3p = &raw_bed.start_;
+                            tailed = *end_3p - raw_bed.tail_length_;
                             break;
                     }
 
-                    if( hete_tables[ smp ].first[ gene_name ].find( *end_5p ) == hete_tables[ smp ].first[ gene_name ].end() )
-                        hete_tables[ smp ].first[ gene_name ][ *end_5p ] = 0;
+                    if( hete_tables[ smp ][0][ gene_name ].find( *end_5p ) == hete_tables[ smp ][0][ gene_name ].end() )
+                        hete_tables[ smp ][0][ gene_name ][ *end_5p ] = 0;
 
-                    if( hete_tables[ smp ].second[ gene_name ].find( *end_3p ) == hete_tables[ smp ].second[ gene_name ].end() )
-                        hete_tables[ smp ].second[ gene_name ][ *end_3p ] = 0;
+                    if( hete_tables[ smp ][1][ gene_name ].find( *end_3p ) == hete_tables[ smp ][1][ gene_name ].end() )
+                        hete_tables[ smp ][1][ gene_name ][ *end_3p ] = 0;
 
-                    hete_tables[ smp ].first[ gene_name ][ *end_5p ] += raw_bed.ppm_;
-                    hete_tables[ smp ].second[ gene_name ][ *end_3p ] += raw_bed.ppm_;
+                    if( hete_tables[ smp ][2][ gene_name ].find(  tailed ) == hete_tables[ smp ][2][ gene_name ].end() )
+                        hete_tables[ smp ][2][ gene_name ][  tailed ] = 0;
+
+                    hete_tables[ smp ][0][ gene_name ][ *end_5p ] += raw_bed.ppm_;
+                    hete_tables[ smp ][1][ gene_name ][ *end_3p ] += raw_bed.ppm_;
+                    hete_tables[ smp ][2][ gene_name ][  tailed ] += raw_bed.ppm_;
                 }
             }
 
-            format_hete_table( hete_tables[ smp ].first );
-            format_hete_table( hete_tables[ smp ].second );
+            format_hete_table( hete_tables[ smp ][0] );
+            format_hete_table( hete_tables[ smp ][1] );
+            format_hete_table( hete_tables[ smp ][2] );
         }
 
         output_heterorgeneity( output_path, bed_samples, ano_len_idx, hete_tables, token );
@@ -156,9 +163,9 @@ class GeneTypeAnalyzerBoxPlot
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                if( hete_tables[ smp ].first[ anno ].find( 0 ) != hete_tables[ smp ].first[ anno ].end() )
+                if( hete_tables[ smp ][0][ anno ].find( 0 ) != hete_tables[ smp ][0][ anno ].end() )
                 {
-                    output << "\t" << hete_tables[ smp ].first[ anno ][0];
+                    output << "\t" << hete_tables[ smp ][0][ anno ][0];
                 }
                 else output << "\t0";
             }
@@ -176,9 +183,29 @@ class GeneTypeAnalyzerBoxPlot
 
             for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
             {
-                if( hete_tables[ smp ].second[ anno ].find( 0 ) != hete_tables[ smp ].second[ anno ].end() )
+                if( hete_tables[ smp ][1][ anno ].find( 0 ) != hete_tables[ smp ][1][ anno ].end() )
                 {
-                    output << "\t" << hete_tables[ smp ].second[ anno ][0];
+                    output << "\t" << hete_tables[ smp ][1][ anno ][0];
+                }
+                else output << "\t0";
+            }
+        }
+
+        output.close();
+
+        output.open( output_path + "Heterorgeneity_3p_tail.tsv" );
+        output << "Heterorgeneity_3p_tail" << ( token == "" ? "" : ( "_" + token ));
+
+        for( auto& smp  : bed_samples ) output << "\t" << smp.first;
+        for( auto& anno : anno_idx )
+        {
+            output << "\n" << anno;
+
+            for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+            {
+                if( hete_tables[ smp ][2][ anno ].find( 0 ) != hete_tables[ smp ][2][ anno ].end() )
+                {
+                    output << "\t" << hete_tables[ smp ][2][ anno ][0];
                 }
                 else output << "\t0";
             }
@@ -256,7 +283,7 @@ class GeneTypeAnalyzerBoxPlot
                     // gene_name = gene_name + "_" + gene_seed;
 
                     if( is_arms && token != arm + "p" ) continue;
-                    if( is_lens && token != std::to_string( raw_bed.length_ )) continue;
+                    if( is_lens && token != std::to_string( raw_bed.length_ - raw_bed.tail_length_ )) continue;
 
                     if( raw_bed.start_ < std::stoll( rnafolds[ mir ][1] ) + 1 ) continue;
                     if( raw_bed.end_   > std::stoll( rnafolds[ mir ][2] ) + 1 ) continue;
