@@ -154,10 +154,10 @@ class GeneTypeAnalyzerEachtype
             std::chrono::time_point< std::chrono::system_clock > make_table_start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
             GeneTypeAnalyzerTaildot taildot_obj;
-            GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table, filter_ppm, taildot_obj.anno_tail_table, taildot_obj.isom_tail_table, is_seed );
+            GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table, filter_ppm, taildot_obj.anno_tail_table, taildot_obj.isom_tail_table, token );
 
             GeneTypeAnalyzerSA_Plot sa_plot_obj;
-            GeneTypeAnalyzerSA_Plot::make_sa_plot_table( biotype, ano_len_idx, bed_samples, genome_table, filter_ppm, sa_plot_obj.anno_sa_table, is_seed );
+            GeneTypeAnalyzerSA_Plot::make_sa_plot_table( biotype, ano_len_idx, bed_samples, genome_table, filter_ppm, sa_plot_obj.anno_sa_table, token );
 
             std::chrono::time_point< std::chrono::system_clock > make_table_end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
             if( is_time_log ) std::cerr << "make_table: " << std::chrono::duration< double >( make_table_end_time - make_table_start_time ).count() << "\n";

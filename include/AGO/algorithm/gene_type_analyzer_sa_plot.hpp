@@ -34,7 +34,7 @@ class GeneTypeAnalyzerSA_Plot
             auto& genome_table,
             const std::size_t filter_ppm,
             std::vector< std::map< std::string, SA_Type >>& anno_sa_table,
-            const bool& isSeed = false
+            const std::string& token
             )
     {
         anno_sa_table.clear();
@@ -46,7 +46,7 @@ class GeneTypeAnalyzerSA_Plot
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             anno_sa_table.emplace_back( anno_map );
-            make_sa_counting_table( biotype, bed_samples[ smp ], anno_sa_table[ smp ], genome_table, filter_ppm, isSeed );
+            make_sa_counting_table( biotype, bed_samples[ smp ], anno_sa_table[ smp ], genome_table, filter_ppm, token );
             // debug( anno_sa_table[ smp ] );
             formation_sa_table( anno_sa_table[ smp ] );
         }
@@ -169,39 +169,49 @@ class GeneTypeAnalyzerSA_Plot
             std::map< std::string, SA_Type >& sa_table,
             auto& genome_table,
             const std::size_t filter_ppm,
-            const bool& isSeed = false
+            const std::string& token
             )
     {
+        bool is_seed = token == "Seed" ? true : false;
+        bool is_arms = token == "3p" || token == "5p" ? true : false;
+        bool is_lens = token != "" && !is_arms ? true : false;
+
         std::string gene_name;
         std::string gene_seed;
 
         std::string sequence;
         std::string tail_seq;
 
+        std::string arm;
         std::size_t tail;
 
         for( auto& raw_bed : bed_sample.second )
         {
             if( raw_bed.ppm_ < filter_ppm ) continue;
-            if( !raw_bed.annotation_info_.empty() && !raw_bed.annotation_info_[0].empty() )
+            if( raw_bed.annotation_info_.empty() || raw_bed.annotation_info_[0].empty() ) continue;
+            if( biotype == "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != "miRNA" && raw_bed.annotation_info_[0][0] != "mirtron" ) continue;
+            if( biotype != "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != biotype ) continue;
+
+            sequence = raw_bed.getReadSeq( genome_table );
+            tail_seq = raw_bed.getTail();
+
+            tail = GeneTypeAnalyzerCounting::which_tail( tail_seq );
+
+            for( std::size_t i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
             {
-                if( !check_biotype( raw_bed, biotype )) continue;
+                gene_name = raw_bed.annotation_info_[0][ i+1 ];
+                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                    + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
 
-                sequence = raw_bed.getReadSeq( genome_table );
-                tail_seq = raw_bed.getTail();
+                arm = GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 );
 
-                tail = GeneTypeAnalyzerCounting::which_tail( tail_seq );
+                if( is_arms && token != arm + "p" ) continue;
+                if( is_lens && token != std::to_string( raw_bed.length_ - raw_bed.tail_length_ )) continue;
 
-                for( std::size_t i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
-                {
-                    gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                            + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                gene_name = is_seed ? gene_seed : ( gene_name + "_" + gene_seed );
 
-                    gene_name = isSeed ? gene_seed : ( raw_bed.annotation_info_[0][ i+1 ] + "_" + gene_seed );
-
-                    if( sa_table.find( gene_name ) != sa_table.end() )
-                        insert_sa_table( sa_table.find( gene_name ), sequence, tail_seq, tail, raw_bed.ppm_, raw_bed.md_map, raw_bed.tc_set );
-                }
+                if( sa_table.find( gene_name ) != sa_table.end() )
+                    insert_sa_table( sa_table.find( gene_name ), sequence, tail_seq, tail, raw_bed.ppm_, raw_bed.md_map, raw_bed.tc_set );
             }
         }
     }

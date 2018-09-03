@@ -279,7 +279,7 @@ class GeneTypeAnalyzerBoxPlot
                     // gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
                     //         + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
 
-                    mir = gene_name.substr( 0, raw_bed.annotation_info_[0][1].length() -3 );
+                    mir = gene_name.substr( 0, raw_bed.annotation_info_[0][ i+1 ].length() -3 );
                     // gene_name = gene_name + "_" + gene_seed;
 
                     if( is_arms && token != arm + "p" ) continue;

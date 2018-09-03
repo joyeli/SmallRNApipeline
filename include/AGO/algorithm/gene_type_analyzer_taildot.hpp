@@ -23,9 +23,11 @@ class GeneTypeAnalyzerTaildot
             const std::size_t& filter_ppm,
             std::vector< std::map< std::string, std::vector< double >>>& anno_tail_table,
             std::vector< std::map< std::string, std::vector< double >>>& isom_tail_table,
-            const bool& isSeed = false
+            const std::string& token
             )
     {
+        bool isSeed = token == "Seed" ? true : false;
+
         anno_tail_table.clear();
         isom_tail_table.clear();
 
@@ -44,10 +46,10 @@ class GeneTypeAnalyzerTaildot
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             anno_tail_table.emplace_back( anno_map );
-            make_tail_counting_table( biotype, bed_samples[ smp ], anno_tail_table[ smp ], genome_table, filter_ppm, false, isSeed );
+            make_tail_counting_table( biotype, bed_samples[ smp ], anno_tail_table[ smp ], genome_table, filter_ppm, false, token );
 
             isom_tail_table.emplace_back( isom_map );
-            make_tail_counting_table( biotype, bed_samples[ smp ], isom_tail_table[ smp ], genome_table, filter_ppm, true, isSeed );
+            make_tail_counting_table( biotype, bed_samples[ smp ], isom_tail_table[ smp ], genome_table, filter_ppm, true, token );
         }
     }
 
@@ -57,15 +59,20 @@ class GeneTypeAnalyzerTaildot
             std::map< std::string, std::vector< double >>& tail_table,
             auto& genome_table,
             const std::size_t& filter_ppm,
-            bool is_isomir = false,
-            const bool& isSeed = false
+            bool is_isomir,
+            const std::string& token
             )
     {
+        bool is_seed = token == "Seed" ? true : false;
+        bool is_arms = token == "3p" || token == "5p" ? true : false;
+        bool is_lens = token != "" && !is_arms ? true : false;
+
         std::string gene_name;
         std::string gene_seed;
 
-        double length, sum;
+        std::string arm;
         std::size_t tail;
+        double length, sum;
 
         std::vector< double > anno_tailing_vec;
         std::map< double, double > lens_p;
@@ -77,42 +84,41 @@ class GeneTypeAnalyzerTaildot
         for( auto& raw_bed : bed_sample.second )
         {
             if( raw_bed.ppm_ < filter_ppm ) continue;
-            // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
+            if( raw_bed.annotation_info_.empty() || raw_bed.annotation_info_[0].empty() ) continue;
+            if( biotype == "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != "miRNA" && raw_bed.annotation_info_[0][0] != "mirtron" ) continue;
+            if( biotype != "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != biotype ) continue;
+            if( raw_bed.ppm_ < filter_ppm ) continue;
+
+            tail = GeneTypeAnalyzerCounting::which_tail( raw_bed.getTail() );
+            length = ( double )( raw_bed.tail_length_ );
+
+            for( std::size_t i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
             {
-                std::size_t i = 0; // do first priority
-                if( i < raw_bed.annotation_info_.size() && !raw_bed.annotation_info_[i].empty() )
+                gene_name = raw_bed.annotation_info_[0][ i+1 ];
+                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
+                    + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+
+                arm = GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 );
+
+                if( is_arms && token != arm + "p" ) continue;
+                if( is_lens && token != std::to_string( raw_bed.length_ - raw_bed.tail_length_ )) continue;
+
+                gene_name = is_seed ? gene_seed : ( gene_name + ( !is_isomir ? "" : ( "_" + gene_seed )));
+
+                if( anno_gmpm.find( gene_name ) == anno_gmpm.end() )
+                    anno_gmpm[ gene_name ] = std::make_pair( 0.0, 0.0 );
+
+                if( tail == 5 )
                 {
-                    if( raw_bed.annotation_info_[i][0] == biotype || ( biotype == "miRNA_mirtron" && ( raw_bed.annotation_info_[i][0] == "miRNA" || raw_bed.annotation_info_[i][0] == "mirtron" )))
-                    {
-                        tail = GeneTypeAnalyzerCounting::which_tail( raw_bed.getTail() );
-                        length = ( double )( raw_bed.tail_length_ );
-
-                        for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
-                        {
-                            gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                                    + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
-
-                            gene_name = isSeed ? gene_seed
-                                : ( raw_bed.annotation_info_[i][ j+1 ] + ( !is_isomir ? ""
-                                : ( "_" + gene_seed )));
-
-                            if( anno_gmpm.find( gene_name ) == anno_gmpm.end() )
-                                anno_gmpm[ gene_name ] = std::make_pair( 0.0, 0.0 );
-
-                            if( tail == 5 )
-                            {
-                                anno_gmpm[ gene_name ].first += raw_bed.ppm_;
-                                continue;
-                            }
-
-                            if( anno_temp[ gene_name ][ tail ].find( length ) == anno_temp[ gene_name ][ tail ].end() )
-                                anno_temp[ gene_name ][ tail ][ length ] = 0.0;
-
-                            anno_temp[ gene_name ][ tail ][ length ] += raw_bed.ppm_;
-                            anno_gmpm[ gene_name ].second += raw_bed.ppm_;
-                        }
-                    }
+                    anno_gmpm[ gene_name ].first += raw_bed.ppm_;
+                    continue;
                 }
+
+                if( anno_temp[ gene_name ][ tail ].find( length ) == anno_temp[ gene_name ][ tail ].end() )
+                    anno_temp[ gene_name ][ tail ][ length ] = 0.0;
+
+                anno_temp[ gene_name ][ tail ][ length ] += raw_bed.ppm_;
+                anno_gmpm[ gene_name ].second += raw_bed.ppm_;
             }
         }
 

@@ -92,15 +92,15 @@ class GeneTypeAnalyzerHisGram
         return ( bin < 0 ? ( res - tmp ) : res );
     }
 
-    static std::map< double, std::size_t > make_hisgram( auto& dists, double bin = 0.025, int shift = 1000 )
+    static std::map< double, std::pair< int, int >> make_hisgram( auto& dists, double bin = 0.025, int shift = 1000 )
     {
         int min = 0;
         int max = 0;
         int tmp = 0;
 
         bin = bin * shift;
-        std::map< int, std::size_t > hisgrams_temp;
-        std::map< double, std::size_t > hisgrams;
+        std::map< int,    std::pair< int, int >> hisgrams_temp;
+        std::map< double, std::pair< int, int >> hisgrams;
 
         for( auto dist : dists )
         {
@@ -109,20 +109,22 @@ class GeneTypeAnalyzerHisGram
             if( tmp > max ) max = tmp;
         }
 
+        if( std::abs( min ) > max )
+            max = std::abs( min );
+
         min = get_bin( min, bin );
         max = get_bin( max, bin );
 
-        for( int i = min; i <= max; i += bin )
-        {
-            if( i > ((int)-bin) && i < (int)bin ) i = 0;
-            hisgrams_temp[i] = 0;
-        }
+        for( std::size_t i = bin; i <= max; i += bin )
+            hisgrams_temp[i] = { 0, 0 };
 
         for( auto& dist : dists )
         {
             tmp = dist.second * shift;
             tmp = get_bin( tmp, bin );
-            hisgrams_temp[ tmp ]++;
+
+            if( tmp > 0 ) hisgrams_temp[ tmp ].first++;
+            if( tmp < 0 ) hisgrams_temp[ std::abs( tmp ) ].second--;
         }
 
         for( auto& histram : hisgrams_temp )
@@ -138,7 +140,7 @@ class GeneTypeAnalyzerHisGram
             return;
 
         std::map< std::string, double > dists;
-        std::map< double, std::size_t > hisgrams;
+        std::map< double, std::pair< int, int >> hisgrams;
         std::map< std::size_t, std::string > headers;
         std::map< std::string, std::map< std::string, std::vector< double >>> tables;
 
@@ -169,10 +171,10 @@ class GeneTypeAnalyzerHisGram
                 hisgrams = make_hisgram( dists );
 
                 output.open( output_name + "Heterorgeneity_" + table.first + "_" + s1.second + "_" + s2.second + ".tsv" );
-                output << "Bin\t" << s1.second << "-" << s2.second;
+                output << s1.second << "-" << s2.second << "\t+\t-";
 
                 for( auto& hisgram : hisgrams )
-                    output << "\n" << hisgram.first << "\t" << hisgram.second;
+                    output << "\n" << hisgram.first << "\t" << hisgram.second.first << "\t" << hisgram.second.second;
 
                 output.close();
                 hisgrams.clear();
@@ -190,7 +192,7 @@ class GeneTypeAnalyzerHisGram
             return;
 
         std::map< std::string, double > dists;
-        std::map< double, std::size_t > hisgrams;
+        std::map< double, std::pair< int, int >> hisgrams;
         std::map< std::size_t, std::string > headers;
         std::map< std::string, std::map< std::string, std::vector< double >>> tables;
 
@@ -223,10 +225,10 @@ class GeneTypeAnalyzerHisGram
                 hisgrams = make_hisgram( dists );
 
                 output.open( output_name + "Entropy_" + table.first + "_" + s1.second + "_" + s2.second + ".tsv" );
-                output << "Bin\t" << s1.second << "-" << s2.second;
+                output << s1.second << "-" << s2.second << "\t+\t-";
 
                 for( auto& hisgram : hisgrams )
-                    output << "\n" << hisgram.first << "\t" << hisgram.second;
+                    output << "\n" << hisgram.first << "\t" << hisgram.second.first << "\t-" << hisgram.second.second;
 
                 output.close();
                 hisgrams.clear();
