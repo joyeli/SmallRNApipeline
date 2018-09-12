@@ -48,6 +48,10 @@ class GeneTypeAnalyzer
     std::string heatbub_js;
     std::string rnafold_path;
 
+    std::string targetscan_path;
+    std::string species_code;
+    double pct_cutoff;
+
     void emplace_list( const bpt::ptree& p, const std::string& tag, std::vector< std::string >& list )
     {
         std::size_t i = 0;
@@ -114,6 +118,9 @@ class GeneTypeAnalyzer
         node_path  = p.get_optional< std::string >( "node_path"  ).value_or( "/home/joyel/bin/node" );
         heatbub_js = p.get_optional< std::string >( "heatbub_js" ).value_or( "/home/joyel/WorkDir/AgoD3/heatmap_bubble_plot/heatmap_bubble_plot.js" );
         rnafold_path = p.get_optional< std::string >( "rnafold_path"  ).value_or( "" );
+        targetscan_path = p.get_optional< std::string >( "targetscan_path" ).value_or( "" );
+        species_code    = p.get_optional< std::string >( "species_code"    ).value_or( "" );
+        pct_cutoff      = p.get_optional< double      >( "pct_cutoff"      ).value_or( 0  );
 
         if( p.get_child_optional( "biotype_list"  )) emplace_list( p, "biotype_list", biotype_list );
         if( p.get_child_optional( "analysis_list" )) emplace_list( p, "analysis_list", analysis_list );
@@ -358,6 +365,9 @@ class GeneTypeAnalyzer
                 , max_anno_merge_size
                 , webpage_update_only
                 , rnafold_path
+                , targetscan_path
+                , species_code
+                , pct_cutoff
                 , token
                 );
     }

@@ -113,6 +113,9 @@ class GeneTypeAnalyzerFiltering
         {
             smp_parallel_pool.job_post( [ smp, &run_filter, &bed_samples, &biotype_list, &is_keep_other_biotype, &max_anno_merge_size, &biotype_set, this ] () mutable
             {
+                bool is_mirbase = false;
+                std::string mirbase;
+
                 std::vector< bool > temp;
                 std::vector< std::vector< std::string >> anno_info_temp;
                 std::map< std::string, std::vector< std::string >> biotype_map;
@@ -126,6 +129,7 @@ class GeneTypeAnalyzerFiltering
                 {
                     biotype_map.clear();
                     anno_info_temp.clear();
+                    is_mirbase = false;
 
                     anno_rawbed = run_filter.Filter( anno_rawbed );
 
@@ -142,6 +146,12 @@ class GeneTypeAnalyzerFiltering
                         {
                             biotype_map[ info[i] ].emplace_back( info[ i   ] );
                             biotype_map[ info[i] ].emplace_back( info[ i+1 ] );
+
+                            if( info[ i ] == "mirbase" )
+                            {
+                                is_mirbase = true;
+                                mirbase = info[ i+1 ];
+                            }
                         }
                     }
 
@@ -162,6 +172,10 @@ class GeneTypeAnalyzerFiltering
                     }
 
                     anno_rawbed.annotation_info_ = anno_info_temp;
+
+                    if( is_mirbase )
+                        anno_rawbed.annotation_info_.emplace_back(
+                                std::vector< std::string >({ "mirbase", mirbase }));
                 }
 
                 for( auto& unannos : un_annotated_checking_map )

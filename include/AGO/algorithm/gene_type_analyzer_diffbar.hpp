@@ -9,8 +9,84 @@ class GeneTypeAnalyzerDiffBar
 {
   public:
 
+    using TargetScanType = std::map< std::string, std::map< std::string, std::set< std::string >>>;
+    //                                mir_name                mir_seed               targets
+
     GeneTypeAnalyzerDiffBar()
     {}
+
+    static std::map< std::string, std::set< std::string >> get_anno_mapping( auto& bed_samples, auto& filter_ppm )
+    {
+        std::map< std::string, std::set< std::string >> anno_mapping;
+
+        std::string mirbase = "";
+        std::string gencode = "";
+
+        for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
+        {
+            for( auto& raw_bed : bed_samples[ smp ].second )
+            {
+                if( raw_bed.ppm_ < filter_ppm ) continue;
+                if( raw_bed.annotation_info_.empty() || raw_bed.annotation_info_[0].empty() ) continue;
+                if( raw_bed.annotation_info_[0][0] != "miRNA" ) continue;
+
+                for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); i++ )
+                    for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
+                        if( raw_bed.annotation_info_[i][j] == "mirbase" )
+                            mirbase = raw_bed.annotation_info_[i][ j+1 ];
+
+                if( mirbase == "" ) continue;
+
+                gencode = raw_bed.annotation_info_[0][1];
+                anno_mapping[ mirbase ].emplace( gencode );
+
+                mirbase = "";
+            }
+        }
+
+        return anno_mapping;
+    }
+
+    static std::string seed_u2t( const std::string& seed )
+    {
+        std::string res;
+        for( auto& s : seed )
+            if( s == 'U' )
+                res += 'T';
+            else
+                res += s;
+        return res;
+    }
+
+    static TargetScanType get_targetscan( auto& bed_samples, auto& targetscan_path, auto& species_code, auto& pct_cutoff, auto& filter_ppm )
+    {
+        TargetScanType targetscan;
+        std::map< std::string, std::set< std::string >> anno_mapping = get_anno_mapping( bed_samples, filter_ppm );
+
+        std::string line;
+        std::string seed;
+
+        std::vector< std::string > split;
+        std::ifstream infile( targetscan_path );
+
+        while( std::getline( infile, line ))
+        {
+            if( line.substr( 0, 4 ) != "ENST" ) continue;
+            boost::iter_split( split, line, boost::algorithm::first_finder( "\t" ));
+
+            if( species_code != "" && split[13].substr( 0, 3 ) != species_code ) continue;
+            if( pct_cutoff != 0 && split[16] == "NULL" ) continue;
+            if( pct_cutoff != 0 && std::stod( split[16] ) < pct_cutoff ) continue;
+            if( anno_mapping.find( split[13] ) == anno_mapping.end() ) continue;
+
+            seed = seed_u2t( split[2] );
+
+            for( auto& gencode : anno_mapping[ split[13] ])
+                targetscan[ gencode ][ seed ].emplace( split[1] );
+        }
+
+        return targetscan;
+    }
 
     static std::vector< std::vector< std::pair< std::size_t, std::string >>>
         get_smp_compare( const std::vector< BedSampleType >& bed_samples )
@@ -154,6 +230,7 @@ class GeneTypeAnalyzerDiffBar
             const std::vector< BedSampleType >& bed_samples,
             const AnnoLengthIndexType& ano_len_idx,
             std::vector< std::vector< CountingTableType >>& anno_table_tail_isomir,
+            TargetScanType& targetscan,
             const bool& is_isomir = true
             )
     {
@@ -278,12 +355,21 @@ class GeneTypeAnalyzerDiffBar
             output.close();
         }
 
-        output_preference( output_path, is_isomir, diffs );
+        output_preference( output_path, is_isomir, targetscan, diffs );
+    }
+
+    static std::set< std::string > get_target( auto& targetscan, auto& mir )
+    {
+        std::vector< std::string > split;
+        boost::iter_split( split, mir, boost::algorithm::first_finder( "|" ));
+        boost::iter_split( split, split[0], boost::algorithm::first_finder( "_" ));
+        return targetscan[ split[0] ][ split[1] ];
     }
 
     static void output_preference(
             const std::string& output_path,
             const bool& is_isomir,
+            auto& targetscan,
             auto& diffs
             )
     {
@@ -306,11 +392,18 @@ class GeneTypeAnalyzerDiffBar
         std::size_t smpidx = 0;
         std::set< std::string > samples;
 
-        std::ofstream out_unilike;
-        std::ofstream out_dislike;
+        std::map< std::string, std::map< std::string, std::set< std::string >>> mir_unilike;
+        std::map< std::string, std::map< std::string, std::set< std::string >>> mir_dislike;
+        //          type                    mir                     samples
 
-        std::map< std::string, std::set< std::string >> mir_unilike;
-        std::map< std::string, std::set< std::string >> mir_dislike;
+        std::map< std::string, std::map< std::string, std::set< std::string >>> set_unitgsc;
+        std::map< std::string, std::map< std::string, std::set< std::string >>> set_distgsc;
+        
+        std::map< std::string, std::map< std::string, std::ofstream >> out_unilike;
+        std::map< std::string, std::map< std::string, std::ofstream >> out_dislike;
+        //          type                    sample      ofstream
+        std::map< std::string, std::map< std::string, std::ofstream >> out_unitgsc;
+        std::map< std::string, std::map< std::string, std::ofstream >> out_distgsc;
 
         for( auto& smp : diffs )
         {
@@ -320,11 +413,19 @@ class GeneTypeAnalyzerDiffBar
 
         for( auto& smp : samples ) for( auto& type : types )
         {
-            out_unilike.open( output_path + "../Preference/" + type.second + smp + "_UniLike" + ( is_isomir ? "-isomiRs" : "" ) + ".text" );
-            out_dislike.open( output_path + "../Preference/" + type.second + smp + "_DisLike" + ( is_isomir ? "-isomiRs" : "" ) + ".text" );
+            out_unilike[ type.second ][ smp ].open( output_path + "../Preference/" + type.second + smp + "_UniLike" + ( is_isomir ? "-isomiRs" : "" ) + ".text" );
+            out_dislike[ type.second ][ smp ].open( output_path + "../Preference/" + type.second + smp + "_DisLike" + ( is_isomir ? "-isomiRs" : "" ) + ".text" );
+
+            if( !targetscan.empty() && is_isomir )
+            {
+                out_unitgsc[ type.second ][ smp ].open( output_path + "../Preference/" + type.second + smp + "_UniLike-isomiRs_target.text" );
+                out_distgsc[ type.second ][ smp ].open( output_path + "../Preference/" + type.second + smp + "_DisLike-isomiRs_target.text" );
+            }
 
             for( auto& compare : diffs )
             {
+                smpidx = 0;
+
                 if( compare.first.first  == smp ) smpidx = 1;
                 if( compare.first.second == smp ) smpidx = 2;
 
@@ -335,23 +436,63 @@ class GeneTypeAnalyzerDiffBar
                     if( mir.second.second > 0.05 ) continue;
                     if( mir.second.first < 2 && mir.second.first > 0.5 ) continue;
 
-                    if( smpidx == 1 && mir.second.first >= 2   ) mir_unilike[ mir.first ].emplace( compare.first.second );
-                    if( smpidx == 1 && mir.second.first <= 0.5 ) mir_dislike[ mir.first ].emplace( compare.first.second );
-                    if( smpidx == 2 && mir.second.first >= 2   ) mir_dislike[ mir.first ].emplace( compare.first.first  );
-                    if( smpidx == 2 && mir.second.first <= 0.5 ) mir_unilike[ mir.first ].emplace( compare.first.first  );
+                    if( smpidx == 1 && mir.second.first >= 2   ) mir_unilike[ type.second ][ mir.first ].emplace( compare.first.second );
+                    if( smpidx == 1 && mir.second.first <= 0.5 ) mir_dislike[ type.second ][ mir.first ].emplace( compare.first.second );
+                    if( smpidx == 2 && mir.second.first >= 2   ) mir_dislike[ type.second ][ mir.first ].emplace( compare.first.first  );
+                    if( smpidx == 2 && mir.second.first <= 0.5 ) mir_unilike[ type.second ][ mir.first ].emplace( compare.first.first  );
                 }
             }
+        }
 
-            for( auto& mir : mir_unilike ) if( mir.second.size() == samples.size() -1 ) out_unilike << mir.first << "\n";
-            for( auto& mir : mir_dislike ) if( mir.second.size() == samples.size() -1 ) out_dislike << mir.first << "\n";
+        for( auto& type : mir_unilike )
+            for( auto& mir : type.second )
+                if( mir.second.size() == samples.size() -1 )
+                    for( auto& smp : samples )
+                        if( mir.second.find( smp ) == mir.second.end() )
+                        {
+                            out_unilike[ type.first ][ smp ] << mir.first << "\n";
 
-            mir_unilike.clear();
-            mir_dislike.clear();
+                            if( !targetscan.empty() && is_isomir )
+                                for( auto& target : get_target( targetscan, mir.first ))
+                                    set_unitgsc[ type.first ][ smp ].emplace( target );
+                        }
 
-            out_unilike.close();
-            out_dislike.close();
+        for( auto& type : mir_dislike )
+            for( auto& mir : type.second )
+                if( mir.second.size() == samples.size() -1 )
+                    for( auto& smp : samples )
+                        if( mir.second.find( smp ) == mir.second.end() )
+                        {
+                            out_dislike[ type.first ][ smp ] << mir.first << "\n";
 
-            smpidx = 0;
+                            if( !targetscan.empty() && is_isomir )
+                                for( auto& target : get_target( targetscan, mir.first ))
+                                    set_distgsc[ type.first ][ smp ].emplace( target );
+                        }
+
+        if( !targetscan.empty() && is_isomir )
+        {
+            for( auto& type : set_unitgsc )
+                for( auto& smp : type.second )
+                    for( auto& target : smp.second )
+                        out_unitgsc[ type.first ][ smp.first ] << target << "\n";
+
+            for( auto& type : set_distgsc )
+                for( auto& smp : type.second )
+                    for( auto& target : smp.second )
+                        out_distgsc[ type.first ][ smp.first ] << target << "\n";
+        }
+
+        for( auto& smp : samples ) for( auto& type : types )
+        {
+            out_unilike[ type.second ][ smp ].close();
+            out_dislike[ type.second ][ smp ].close();
+
+            if( !targetscan.empty() && is_isomir )
+            {
+                out_unitgsc[ type.second ][ smp ].close();
+                out_distgsc[ type.second ][ smp ].close();
+            }
         }
     }
 

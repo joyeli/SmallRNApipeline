@@ -94,6 +94,9 @@ class GeneTypeAnalyzerEachtype
             const std::size_t& max_anno_merge_size,
             const bool& webpage_update_only,
             const std::string& rnafold_path,
+            const std::string& targetscan_path,
+            const std::string& species_code,
+            const double& pct_cutoff,
             const std::string& token
             )
         : is_time_log( false )
@@ -122,6 +125,12 @@ class GeneTypeAnalyzerEachtype
         , difference( "Difference/" )
     {
         bool is_seed = token == "Seed" ? true : false;
+
+        GeneTypeAnalyzerDiffBar::TargetScanType targetscan = (
+                !is_seed && biotype == "miRNA" && targetscan_path != ""
+                ? GeneTypeAnalyzerDiffBar::get_targetscan( bed_samples, targetscan_path, species_code, pct_cutoff, filter_ppm )
+                : GeneTypeAnalyzerDiffBar::TargetScanType()
+                );
 
         if( !webpage_update_only )
         {
@@ -257,7 +266,7 @@ class GeneTypeAnalyzerEachtype
             {
                 std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                GeneTypeAnalyzerDiffBar::output_loading_differential( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, false );
+                GeneTypeAnalyzerDiffBar::output_loading_differential( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, targetscan, false );
 
                 std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                 if( is_time_log ) std::cerr << "Differential: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
@@ -316,7 +325,7 @@ class GeneTypeAnalyzerEachtype
                 {
                     std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                    GeneTypeAnalyzerDiffBar::output_loading_differential( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, true );
+                    GeneTypeAnalyzerDiffBar::output_loading_differential( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, targetscan, true );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
                     if( is_time_log ) std::cerr << "Differential_isomirs: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
