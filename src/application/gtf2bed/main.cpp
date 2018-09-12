@@ -14,6 +14,41 @@ std::vector< std::string > explode( const std::string& in, const std::string& sp
     return content;
 }
 
+std::vector< std::vector< std::string >> read_gff3( const std::string& anno )
+{
+    std::fstream file( anno, std::ios::in );
+    std::string line;
+
+    std::vector< std::vector< std::string >> bed_vec;
+    std::vector< std::string > split_vec;
+
+    std::vector< std::string > split_name_vec;
+    std::vector< std::string > split_name;
+
+    while( std::getline( file, line ))
+    {
+        if( line.at(0) == '#' ) continue;
+        split_vec = explode( line, "\t" );
+
+        if( split_vec[2] != "miRNA" ) continue;
+
+        split_name_vec = explode( split_vec[8], "Name=" );
+        split_name     = explode( split_name_vec[1], ";" );
+
+        bed_vec.emplace_back( std::vector< std::string >{
+                  split_vec[0]
+                , std::to_string( std::stol( split_vec[3] ) -1 )
+                , split_vec[4]
+                , split_vec[6]
+                , "mirbase"
+                , split_name[0]
+                });
+    }
+
+    file.close();
+    return bed_vec;
+}
+
 std::vector< std::vector< std::string >> read_gtf( const std::string& anno, const bool& main_annotaion = false )
 {
     std::fstream file( anno, std::ios::in );
@@ -122,6 +157,7 @@ std::map< std::string, std::string > get_options( int& argc, char** argv )
         ( "trna,t", boost::program_options::value< std::string >()->default_value(""),"Set input tRNA gtf annotation file from GenCode" )
         ( "plya,p", boost::program_options::value< std::string >()->default_value(""),"Set input polyA gtf annotation file from GenCode" )
         ( "sudo,s", boost::program_options::value< std::string >()->default_value(""),"Set input pseudogene gtf annotation file from GenCode" )
+        ( "mbse,b", boost::program_options::value< std::string >()->default_value(""),"Set input mirbase gff3 annotation file from MirBase" )
         ;
     try {
         boost::program_options::store( boost::program_options::parse_command_line( argc, argv, options ), op );
@@ -154,6 +190,7 @@ int main( int argc, char** argv )
     auto& trna = args[ "trna" ];
     auto& plya = args[ "plya" ];
     auto& sudo = args[ "sudo" ];
+    auto& mbse = args[ "mbse" ];
 
     std::vector< std::string > trna_check;
     std::vector< std::vector< std::string >> bed_vec;
@@ -223,6 +260,13 @@ int main( int argc, char** argv )
     if( sudo != "" )
     {
         anno_bed_vec = read_gtf( sudo );
+        bed_vec.insert( bed_vec.end(), anno_bed_vec.begin(), anno_bed_vec.end() );
+        anno_bed_vec.clear();
+    }
+
+    if( mbse != "" )
+    {
+        anno_bed_vec = read_gff3( mbse );
         bed_vec.insert( bed_vec.end(), anno_bed_vec.begin(), anno_bed_vec.end() );
         anno_bed_vec.clear();
     }
