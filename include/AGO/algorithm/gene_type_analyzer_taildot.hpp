@@ -72,10 +72,9 @@ class GeneTypeAnalyzerTaildot
 
         std::string arm;
         std::size_t tail;
-        double length, sum;
+        double length;
 
         std::vector< double > anno_tailing_vec;
-        std::map< double, double > lens_p;
 
         std::map< std::string, std::pair< double, double >> anno_gmpm;
         std::map< std::string, std::map< std::size_t, std::map< double, double >>> anno_temp;
@@ -124,24 +123,12 @@ class GeneTypeAnalyzerTaildot
 
         for( auto& anno : anno_gmpm )
         {
-            sum = 0.0;
             length = 0.0;
-
-            lens_p.clear();
             anno_tailing_vec = std::vector< double >( 8, 0.0 );
 
             for( auto& tail : anno_temp[ anno.first ] ) for( auto& len : tail.second )
             {
-                if( lens_p.find( len.first ) == lens_p.end() )
-                    lens_p[ len.first ] = 0;
-
-                lens_p[ len.first ] += len.second;
-                sum += len.second;
-            }
-
-            for( auto& tail : anno_temp[ anno.first ] ) for( auto& len : tail.second )
-            {
-                anno_tailing_vec[ tail.first + 3 ] += len.second * ( lens_p[ len.first ] / sum ); 
+                anno_tailing_vec[ tail.first + 3 ] += len.second; 
                 len.second = len.second / anno.second.second;
                 length += len.first * len.second;
             }

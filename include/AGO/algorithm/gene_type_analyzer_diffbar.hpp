@@ -82,7 +82,7 @@ class GeneTypeAnalyzerDiffBar
             seed = seed_u2t( split[2] );
 
             for( auto& gencode : anno_mapping[ split[13] ])
-                targetscan[ gencode ][ seed ].emplace( split[1] );
+                targetscan[ gencode ][ seed ].emplace( split[1] + "\t" + split[16] );
         }
 
         return targetscan;

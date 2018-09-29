@@ -362,6 +362,7 @@ class GeneTypeAnalyzer
                 , extend_merge
                 , extend_refseq
                 , filter_ppm
+                , sudo_count
                 , max_anno_merge_size
                 , webpage_update_only
                 , rnafold_path

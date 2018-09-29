@@ -18,6 +18,7 @@
 #include <AGO/algorithm/gene_type_analyzer_hisgram.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
 #include <AGO/algorithm/gene_type_analyzer_diffbar.hpp>
+#include <AGO/algorithm/gene_type_analyzer_diffarm.hpp>
 #include <AGO/algorithm/gene_type_analyzer_debug.hpp>
 #include <chrono>
 
@@ -46,6 +47,7 @@ class GeneTypeAnalyzerEachtype
     std::string boxplot;
     std::string hisgram;
     std::string diffbar;
+    std::string diffarm;
     std::string difference;
 
   public:
@@ -70,6 +72,7 @@ class GeneTypeAnalyzerEachtype
         , boxplot( "BoxPlot/" )
         , hisgram( "HisGram/" )
         , diffbar( "DiffBar/" )
+        , diffarm( "DiffArm/" )
         , difference( "Difference/" )
     {}
 
@@ -91,6 +94,7 @@ class GeneTypeAnalyzerEachtype
             const std::size_t& extend_merge,
             const std::size_t& extend_refseq,
             const std::size_t& filter_ppm,
+            const std::size_t& sudo_count,
             const std::size_t& max_anno_merge_size,
             const bool& webpage_update_only,
             const std::string& rnafold_path,
@@ -122,9 +126,11 @@ class GeneTypeAnalyzerEachtype
         , boxplot( "BoxPlot/" )
         , hisgram( "HisGram/" )
         , diffbar( "DiffBar/" )
+        , diffarm( "DiffArm/" )
         , difference( "Difference/" )
     {
         bool is_seed = token == "Seed" ? true : false;
+        bool is_all = token == "" ? true : false;
 
         GeneTypeAnalyzerDiffBar::TargetScanType targetscan = (
                 !is_seed && biotype == "miRNA" && targetscan_path != ""
@@ -558,11 +564,19 @@ class GeneTypeAnalyzerEachtype
             //     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
             //     if( is_time_log ) std::cerr << "output_arms_difference Tailing: " << std::chrono::duration< double >( end_time - start_time ).count() << "\n";
             // });
+
         }
 
         // parallel_pool.flush_pool();
 
         GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, biotype, is_seed );
+
+        if( is_all && ( biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron" ))
+        {
+            boost::filesystem::create_directory( boost::filesystem::path( output_path + diffarm ));
+            GeneTypeAnalyzerDiffarm::output_diffarm_visualization( output_path + diffarm );
+            GeneTypeAnalyzerDiffarm::get_diffarm( output_path + diffarm );
+        }
     }
 };
 
