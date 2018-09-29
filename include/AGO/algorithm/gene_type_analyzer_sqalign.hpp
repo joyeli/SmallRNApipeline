@@ -2007,7 +2007,7 @@ class GeneTypeAnalyzerSqalign
         output << "                            'z-index': '-1'" << "\n";
         output << "                            });" << "\n";
         output << "" << "\n";
-        output << "                        $( '#expr' + idx ).append( \\\"<div id='expr\\\" + idx + \\\"T'></div>\\\" );" << "\n";
+        output << "                        $( '#expr' + idx ).append( \\\"<div id='expr\\\" + idx + \\\"U'></div>\\\" );" << "\n";
         output << "                        $( '#expr' + idx ).append( \\\"<div id='expr\\\" + idx + \\\"G'></div>\\\" );" << "\n";
         output << "                        $( '#expr' + idx ).append( \\\"<div id='expr\\\" + idx + \\\"C'></div>\\\" );" << "\n";
         output << "                        $( '#expr' + idx ).append( \\\"<div id='expr\\\" + idx + \\\"A'></div>\\\" );" << "\n";
