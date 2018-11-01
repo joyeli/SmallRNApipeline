@@ -280,8 +280,8 @@ class GeneTypeAnalyzerBubplot
 
         switch( std::get<3>( range ))
         {
-            case '+' : read_seq = genome_table[ std::get<0>( range )].substr( std::get<1>( range )   , std::get<4>( range ) - std::get<1>( range ) -1 ); break;
-            case '-' : read_seq = genome_table[ std::get<0>( range )].substr( std::get<4>( range ) -1, std::get<2>( range ) - std::get<4>( range ) -1 ); break;
+            case '+' : read_seq = GeneTypeAnalyzerCounting::seqT2U( genome_table[ std::get<0>( range )].substr( std::get<1>( range )   , std::get<4>( range ) - std::get<1>( range ) -1 )); break;
+            case '-' : read_seq = GeneTypeAnalyzerCounting::seqT2U( genome_table[ std::get<0>( range )].substr( std::get<4>( range ) -1, std::get<2>( range ) - std::get<4>( range ) -1 )); break;
         }
 
 		std::transform( read_seq.begin(), read_seq.end(), read_seq.begin(), ::toupper );
@@ -298,8 +298,8 @@ class GeneTypeAnalyzerBubplot
 	static char complement( char c )
 	{
 		switch (c) {
-			case 'A': c = 'T'; break;
-			case 'T': c = 'A'; break;
+			case 'A': c = 'U'; break;
+			case 'U': c = 'A'; break;
 			case 'C': c = 'G'; break;
 			case 'G': c = 'C'; break;
 		}
@@ -448,7 +448,7 @@ class GeneTypeAnalyzerBubplot
         output << "            echo '<select name=GMPMT_Types onchange=this.form.submit();>';" << "\n";
         output << "            echo \"<option value='' \"; if($GMPMT_Types=='') echo 'selected'; echo '>Types</option>';" << "\n";
         output << "" << "\n";
-        output << "            $GMPMT_List = array('GMPM', 'GM', 'PM', 'A_Tail', 'C_Tail', 'G_Tail', 'T_Tail', 'Other_Tail');" << "\n";
+        output << "            $GMPMT_List = array('GMPM', 'GM', 'PM', 'A_Tail', 'C_Tail', 'G_Tail', 'U_Tail', 'Other_Tail');" << "\n";
         output << "" << "\n";
         output << "            For( $i = 0; $i < Count( $GMPMT_List ); ++$i )" << "\n";
         output << "            {" << "\n";

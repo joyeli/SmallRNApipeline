@@ -21,7 +21,7 @@ class GeneTypeAnalyzerLendist
             )
     {
         std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
-        output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\tGM";
+        output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tU_Tail\tOther_Tail\tGM";
 
         for( auto& anno : ano_len_idx.first )
         {
@@ -56,7 +56,7 @@ class GeneTypeAnalyzerLendist
             )
     {
         std::ofstream output( output_name + sample_name + "-trimmed.tsv" );
-        output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\tGM";
+        output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tU_Tail\tOther_Tail\tGM";
 
         for( auto& anno : ano_len_idx.first )
         {
@@ -92,7 +92,7 @@ class GeneTypeAnalyzerLendist
             )
     {
         std::ofstream output( output_name + sample_name + ".tsv" );
-        output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\tGM";
+        output << "Annotation\tA_Tail\tC_Tail\tG_Tail\tU_Tail\tOther_Tail\tGM";
 
         std::vector< std::string > split;
         std::set< std::string > anno_mark_set;
@@ -648,7 +648,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \"                .width(width)" << "\n";
         output << "                            .height(height)" << "\n";
-        output << "                            .color( ['#000000', '#FF0000', '#0000FF', '#FFBF00', '#088A08', '#6E6E6E'])" << "\n";
+        output << "                            .color( ['#000000', '#088A08', '#FFBF00', '#0000FF', '#FF0000', '#6E6E6E'])" << "\n";
         output << "                            .stacked(true);" << "\n";
         output << "        " << "\n";
         output << "                        var svg = d3.select('#bar').attr('height',height*2).datum(data);" << "\n";

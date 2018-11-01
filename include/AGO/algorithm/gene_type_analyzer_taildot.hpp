@@ -18,11 +18,14 @@ class GeneTypeAnalyzerTaildot
     static void make_taildot_table(
             const std::string& biotype,
             const AnnoLengthIndexType& ano_len_idx,
+            auto& quantiled_ppm,
             std::vector< BedSampleType >& bed_samples,
             auto& genome_table,
             const std::size_t& filter_ppm,
             std::vector< std::map< std::string, std::vector< double >>>& anno_tail_table,
             std::vector< std::map< std::string, std::vector< double >>>& isom_tail_table,
+            std::vector< std::map< std::string, std::tuple< double, double, double >>>& hetemap,
+            std::vector< std::map< std::string, std::tuple< double, double, double, double >>>& foldmap,
             const std::string& token
             )
     {
@@ -37,35 +40,40 @@ class GeneTypeAnalyzerTaildot
         for( auto& anno : ano_len_idx.first )
         {
             boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
-            anno_map.emplace(( !isSeed ? split[0] : anno ), std::vector< double >( 8, 0.0 ));
+            anno_map.emplace(( !isSeed ? split[0] : anno ), std::vector< double >( 15, 0.0 ));
+            // GMPM TailLens    Tailing％   A_Tail％    C_Tail％    G_Tail％    U_Tail％    Other_Tail％    Heter_5End  Heter_3End  Hete_Tail   Entpy_5End  Entpy_Mid   Entpy_3End  Entpy_Tail
+            // 0    1           2           3           4           5           6           7
+
             isom_map.emplace( anno, std::vector< double >( 8, 0.0 ));
-            // GMPM TailLens    Tailing％   A_Tail％    C_Tail％    G_Tail％    T_Tail％    Other_Tail％
+            // GMPM TailLens    Tailing％   A_Tail％    C_Tail％    G_Tail％    U_Tail％    Other_Tail％
             // 0    1           2           3           4           5           6           7
         }
 
         for( std::size_t smp = 0; smp < bed_samples.size(); ++smp )
         {
             anno_tail_table.emplace_back( anno_map );
-            make_tail_counting_table( biotype, bed_samples[ smp ], anno_tail_table[ smp ], genome_table, filter_ppm, false, token );
+            make_tail_counting_table( biotype, bed_samples[ smp ], quantiled_ppm[ smp ], anno_tail_table[ smp ], genome_table, filter_ppm, false, token, hetemap[ smp ], foldmap[ smp ] );
 
             isom_tail_table.emplace_back( isom_map );
-            make_tail_counting_table( biotype, bed_samples[ smp ], isom_tail_table[ smp ], genome_table, filter_ppm, true, token );
+            make_tail_counting_table( biotype, bed_samples[ smp ], quantiled_ppm[ smp ], isom_tail_table[ smp ], genome_table, filter_ppm, true, token );
         }
     }
 
     static void make_tail_counting_table(
             const std::string& biotype,
             BedSampleType& bed_sample,
+            auto& quantiled_ppm,
             std::map< std::string, std::vector< double >>& tail_table,
             auto& genome_table,
             const std::size_t& filter_ppm,
             bool is_isomir,
-            const std::string& token
+            const std::string& token,
+            std::map< std::string, std::tuple< double, double, double >> hetemap = std::map< std::string, std::tuple< double, double, double >>(),
+            std::map< std::string, std::tuple< double, double, double, double >> foldmap = std::map< std::string, std::tuple< double, double, double, double >>()
             )
     {
         bool is_seed = token == "Seed" ? true : false;
-        bool is_arms = token == "3p" || token == "5p" ? true : false;
-        bool is_lens = token != "" && !is_arms ? true : false;
+        bool is_lens = token != "" && token != "Seed" ? true : false;
 
         std::string gene_name;
         std::string gene_seed;
@@ -79,6 +87,10 @@ class GeneTypeAnalyzerTaildot
         std::map< std::string, std::pair< double, double >> anno_gmpm;
         std::map< std::string, std::map< std::size_t, std::map< double, double >>> anno_temp;
         //          annotation              tail                length  ppm
+        
+        std::map< std::string, double > quantiled_ppm_map = 
+            is_isomir ? quantiled_ppm.second
+                      : quantiled_ppm.first;
 
         for( auto& raw_bed : bed_sample.second )
         {
@@ -88,18 +100,17 @@ class GeneTypeAnalyzerTaildot
             if( biotype != "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != biotype ) continue;
             if( raw_bed.ppm_ < filter_ppm ) continue;
 
-            tail = GeneTypeAnalyzerCounting::which_tail( raw_bed.getTail() );
+            tail = GeneTypeAnalyzerCounting::which_tail( GeneTypeAnalyzerCounting::seqT2U( raw_bed.getTail() ));
             length = ( double )( raw_bed.tail_length_ );
 
             for( std::size_t i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
             {
                 gene_name = raw_bed.annotation_info_[0][ i+1 ];
-                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                    + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                gene_seed = GeneTypeAnalyzerCounting::seqT2U( raw_bed.getReadSeq( genome_table ).substr( 1, 7 ))
+                    + ( GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag ) != "" ? ( "|" + GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag )) : "" );
 
                 arm = GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 );
 
-                if( is_arms && token != arm + "p" ) continue;
                 if( is_lens && token != std::to_string( raw_bed.length_ - raw_bed.tail_length_ )) continue;
 
                 gene_name = is_seed ? gene_seed : ( gene_name + ( !is_isomir ? "" : ( "_" + gene_seed )));
@@ -124,7 +135,11 @@ class GeneTypeAnalyzerTaildot
         for( auto& anno : anno_gmpm )
         {
             length = 0.0;
+
             anno_tailing_vec = std::vector< double >( 8, 0.0 );
+
+            if( !hetemap.empty() )
+                anno_tailing_vec = std::vector< double >( 15, 0.0 );
 
             for( auto& tail : anno_temp[ anno.first ] ) for( auto& len : tail.second )
             {
@@ -135,14 +150,25 @@ class GeneTypeAnalyzerTaildot
 
             if( length == 0.0 ) continue;
 
-            anno_tailing_vec[0] = anno.second.first + anno.second.second;   // GMPM
+            anno_tailing_vec[0] = quantiled_ppm_map[ anno.first ];          // GMPM
             anno_tailing_vec[1] = length;                                   // TailLens
             anno_tailing_vec[2] = anno.second.second /( anno.second.first + anno.second.second );   // Tailing％
             anno_tailing_vec[3] = anno_tailing_vec[3] / anno.second.second; // A_Tail％
             anno_tailing_vec[4] = anno_tailing_vec[4] / anno.second.second; // C_Tail％
             anno_tailing_vec[5] = anno_tailing_vec[5] / anno.second.second; // G_Tail％
-            anno_tailing_vec[6] = anno_tailing_vec[6] / anno.second.second; // T_Tail％
+            anno_tailing_vec[6] = anno_tailing_vec[6] / anno.second.second; // U_Tail％
             anno_tailing_vec[7] = anno_tailing_vec[7] / anno.second.second; // Other_Tail％
+
+            if( !hetemap.empty() )
+            {
+                anno_tailing_vec[8 ] = std::get<0>( hetemap[ anno.first ] );
+                anno_tailing_vec[9 ] = std::get<1>( hetemap[ anno.first ] );
+                anno_tailing_vec[10] = std::get<2>( hetemap[ anno.first ] );
+                anno_tailing_vec[11] = std::get<0>( foldmap[ anno.first ] );
+                anno_tailing_vec[12] = std::get<1>( foldmap[ anno.first ] );
+                anno_tailing_vec[13] = std::get<2>( foldmap[ anno.first ] );
+                anno_tailing_vec[14] = std::get<3>( foldmap[ anno.first ] );
+            }
 
             tail_table[ anno.first ] = anno_tailing_vec;
         }
@@ -157,7 +183,7 @@ class GeneTypeAnalyzerTaildot
             )
     {
         std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
-        output << sample_name << "\tGMPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tT_Tail％\tOther_Tail％\n";
+        output << sample_name << "\tGMPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tU_Tail％\tOther_Tail％\n";
 
         for( auto& anno : ano_len_idx.first )
         {
@@ -198,7 +224,7 @@ class GeneTypeAnalyzerTaildot
         }
 
         std::ofstream output( output_name + sample_name + ".tsv" );
-        output << sample_name << "\tGMPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tT_Tail％\tOther_Tail％\n";
+        output << sample_name << "\tGMPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tU_Tail％\tOther_Tail％\tHeter_5End\tHeter_3End\tHete_Tail\tEntpy_5End\tEntpy_Mid\tEntpy_3End\tEntpy_Tail\n";
 
         for( auto& anno : anno_idx_set )
         {
@@ -215,14 +241,6 @@ class GeneTypeAnalyzerTaildot
 
     static void output_taildot_visualization( const std::string& output_name, const std::string& biotype, const bool& isSeed )
     {
-        if( !isSeed && ( biotype == "miRNA" || biotype == "miRNA_mirtron" || biotype == "mirtron" ))
-        {
-            if( !boost::filesystem::exists( output_name + "Heterorgeneity_5p.tsv" ))
-                 boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_5p.tsv", ( output_name + "Heterorgeneity_5p.tsv" ).c_str() );
-            if( !boost::filesystem::exists( output_name + "Heterorgeneity_3p.tsv" ))
-                 boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_3p.tsv", ( output_name + "Heterorgeneity_3p.tsv" ).c_str() );
-        }
-
         std::ofstream output( output_name + "index.php" );
 
         output << "<!DOCTYPE html>" << "\n";
@@ -369,7 +387,7 @@ class GeneTypeAnalyzerTaildot
         output << "        echo '<select name=RatioType onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '; if($RatioType=='') echo 'selected'; echo '>RatioType</option>';" << "\n";
         output << "" << "\n";
-        output << "        $RatioType_List = array('Tailing％', 'A_Tail％', 'C_Tail％', 'G_Tail％', 'T_Tail％', 'Other_Tail％');" << "\n";
+        output << "        $RatioType_List = array('Tailing％', 'A_Tail％', 'C_Tail％', 'G_Tail％', 'U_Tail％', 'Other_Tail％');" << "\n";
         output << "" << "\n";
         output << "        $RatioType_Size = Count( $RatioType_List );" << "\n";
         output << "" << "\n";

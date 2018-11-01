@@ -9,7 +9,7 @@ class GeneTypeAnalyzerDiffarm
   public:
 
     using DiffArmType = std::map< std::string, std::vector< std::vector< double >>>;
-    //                              anno       5p[0] 3p[1]  Tail%[0] A[1] C[2] G[3] T[4] O[5]
+    //                              anno       5p[0] 3p[1]  Tail%[0] A[1] C[2] G[3] U[4] O[5]
 
     GeneTypeAnalyzerDiffarm()
     {}
@@ -45,11 +45,12 @@ class GeneTypeAnalyzerDiffarm
 
             anno_arm = get_anno_arm( split[0] );
             if( diffarm.find( anno_arm.first ) == diffarm.end() )
-                diffarm[ anno_arm.first ] = std::vector< std::vector< double >>( 3, std::vector< double >( 9, 0.0 ));
+                diffarm[ anno_arm.first ] = std::vector< std::vector< double >>( 3, std::vector< double >( 18, 0.0 ));
 
             diffarm[ anno_arm.first ][ anno_arm.second == "5p" ? 0 : 1 ] = 
             {
                 std::stod( split[1] ),
+                0.0, // GM
                 std::stod( split[1] ) * std::stod( split[3] ),
                 std::stod( split[3] ),
                 std::stod( split[4] ),
@@ -57,8 +58,21 @@ class GeneTypeAnalyzerDiffarm
                 std::stod( split[6] ),
                 std::stod( split[7] ),
                 std::stod( split[8] ),
-                0.0,
+                0.0, // RatioGMPM
+                0.0, // RatioGM
+                0.0, // RatioPM
+                0.0, // RatioTailing
+                0.0, // RatioA
+                0.0, // RatioC
+                0.0, // RatioG
+                0.0, // RatioU
+                0.0  // RatioO
             };
+
+            diffarm[ anno_arm.first ][ anno_arm.second == "5p" ? 0 : 1 ][1]
+                = diffarm[ anno_arm.first ][ anno_arm.second == "5p" ? 0 : 1 ][0]
+                - diffarm[ anno_arm.first ][ anno_arm.second == "5p" ? 0 : 1 ][2]
+                ;
         }
 
         infile.close();
@@ -76,20 +90,20 @@ class GeneTypeAnalyzerDiffarm
             auto& p2 = anno.second[2];
 
             p2[0] = p5[0] + p3[0];
-            p2[1] = p2[0] == 0 ? 0 : (( p5[1] + p3[1] ) / p2[0] );
+            p2[1] = p5[1] + p3[1];
+            p2[2] = p5[2] + p3[2];
+            p2[3] = p2[0] == 0 ? 0 : ( p2[2] / p2[0] );
 
-            tmp = p5[2] + p3[2];
-
-            p5[8] = tmp == 0 ? 0 : ( p5[2] / tmp );
-            p3[8] = tmp == 0 ? 0 : ( p3[2] / tmp );
-
-            for( std::size_t i = 2; i < 8; ++i )
+            for( std::size_t i = 9; i < anno.second[2].size(); ++i )
             {
-                auto& p5 = anno.second[0][i];
-                auto& p3 = anno.second[1][i];
-                auto& p2 = anno.second[2][i];
-                p2 = p5 - p3;
+                tmp = p5[ i-9 ] + p3[ i-9 ];
+
+                p5[i] = tmp == 0 ? 0 : ( p5[ i-9 ] / tmp );
+                p3[i] = tmp == 0 ? 0 : ( p3[ i-9 ] / tmp );
             }
+
+            for( std::size_t i = 4; i < 9; ++i )
+                p2[i+1] = p5[i] - p3[i];
         }
     }
 
@@ -97,24 +111,20 @@ class GeneTypeAnalyzerDiffarm
     {
         std::ofstream output( out_file );
         output << "Anno\t"
-            << "GMPM\tTailing\tDiff_Tailing\tDiff_A\tDiff_C\tDiff_G\tDiff_T\tDiff_Other\t"
-            << "GMPM\tTailing\tAtail\tCtail\tGtail\tTtail\tOther\tRatio5p\t"
-            << "GMPM\tTailing\tAtail\tCtail\tGtail\tTtail\tOther\tRatio3p\n";
+            << "GMPM\tGM\tPM\tTailing\tDiff_Tailing\tDiff_A\tDiff_C\tDiff_G\tDiff_U\tDiff_Other\t"
+            << "GMPM\tGM\tPM\tTailing\tAtail\tCtail\tGtail\tUtail\tOther\t"
+            << "Ratio_GMPM\tRatio_GM\tRatio_PM\tRatio_Tailing\tRatio_Atail\tRatio_Ctail\tRatio_Gtail\tRatio_Utail\tRatio_Other\t"
+            << "GMPM\tGM\tPM\tTailing\tAtail\tCtail\tGtail\tUtail\tOther\t"
+            << "Ratio_GMPM\tRatio_GM\tRatio_PM\tRatio_Tailing\tRatio_Atail\tRatio_Ctail\tRatio_Gtail\tRatio_Utail\tRatio_Other\n"
+            ;
 
         for( auto& anno : diffarm )
         {
             output << anno.first;
 
-            for( std::size_t i = 0; i < anno.second[2].size()-1; ++i )
-                output << "\t" << anno.second[2][i];
-
-            for( std::size_t i = 0; i < anno.second[0].size(); ++i )
-                if( i != 1 ) output << "\t" << anno.second[0][i];
-                else continue;
-
-            for( std::size_t i = 0; i < anno.second[1].size(); ++i )
-                if( i != 1 ) output << "\t" << anno.second[1][i];
-                else continue;
+            for( std::size_t i = 0; i < 10                   ; ++i ) output << "\t" << anno.second[2][i];
+            for( std::size_t i = 0; i < anno.second[0].size(); ++i ) output << "\t" << anno.second[0][i];
+            for( std::size_t i = 0; i < anno.second[1].size(); ++i ) output << "\t" << anno.second[1][i];
 
             output << "\n";
         }
@@ -170,14 +180,14 @@ class GeneTypeAnalyzerDiffarm
         output << "        //  4 Diff_A" << "\n";
         output << "        //  5 Diff_C" << "\n";
         output << "        //  6 Diff_G" << "\n";
-        output << "        //  7 Diff_T" << "\n";
+        output << "        //  7 Diff_U" << "\n";
         output << "        //  8 Diff_Other" << "\n";
         output << "        //  9 GMPM" << "\n";
         output << "        // 10 Tailing" << "\n";
         output << "        // 11 Atail" << "\n";
         output << "        // 12 Ctail" << "\n";
         output << "        // 13 Gtail" << "\n";
-        output << "        // 14 Ttail" << "\n";
+        output << "        // 14 Utail" << "\n";
         output << "        // 15 Other" << "\n";
         output << "        // 16 Ratio5p" << "\n";
         output << "        // 17 GMPM" << "\n";
@@ -185,7 +195,7 @@ class GeneTypeAnalyzerDiffarm
         output << "        // 19 Atail" << "\n";
         output << "        // 20 Ctail" << "\n";
         output << "        // 21 Gtail" << "\n";
-        output << "        // 22 Ttail" << "\n";
+        output << "        // 22 Utail" << "\n";
         output << "        // 23 Other" << "\n";
         output << "        // 24 Ratio3p" << "\n";
         output << "" << "\n";
@@ -340,13 +350,13 @@ class GeneTypeAnalyzerDiffarm
         output << "        $List5p[ 'Atail' ] = 11;" << "\n";
         output << "        $List5p[ 'Ctail' ] = 12;" << "\n";
         output << "        $List5p[ 'Gtail' ] = 13;" << "\n";
-        output << "        $List5p[ 'Ttail' ] = 14;" << "\n";
+        output << "        $List5p[ 'Utail' ] = 14;" << "\n";
         output << "        $List5p[ 'Other' ] = 15;" << "\n";
         output << "" << "\n";
         output << "        $List3p[ 'Atail' ] = 19;" << "\n";
         output << "        $List3p[ 'Ctail' ] = 20;" << "\n";
         output << "        $List3p[ 'Gtail' ] = 21;" << "\n";
-        output << "        $List3p[ 'Ttail' ] = 22;" << "\n";
+        output << "        $List3p[ 'Utail' ] = 22;" << "\n";
         output << "        $List3p[ 'Other' ] = 23;" << "\n";
         output << "" << "\n";
         output << "        if( $DiffType == 'Ratios_5p3p' )" << "\n";

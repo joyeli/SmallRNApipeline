@@ -139,7 +139,7 @@ class GeneTypeAnalyzerBarplot
                     {
                         value = len.second[ smp ][2];
                     }
-                    else if( token == "Ttail" )
+                    else if( token == "Utail" )
                     {
                         value = len.second[ smp ][3];
                     }
@@ -242,7 +242,7 @@ class GeneTypeAnalyzerBarplot
                     {
                         value = len.second[ smp ][2];
                     }
-                    else if( token == "Ttail" )
+                    else if( token == "Utail" )
                     {
                         value = len.second[ smp ][3];
                     }

@@ -31,7 +31,7 @@ const argv = require( "yargs" )
         },
         "type": {
             alias: "t",
-            choices: [ "GMPM", "GM", "PM", "A_Tail", "C_Tail", "G_Tail", "T_Tail", "Other_Tail" ],
+            choices: [ "GMPM", "GM", "PM", "A_Tail", "C_Tail", "G_Tail", "U_Tail", "Other_Tail" ],
             default: "GMPM",
             describe: "Select a type of expression data, Tails are only work with mode[heatmap]"
         },

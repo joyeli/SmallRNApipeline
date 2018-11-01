@@ -56,8 +56,8 @@ class GeneTypeAnalyzerCounting
 
                             for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                             {
-                                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                                        + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                                gene_seed = GeneTypeAnalyzerCounting::seqT2U( raw_bed.getReadSeq( genome_table ).substr( 1, 7 ))
+                                        + ( GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag ) != "" ? ( "|" + GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag )) : "" );
 
                                 gene_name = token == "Seed" ? gene_seed : ( biotype == ""
                                     ?   raw_bed.annotation_info_[i][j]
@@ -142,8 +142,15 @@ class GeneTypeAnalyzerCounting
             case 'A' : return 0; // A_Tail
             case 'C' : return 1; // C_Tail
             case 'G' : return 2; // G_Tail
-            case 'T' : return 3; // T_Tail
+            case 'U' : return 3; // U_Tail
         }
+    }
+
+    static std::string seqT2U( std::string seq )
+    {
+        for( auto& nt : seq ) switch( nt )
+            case 'T' : nt = 'U';
+        return seq;
     }
 
     static std::string find_abundance( std::map< std::string, std::map< std::size_t, std::map< std::size_t, double >>>& seeds )
@@ -207,8 +214,8 @@ class GeneTypeAnalyzerCounting
                 for( std::size_t j = 0; j < raw_bed.annotation_info_[0].size(); j+=2 )
                 {
                     anno_first  = raw_bed.annotation_info_[0][ j+1 ];
-                    anno_second = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                                + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                    anno_second = GeneTypeAnalyzerCounting::seqT2U( raw_bed.getReadSeq( genome_table ).substr( 1, 7 ))
+                                + ( GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag ) != "" ? ( "|" + GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag )) : "" );
                     anno_pair   = std::make_pair( anno_first, anno_second );
 
                     if( anno_map.find( anno_pair ) == anno_map.end() ) anno_map[ anno_pair ] = 0.0;
@@ -346,7 +353,7 @@ class GeneTypeAnalyzerCounting
             if( raw_bed.ppm_ < filter_ppm ) continue;
             isbiotype = ( biotype == "" ? true : false );
             read_len = raw_bed.length_ - raw_bed.tail_length_;
-            tail = which_tail( raw_bed.getTail() );
+            tail = which_tail( GeneTypeAnalyzerCounting::seqT2U( raw_bed.getTail() ));
 
             // for( std::size_t i = 0; i < raw_bed.annotation_info_.size(); ++i )
             {
@@ -364,8 +371,8 @@ class GeneTypeAnalyzerCounting
                     for( std::size_t j = 0; j < raw_bed.annotation_info_[i].size(); j+=2 )
                     {
                         gene_name = raw_bed.annotation_info_[i][ j+1 ];
-                        gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                                  + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                        gene_seed = GeneTypeAnalyzerCounting::seqT2U( raw_bed.getReadSeq( genome_table ).substr( 1, 7 ))
+                                  + ( GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag ) != "" ? ( "|" + GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag )) : "" );
 
                         if( trimming && anno_trimmed.find( std::make_pair( gene_name, gene_seed )) == anno_trimmed.end() )
                             continue;
@@ -581,6 +588,44 @@ class GeneTypeAnalyzerCounting
         }
 
         seed_match_table = std::move( seed_match_temp );
+    }
+
+    static auto get_quantiled_ppm_map( std::vector< std::vector< CountingTableType >>& anno_table_tail )
+    {
+        std::vector< std::pair<              // each samples
+            std::map< std::string, double >, // mir
+            std::map< std::string, double >  // iosmir
+                >> quantiled_ppm( anno_table_tail.size() );
+
+        std::vector< std::string > split;
+
+        for( std::size_t smp = 0; smp < anno_table_tail.size(); ++smp )
+        {
+            for( std::size_t i = 0; i < anno_table_tail[ smp ].size(); ++i )
+            {
+                for( auto& anno : anno_table_tail[ smp ][i] )
+                {
+                    boost::iter_split( split, anno.first, boost::algorithm::first_finder( "_" ));
+
+                    for( std::size_t i = 1; i < split.size() -2; ++i )
+                        split[0] = split[0] + "_" + split[i];
+
+                    if( quantiled_ppm[ smp ].first.find( split[0] ) == quantiled_ppm[ smp ].first.end() )
+                        quantiled_ppm[ smp ].first[ split[0] ] = 0.0;
+
+                    if( quantiled_ppm[ smp ].second.find( anno.first ) == quantiled_ppm[ smp ].second.end() )
+                        quantiled_ppm[ smp ].second[ anno.first ] = 0.0;
+
+                    for( auto& len : anno.second )
+                    {
+                        quantiled_ppm[ smp ].first[ split[0] ] += len.second;
+                        quantiled_ppm[ smp ].second[ anno.first ] += len.second;
+                    }
+                }
+            }
+        }
+
+        return quantiled_ppm;
     }
 };
 

@@ -74,9 +74,9 @@ struct SeqType
     SeedTailType make_seed_tail_index( ago::format::MDRawBed& rawbed )
     {
         SeedTailType seedtemp = {
-            rawbed.getReadSeq( *genome ).substr( 1, 7 ),
+            GeneTypeAnalyzerCounting::seqT2U( rawbed.getReadSeq( *genome ).substr( 1, 7 )),
             get_arm( rawbed ),
-            ( rawbed.getTail() != "" ? rawbed.getTail() : "." )
+            ( GeneTypeAnalyzerCounting::seqT2U( rawbed.getTail() ) != "" ? GeneTypeAnalyzerCounting::seqT2U( rawbed.getTail() ) : "." )
         };
         return seedtemp;
     }
@@ -136,8 +136,8 @@ struct SeqType
             std::transform( read_seq.begin(), read_seq.end(), read_seq.begin(), [ this ]( char c )
             {
                 switch (c) {
-                    case 'A': c = 'T'; break;
-                    case 'T': c = 'A'; break;
+                    case 'A': c = 'U'; break;
+                    case 'U': c = 'A'; break;
                     case 'C': c = 'G'; break;
                     case 'G': c = 'C'; break;
                     case 'N': c = 'N'; break;
@@ -1248,10 +1248,10 @@ class GeneTypeAnalyzerSqalign
         output << "                var anno = '';" << "\n";
         output << "                var sequ = '';" << "\n";
         output << "" << "\n";
-        output << "                var colorA = 'red';" << "\n";
+        output << "                var colorA = 'green';" << "\n";
         output << "                var colorC = 'blue';" << "\n";
         output << "                var colorG = 'goldenrod';" << "\n";
-        output << "                var colorU = 'green';" << "\n";
+        output << "                var colorU = 'red';" << "\n";
         output << "                var colorP = 'darkgray';\";" << "\n";
         output << "" << "\n";
         output << "            if( $isRNAfold )" << "\n";

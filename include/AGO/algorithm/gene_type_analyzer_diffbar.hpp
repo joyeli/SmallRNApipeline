@@ -128,7 +128,7 @@ class GeneTypeAnalyzerDiffBar
             + s1 + ":" + s2 + ":Atail\t"
             + s1 + ":" + s2 + ":Ctail\t"
             + s1 + ":" + s2 + ":Gtail\t"
-            + s1 + ":" + s2 + ":Ttail\t"
+            + s1 + ":" + s2 + ":Utail\t"
             + s1 + ":" + s2 + ":Other\t"
             + s2 + ":" + s1 + ":GMPM\t"
             + s2 + ":" + s1 + ":GM\t"
@@ -136,7 +136,7 @@ class GeneTypeAnalyzerDiffBar
             + s2 + ":" + s1 + ":Atail\t"
             + s2 + ":" + s1 + ":Ctail\t"
             + s2 + ":" + s1 + ":Gtail\t"
-            + s2 + ":" + s1 + ":Ttail\t"
+            + s2 + ":" + s1 + ":Utail\t"
             + s2 + ":" + s1 + ":Other";
     }
 
@@ -151,7 +151,7 @@ class GeneTypeAnalyzerDiffBar
                 case 'A' : i = 0; break;
                 case 'C' : i = 1; break;
                 case 'G' : i = 2; break;
-                case 'T' : i = 3; break;
+                case 'U' : i = 3; break;
                 case 'O' : i = 4; break;
                 case 'M' : i = 5; break;
             }
@@ -297,8 +297,8 @@ class GeneTypeAnalyzerDiffBar
                 ct2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'C' );
                 gt1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'G' );
                 gt2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'G' );
-                tt1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'T' );
-                tt2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'T' );
+                tt1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'U' );
+                tt2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'U' );
                 ot1 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s1.first, anno, ano_len_idx.second, 'O' );
                 ot2 = get_value(( is_isomir ? anno_table_tail_isomir : anno_table_tail ), s2.first, anno, ano_len_idx.second, 'O' );
 
@@ -317,7 +317,7 @@ class GeneTypeAnalyzerDiffBar
                 diffs[{ s1.second, s2.second }][ 'A' ][ anno ] = diff_vec[ diff_vec.size() - 5 ];
                 diffs[{ s1.second, s2.second }][ 'C' ][ anno ] = diff_vec[ diff_vec.size() - 4 ];
                 diffs[{ s1.second, s2.second }][ 'G' ][ anno ] = diff_vec[ diff_vec.size() - 3 ];
-                diffs[{ s1.second, s2.second }][ 'T' ][ anno ] = diff_vec[ diff_vec.size() - 2 ];
+                diffs[{ s1.second, s2.second }][ 'U' ][ anno ] = diff_vec[ diff_vec.size() - 2 ];
 
                 diff_vec.emplace_back( get_differential( gm2 + pm2 + 1, gm1 + pm1  + 1 ));
                 diff_vec.emplace_back( get_differential( gm2       + 1, gm1        + 1 ));
@@ -334,7 +334,7 @@ class GeneTypeAnalyzerDiffBar
                 diffs[{ s2.second, s1.second }][ 'A' ][ anno ] = diff_vec[ diff_vec.size() - 5 ];
                 diffs[{ s2.second, s1.second }][ 'C' ][ anno ] = diff_vec[ diff_vec.size() - 4 ];
                 diffs[{ s2.second, s1.second }][ 'G' ][ anno ] = diff_vec[ diff_vec.size() - 3 ];
-                diffs[{ s2.second, s1.second }][ 'T' ][ anno ] = diff_vec[ diff_vec.size() - 2 ];
+                diffs[{ s2.second, s1.second }][ 'U' ][ anno ] = diff_vec[ diff_vec.size() - 2 ];
 
                 out_temp.emplace_back( std::make_tuple(
                         gm1 + pm1 + gm2 + pm2,
@@ -381,7 +381,7 @@ class GeneTypeAnalyzerDiffBar
             , { 'A', "Atail/" }
             , { 'C', "Ctail/" }
             , { 'G', "Gtail/" }
-            , { 'T', "Ttail/" }
+            , { 'U', "Utail/" }
         });
 
         boost::filesystem::create_directory( boost::filesystem::path( output_path + "../Preference/" ));
@@ -586,7 +586,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo '<select name=Diff onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '.( $Diff=='' ? 'selected' : '' ).'>Diff By</option>';" << "\n";
         output << "" << "\n";
-        output << "        $Diff_List = array('GMPM', 'GM', 'PM', 'Atail', 'Ctail', 'Gtail', 'Ttail', 'Other');" << "\n";
+        output << "        $Diff_List = array('GMPM', 'GM', 'PM', 'Atail', 'Ctail', 'Gtail', 'Utail', 'Other');" << "\n";
         output << "" << "\n";
         output << "        $Diff_Size = Count( $Diff_List );" << "\n";
         output << "" << "\n";
@@ -619,7 +619,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo '<select name=GMPM onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '.( $GMPM=='' ? 'selected' : '' ).'>GM or PM</option>';" << "\n";
         output << "" << "\n";
-        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Tailing', 'Atail', 'Ctail', 'Gtail', 'Ttail', 'Other');" << "\n";
+        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Tailing', 'Atail', 'Ctail', 'Gtail', 'Utail', 'Other');" << "\n";
         output << "" << "\n";
         output << "        $GMPM_Size = Count( $GMPM_List );" << "\n";
         output << "" << "\n";

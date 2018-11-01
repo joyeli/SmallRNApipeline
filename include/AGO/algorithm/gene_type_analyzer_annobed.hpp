@@ -38,14 +38,14 @@ class GeneTypeAnalyzerAnnobed
                             << ( anno.is_filtered_ == 0 ? "N\t" : "Y\t" )
                             << (int)anno.length_ - (int)anno.tail_length_ << "\t"
                             << (int)anno.tail_length_ << "\t"
-                            << anno.getReadSeq( genome ) << "\t"
-                            << ( anno.getTail() != "" ? anno.getTail() : "." ) << "\t"
-                            << ( anno.md_map.size() != 0 ? anno.getMD() : "." ) << "\t"
-                            << ( anno.tc_set.size() != 0 ? anno.getTC() : "." ) << "\t"
+                            << GeneTypeAnalyzerCounting::seqT2U( anno.getReadSeq( genome )) << "\t"
+                            << ( GeneTypeAnalyzerCounting::seqT2U( anno.getTail() ) != "" ? GeneTypeAnalyzerCounting::seqT2U( anno.getTail() ) : "." ) << "\t"
+                            << ( anno.md_map.size() != 0 ? GeneTypeAnalyzerCounting::seqT2U( anno.getMD() ): "." ) << "\t"
+                            << ( anno.tc_set.size() != 0 ? GeneTypeAnalyzerCounting::seqT2U( anno.getTC() ): "." ) << "\t"
                             << anno.annotation_info_[i][j] << "\t"
                             << anno.annotation_info_[i][ j+1 ] << "_"
-                            << anno.getReadSeq( genome ).substr(1,7)
-                            << ( anno.seed_md_tag != "" ? ( "|" + anno.seed_md_tag ) : "" )
+                            << GeneTypeAnalyzerCounting::seqT2U( anno.getReadSeq( genome ).substr(1,7) )
+                            << ( GeneTypeAnalyzerCounting::seqT2U( anno.seed_md_tag ) != "" ? ( "|" + GeneTypeAnalyzerCounting::seqT2U( anno.seed_md_tag )) : "" )
                             << "\n"
                             ;
                     }

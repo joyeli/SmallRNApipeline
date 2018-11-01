@@ -76,10 +76,10 @@ module.exports = {
                 console.log(
                         "<th style='text-align:right;font-family:Sans-serif;font-size:12px;"
                         + ( count_type != 1 ? "" : "border-top:1px #666 solid;" )
-                        + ( types[ type ] != "A_Tail" ? "" : "background-color:#fcc;" )
+                        + ( types[ type ] != "A_Tail" ? "" : "background-color:#cfc;" )
                         + ( types[ type ] != "C_Tail" ? "" : "background-color:#ccf;" )
                         + ( types[ type ] != "G_Tail" ? "" : "background-color:#ffc;" )
-                        + ( types[ type ] != "T_Tail" ? "" : "background-color:#cfc;" )
+                        + ( types[ type ] != "U_Tail" ? "" : "background-color:#fcc;" )
                         + ( types[ type ] != "Other_Tail" ? "" : "background-color:#eee;" )
                         + "'>" + types[ type ] + "</th>" );
         
@@ -96,10 +96,10 @@ module.exports = {
                                     "<td style='text-align:center;font-family:Sans-serif;font-size:12px;"
                                     + ( count_type != 1 ? "" : "border-top:1px #666 solid;" )
                                     + ( count_arm  != 1 ? "" : "border-left:1px #666 solid;" )
-                                    + ( types[ type ] != "A_Tail" ? "" : "background-color:#fcc;" )
+                                    + ( types[ type ] != "A_Tail" ? "" : "background-color:#cfc;" )
                                     + ( types[ type ] != "C_Tail" ? "" : "background-color:#ccf;" )
                                     + ( types[ type ] != "G_Tail" ? "" : "background-color:#ffc;" )
-                                    + ( types[ type ] != "T_Tail" ? "" : "background-color:#cfc;" )
+                                    + ( types[ type ] != "U_Tail" ? "" : "background-color:#fcc;" )
                                     + ( types[ type ] != "Other_Tail" ? "" : "background-color:#eee;" )
                                     + "'>"
                                     + ( seed in files[ file_name ][ arm ]

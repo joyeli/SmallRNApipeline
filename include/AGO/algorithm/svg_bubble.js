@@ -13,7 +13,7 @@ module.exports = {
                 A_Tail     : 0,
                 C_Tail     : 0,
                 G_Tail     : 0,
-                T_Tail     : 0,
+                U_Tail     : 0,
                 Other_Tail : 0
         };
 
@@ -39,7 +39,7 @@ module.exports = {
                         A_Tail     : rwth *( tail_data[ seed ][ "A_Tail"     ][ idx ] / tail_data[ seed ][ "PM" ][ idx ] ),
                         C_Tail     : rwth *( tail_data[ seed ][ "C_Tail"     ][ idx ] / tail_data[ seed ][ "PM" ][ idx ] ),
                         G_Tail     : rwth *( tail_data[ seed ][ "G_Tail"     ][ idx ] / tail_data[ seed ][ "PM" ][ idx ] ),
-                        T_Tail     : rwth *( tail_data[ seed ][ "T_Tail"     ][ idx ] / tail_data[ seed ][ "PM" ][ idx ] ),
+                        U_Tail     : rwth *( tail_data[ seed ][ "U_Tail"     ][ idx ] / tail_data[ seed ][ "PM" ][ idx ] ),
                         Other_Tail : rwth *( tail_data[ seed ][ "Other_Tail" ][ idx ] / tail_data[ seed ][ "PM" ][ idx ] )
                     })
                 };
@@ -126,7 +126,7 @@ module.exports = {
                 .outerRadius( function( d, i ){
                     if( i == 0 ){ j++; }
                     if( j > jend ){ j = 0; }
-                    return tail_path[j][i] != null ? tail_path[j][i][ "T_Tail" ] : 0;
+                    return tail_path[j][i] != null ? tail_path[j][i][ "U_Tail" ] : 0;
                 }));
 
         cell.append( "path" )

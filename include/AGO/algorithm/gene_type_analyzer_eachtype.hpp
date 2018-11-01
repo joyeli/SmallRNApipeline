@@ -14,8 +14,10 @@
 #include <AGO/algorithm/gene_type_analyzer_seedmap.hpp>
 #include <AGO/algorithm/gene_type_analyzer_seedpie.hpp>
 #include <AGO/algorithm/gene_type_analyzer_mdtcpos.hpp>
-#include <AGO/algorithm/gene_type_analyzer_boxplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_hisgram.hpp>
+#include <AGO/algorithm/gene_type_analyzer_hetergt.hpp>
+#include <AGO/algorithm/gene_type_analyzer_rnafold.hpp>
+#include <AGO/algorithm/gene_type_analyzer_boxplot.hpp>
 #include <AGO/algorithm/gene_type_analyzer_difference.hpp>
 #include <AGO/algorithm/gene_type_analyzer_diffbar.hpp>
 #include <AGO/algorithm/gene_type_analyzer_diffarm.hpp>
@@ -81,6 +83,7 @@ class GeneTypeAnalyzerEachtype
             const std::string output_path_,
             std::vector< BedSampleType >& bed_samples,
             AnnoLengthIndexType& ano_len_idx,
+            auto& quantiled_ppm,
             std::vector< std::vector< CountingTableType >>& anno_table_tail,
             std::vector< std::vector< CountingTableType >>& anno_table_trim,
             std::vector< std::map< std::string, std::map< std::string, double >>>& seed_match_table,
@@ -138,6 +141,9 @@ class GeneTypeAnalyzerEachtype
                 : GeneTypeAnalyzerDiffBar::TargetScanType()
                 );
 
+        std::vector< std::map< std::string, std::tuple< double, double, double >>> hetemap;
+        std::vector< std::map< std::string, std::tuple< double, double, double, double >>> foldmap;
+
         if( !webpage_update_only )
         {
             // is_time_log = true;
@@ -168,8 +174,11 @@ class GeneTypeAnalyzerEachtype
 
             std::chrono::time_point< std::chrono::system_clock > make_table_start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
+            hetemap = GeneTypeAnalyzerHetergt::make_hete_table( bed_samples, ano_len_idx, genome_table, filter_ppm, biotype, token );
+            foldmap = GeneTypeAnalyzerRNAfold::make_fold_table( bed_samples, ano_len_idx, genome_table, filter_ppm, rnafold_path, biotype, token );
+
             GeneTypeAnalyzerTaildot taildot_obj;
-            GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, bed_samples, genome_table, filter_ppm, taildot_obj.anno_tail_table, taildot_obj.isom_tail_table, token );
+            GeneTypeAnalyzerTaildot::make_taildot_table( biotype, ano_len_idx, quantiled_ppm, bed_samples, genome_table, filter_ppm, taildot_obj.anno_tail_table, taildot_obj.isom_tail_table, hetemap, foldmap, token );
 
             GeneTypeAnalyzerSA_Plot sa_plot_obj;
             GeneTypeAnalyzerSA_Plot::make_sa_plot_table( biotype, ano_len_idx, bed_samples, genome_table, filter_ppm, sa_plot_obj.anno_sa_table, token );
@@ -235,7 +244,7 @@ class GeneTypeAnalyzerEachtype
                 GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Atail"   );
                 GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Ctail"   );
                 GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Gtail"   );
-                GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Ttail"   );
+                GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Utail"   );
                 GeneTypeAnalyzerDiffBar::output_diffbar( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Other"   );
 
                 std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -294,7 +303,7 @@ class GeneTypeAnalyzerEachtype
                     GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Atail"   );
                     GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Ctail"   );
                     GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Gtail"   );
-                    GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Ttail"   );
+                    GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Utail"   );
                     GeneTypeAnalyzerDiffBar::output_diffbar_isomirs( output_path + diffbar, bed_samples, ano_len_idx, anno_table_tail, biotype, "Other"   );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -353,8 +362,6 @@ class GeneTypeAnalyzerEachtype
                 {
                     std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                    GeneTypeAnalyzerBoxPlot::make_hete_table( output_path + boxplot, bed_samples, ano_len_idx, genome_table, filter_ppm, biotype, token );
-                    GeneTypeAnalyzerBoxPlot::make_rnafold_table( output_path + boxplot, bed_samples, ano_len_idx, genome_table, filter_ppm, rnafold_path, biotype, token );
                     GeneTypeAnalyzerBoxPlot::output_boxplot_visualization( output_path + boxplot );
 
                     std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -569,8 +576,8 @@ class GeneTypeAnalyzerEachtype
 
         // parallel_pool.flush_pool();
 
-        GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, biotype, is_seed );
-
+        GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, is_seed, biotype );
+        if( !is_seed ) GeneTypeAnalyzerVolcano::output_heter_for_volcano( output_path + volcano, hetemap );
         if( is_all && ( biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron" ))
         {
             boost::filesystem::create_directory( boost::filesystem::path( output_path + diffarm ));

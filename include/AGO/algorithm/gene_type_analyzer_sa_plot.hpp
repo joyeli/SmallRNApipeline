@@ -96,7 +96,7 @@ class GeneTypeAnalyzerSA_Plot
                     case 'A' : sa_it->second.tail[0] += (double)(tail_char.second) / (double)(tail_seq.length()) * ppm; break;
                     case 'C' : sa_it->second.tail[1] += (double)(tail_char.second) / (double)(tail_seq.length()) * ppm; break;
                     case 'G' : sa_it->second.tail[2] += (double)(tail_char.second) / (double)(tail_seq.length()) * ppm; break;
-                    case 'T' : sa_it->second.tail[3] += (double)(tail_char.second) / (double)(tail_seq.length()) * ppm; break;
+                    case 'U' : sa_it->second.tail[3] += (double)(tail_char.second) / (double)(tail_seq.length()) * ppm; break;
                 }
             }
             else sa_it->second.tail[ tail ] += ppm;
@@ -106,7 +106,7 @@ class GeneTypeAnalyzerSA_Plot
                 nt = sequence.at( sequence.length() -1 -i );
 
                 if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
-                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
+                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'U';
 
                 if( sa_it->second.Ends[ 8 + i ].find( nt ) == sa_it->second.Ends[ 8 + i ].end() )
                     sa_it->second.Ends[ 8 + i ][ nt ] = 0;
@@ -121,7 +121,7 @@ class GeneTypeAnalyzerSA_Plot
                 nt = last4n_tail.at(i);
 
                 if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
-                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
+                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'U';
 
                 if( sa_it->second.Ends[13].find( nt ) == sa_it->second.Ends[13].end() )
                     sa_it->second.Ends[13][ nt ] = 0;
@@ -138,7 +138,7 @@ class GeneTypeAnalyzerSA_Plot
                 nt = last4n_notail.at(i);
 
                 if( md_map.find( sequence.length() -1 -i ) != md_map.end() ) nt = md_map[ sequence.length() -1 -i ];
-                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'T';
+                if( tc_set.find( sequence.length() -1 -i ) != tc_set.end() ) nt = 'U';
 
                 if( sa_it->second.Ends[14].find( nt ) == sa_it->second.Ends[14].end() )
                     sa_it->second.Ends[14][ nt ] = 0;
@@ -154,7 +154,7 @@ class GeneTypeAnalyzerSA_Plot
             nt = sequence.at(i);
 
             if( md_map.find(i) != md_map.end() ) nt = md_map[i];
-            if( tc_set.find(i) != tc_set.end() ) nt = 'T';
+            if( tc_set.find(i) != tc_set.end() ) nt = 'U';
 
             if( sa_it->second.Ends[i].find( nt ) == sa_it->second.Ends[i].end() )
                 sa_it->second.Ends[i][ nt ] = 0;
@@ -192,16 +192,16 @@ class GeneTypeAnalyzerSA_Plot
             if( biotype == "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != "miRNA" && raw_bed.annotation_info_[0][0] != "mirtron" ) continue;
             if( biotype != "miRNA_mirtron" && raw_bed.annotation_info_[0][0] != biotype ) continue;
 
-            sequence = raw_bed.getReadSeq( genome_table );
-            tail_seq = raw_bed.getTail();
+            sequence = GeneTypeAnalyzerCounting::seqT2U( raw_bed.getReadSeq( genome_table ) );
+            tail_seq = GeneTypeAnalyzerCounting::seqT2U( raw_bed.getTail() );
 
             tail = GeneTypeAnalyzerCounting::which_tail( tail_seq );
 
             for( std::size_t i = 0; i < raw_bed.annotation_info_[0].size(); i+=2 )
             {
                 gene_name = raw_bed.annotation_info_[0][ i+1 ];
-                gene_seed = raw_bed.getReadSeq( genome_table ).substr( 1, 7 )
-                    + ( raw_bed.seed_md_tag != "" ? ( "|" + raw_bed.seed_md_tag ) : "" );
+                gene_seed = GeneTypeAnalyzerCounting::seqT2U( raw_bed.getReadSeq( genome_table ).substr( 1, 7 ))
+                    + ( GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag ) != "" ? ( "|" + GeneTypeAnalyzerCounting::seqT2U( raw_bed.seed_md_tag )) : "" );
 
                 arm = GeneTypeAnalyzerCounting::get_arm( gene_name ).substr( 0, 1 );
 
@@ -247,7 +247,7 @@ class GeneTypeAnalyzerSA_Plot
                 if( sa.second.Ends[i].find( 'A' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'A' ] = 0.0;
                 if( sa.second.Ends[i].find( 'C' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'C' ] = 0.0;
                 if( sa.second.Ends[i].find( 'G' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'G' ] = 0.0;
-                if( sa.second.Ends[i].find( 'T' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'T' ] = 0.0;
+                if( sa.second.Ends[i].find( 'U' ) == sa.second.Ends[i].end() ) sa.second.Ends[i][ 'U' ] = 0.0;
             }
         }
     }
@@ -281,7 +281,7 @@ class GeneTypeAnalyzerSA_Plot
 
         for( std::size_t i = 0; i < outputs.size(); ++i )
         {
-            outputs[i] << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tT";
+            outputs[i] << "Annotation\tGMPM\tGM\tPM\tA\tC\tG\tU";
             if( i == 1 ) outputs[i] << "\tO";
         }
 
@@ -319,7 +319,7 @@ class GeneTypeAnalyzerSA_Plot
                 std::cerr << ( sa.Ends[i].find( 'A' ) == sa.Ends[i].end() ? "\tAnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'A' ] )));
                 std::cerr << ( sa.Ends[i].find( 'C' ) == sa.Ends[i].end() ? "\tCnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'C' ] )));
                 std::cerr << ( sa.Ends[i].find( 'G' ) == sa.Ends[i].end() ? "\tGnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'G' ] )));
-                std::cerr << ( sa.Ends[i].find( 'T' ) == sa.Ends[i].end() ? "\tTnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'T' ] )));
+                std::cerr << ( sa.Ends[i].find( 'U' ) == sa.Ends[i].end() ? "\tUnotFound" : ( "\t" + std::to_string( sa.Ends[i][ 'U' ] )));
             }
 
             std::cerr << "\n";
@@ -847,7 +847,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "#<!--=================== TempFile ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $Order = $GMbool ? [ 'GM', 'A', 'T', 'C', 'G' ] : [ 'A', 'T', 'C', 'G' ];" << "\n";
+        output << "        $Order = $GMbool ? [ 'GM', 'A', 'U', 'C', 'G' ] : [ 'A', 'U', 'C', 'G' ];" << "\n";
         output << "" << "\n";
         output << "        $JsonL = Tempnam( '/tmp', 'Json_L_'.$TSV_File.$Type_Name );" << "\n";
         output << "        $JsonM = Tempnam( '/tmp', 'Json_M_'.$TSV_File.$Type_Name );" << "\n";
@@ -946,7 +946,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "" << "\n";
         output << "#<!--================== SA_Plot ====================-->" << "\n";
         output << "" << "\n";
-        output << "        $Color_Array = $GMbool ? \"['#000000','#FF0000','#088A08','#0000FF','#FFBF00']\" : \"['#FF0000','#088A08','#0000FF','#FFBF00']\";" << "\n";
+        output << "        $Color_Array = $GMbool ? \"['#000000','#088A08','#FF0000','#0000FF','#FFBF00']\" : \"['#088A08','#FF0000','#0000FF','#FFBF00']\";" << "\n";
         output << "" << "\n";
         output << "        echo \"<script>" << "\n";
         output << "            var svg_width  = window.innerWidth;" << "\n";

@@ -12,7 +12,15 @@ class GeneTypeAnalyzerVolcano
     GeneTypeAnalyzerVolcano()
     {}
 
-    static void make_file_link( const std::string& p, const bool& isSeed )
+    static void output_heter_for_volcano( const std::string& output_name, auto& hetemap)
+    {
+        // if( !boost::filesystem::exists( p + "Heterorgeneity_5p.tsv" ))
+        //     boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_5p.tsv", ( p + "Heterorgeneity_5p.tsv" ).c_str() );
+        // if( !boost::filesystem::exists( p + "Heterorgeneity_3p.tsv" ))
+        //     boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_3p.tsv", ( p + "Heterorgeneity_3p.tsv" ).c_str() );
+    }
+
+    static void make_file_link( const std::string& p )
     {
         std::vector< std::string > list;
         boost::filesystem::path path( p + "../DiffBar/" );
@@ -24,19 +32,11 @@ class GeneTypeAnalyzerVolcano
         for( auto& file : list )
             if( !boost::filesystem::exists( p + file ))
                  boost::filesystem::create_symlink(( "../DiffBar/" + file ).c_str(), ( p + file ).c_str() );
-
-        if( !isSeed )
-        {
-            if( !boost::filesystem::exists( p + "Heterorgeneity_5p.tsv" ))
-                 boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_5p.tsv", ( p + "Heterorgeneity_5p.tsv" ).c_str() );
-            if( !boost::filesystem::exists( p + "Heterorgeneity_3p.tsv" ))
-                 boost::filesystem::create_symlink( "../BoxPlot/Heterorgeneity_3p.tsv", ( p + "Heterorgeneity_3p.tsv" ).c_str() );
-        }
     }
 
-    static void output_volcano_visualization( const std::string& output_name, const std::string& biotype, const bool& isSeed )
+    static void output_volcano_visualization( const std::string& output_name, const auto& isSeed, const std::string& biotype )
     {
-        make_file_link( output_name, isSeed );
+        make_file_link( output_name );
         std::ofstream output( output_name + "index.php" );
 
         output << "<!DOCTYPE html>" << "\n";
@@ -105,7 +105,7 @@ class GeneTypeAnalyzerVolcano
         output << "        echo '<select name=GMPM onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '; if($GMPM=='') echo 'selected'; echo '>GM or PM</option>';" << "\n";
         output << "" << "\n";
-        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Atail', 'Ctail', 'Gtail', 'Ttail', 'Other');" << "\n";
+        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Atail', 'Ctail', 'Gtail', 'Utail', 'Other');" << "\n";
         output << "" << "\n";
         output << "        $GMPM_Size = Count( $GMPM_List );" << "\n";
         output << "" << "\n";

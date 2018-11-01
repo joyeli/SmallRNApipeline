@@ -16,7 +16,7 @@ module.exports = {
     },
 
     readData: function( filein, miRNA, minlen, maxlen, seed_obj ) {
-        // miRNA_Length	A_Tail	C_Tail	G_Tail	T_Tail	Other_Tail	GM
+        // miRNA_Length	A_Tail	C_Tail	G_Tail	U_Tail	Other_Tail	GM
         // MIR17HG-206-3p_ATTGCAC*:15	0	0	0	0	0	1.27017
 
         let idx = 0;
@@ -58,7 +58,7 @@ module.exports = {
                     A_Tail:     Array( lens.length ).fill( 0 ),
                     C_Tail:     Array( lens.length ).fill( 0 ),
                     G_Tail:     Array( lens.length ).fill( 0 ),
-                    T_Tail:     Array( lens.length ).fill( 0 ),
+                    U_Tail:     Array( lens.length ).fill( 0 ),
                     Other_Tail: Array( lens.length ).fill( 0 )
                 };
             }
@@ -76,7 +76,7 @@ module.exports = {
                 = file[ arm ][ seed ][ "A_Tail" ][ lens[ length ]]
                 + file[ arm ][ seed ][ "C_Tail" ][ lens[ length ]]
                 + file[ arm ][ seed ][ "G_Tail" ][ lens[ length ]]
-                + file[ arm ][ seed ][ "T_Tail" ][ lens[ length ]]
+                + file[ arm ][ seed ][ "U_Tail" ][ lens[ length ]]
                 + file[ arm ][ seed ][ "Other_Tail" ][ lens[ length ]];
 
             file[ arm ][ seed ][ "GMPM" ][ lens[ length ]]

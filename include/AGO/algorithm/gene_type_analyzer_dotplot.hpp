@@ -21,14 +21,14 @@ class GeneTypeAnalyzerDotplot
             )
     {
         std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
-        output << sample_name << "\tGMPM\tGM\tPM\tTailing_Ratio\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\n";
+        output << sample_name << "\tGMPM\tGM\tPM\tTailing_Ratio\tA_Tail\tC_Tail\tG_Tail\tU_Tail\tOther_Tail\n";
 
         double gm = 0.0;
         double pm = 0.0;
         double tail_a = 0.0;
         double tail_c = 0.0;
         double tail_g = 0.0;
-        double tail_t = 0.0;
+        double tail_u = 0.0;
         double tail_o = 0.0;
 
         for( auto& anno : ano_len_idx.first )
@@ -38,7 +38,7 @@ class GeneTypeAnalyzerDotplot
             tail_a = 0.0;
             tail_c = 0.0;
             tail_g = 0.0;
-            tail_t = 0.0;
+            tail_u = 0.0;
             tail_o = 0.0;
 
             if( anno_table_tail[5].find( anno ) != anno_table_tail[5].end() )
@@ -53,7 +53,7 @@ class GeneTypeAnalyzerDotplot
                     case 0 : tail_a += len.second; break;
                     case 1 : tail_c += len.second; break;
                     case 2 : tail_g += len.second; break;
-                    case 3 : tail_t += len.second; break;
+                    case 3 : tail_u += len.second; break;
                     case 4 : tail_o += len.second; break;
                 }}
             }
@@ -69,7 +69,7 @@ class GeneTypeAnalyzerDotplot
                 << tail_a << "\t"
                 << tail_c << "\t"
                 << tail_g << "\t"
-                << tail_t << "\t"
+                << tail_u << "\t"
                 << tail_o << "\n"
                 ;
         }
@@ -103,14 +103,14 @@ class GeneTypeAnalyzerDotplot
         }
 
         std::ofstream output( output_name + sample_name + ".tsv" );
-        output << sample_name << "\tGMPM\tGM\tPM\tTailing_Ratio\tA_Tail\tC_Tail\tG_Tail\tT_Tail\tOther_Tail\n";
+        output << sample_name << "\tGMPM\tGM\tPM\tTailing_Ratio\tA_Tail\tC_Tail\tG_Tail\tU_Tail\tOther_Tail\n";
 
         double gm = 0.0;
         double pm = 0.0;
         double tail_a = 0.0;
         double tail_c = 0.0;
         double tail_g = 0.0;
-        double tail_t = 0.0;
+        double tail_u = 0.0;
         double tail_o = 0.0;
 
         for( auto& anno : ano_len_idx.first )
@@ -120,7 +120,7 @@ class GeneTypeAnalyzerDotplot
             tail_a = 0.0;
             tail_c = 0.0;
             tail_g = 0.0;
-            tail_t = 0.0;
+            tail_u = 0.0;
             tail_o = 0.0;
 
             if( anno_table_tail[5].find( anno ) != anno_table_tail[5].end() )
@@ -135,7 +135,7 @@ class GeneTypeAnalyzerDotplot
                     case 0 : tail_a += len.second; break;
                     case 1 : tail_c += len.second; break;
                     case 2 : tail_g += len.second; break;
-                    case 3 : tail_t += len.second; break;
+                    case 3 : tail_u += len.second; break;
                     case 4 : tail_o += len.second; break;
                 }}
             }
@@ -151,7 +151,7 @@ class GeneTypeAnalyzerDotplot
             anno_map[ anno_temp ][2] += tail_a;
             anno_map[ anno_temp ][3] += tail_c;
             anno_map[ anno_temp ][4] += tail_g;
-            anno_map[ anno_temp ][5] += tail_t;
+            anno_map[ anno_temp ][5] += tail_u;
             anno_map[ anno_temp ][6] += tail_o;
         }
 
@@ -162,7 +162,7 @@ class GeneTypeAnalyzerDotplot
             tail_a = anno.second[2];
             tail_c = anno.second[3];
             tail_g = anno.second[4];
-            tail_t = anno.second[5];
+            tail_u = anno.second[5];
             tail_o = anno.second[6];
 
             output
@@ -176,7 +176,7 @@ class GeneTypeAnalyzerDotplot
                 << tail_a << "\t"
                 << tail_c << "\t"
                 << tail_g << "\t"
-                << tail_t << "\t"
+                << tail_u << "\t"
                 << tail_o << "\n"
                 ;
         }
@@ -256,7 +256,7 @@ class GeneTypeAnalyzerDotplot
         output << "        echo '<select name=GMPM onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '; if($GMPM=='') echo 'selected'; echo '>GM or PM</option>';" << "\n";
         output << "" << "\n";
-        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Tailing_Ratio', 'A_Tail', 'C_Tail', 'G_Tail', 'T_Tail', 'Other_Tail');" << "\n";
+        output << "        $GMPM_List = array('GMPM', 'GM', 'PM', 'Tailing_Ratio', 'A_Tail', 'C_Tail', 'G_Tail', 'U_Tail', 'Other_Tail');" << "\n";
         output << "" << "\n";
         output << "        $GMPM_Size = Count( $GMPM_List );" << "\n";
         output << "" << "\n";
@@ -529,7 +529,7 @@ class GeneTypeAnalyzerDotplot
         output << "        echo '<select name=FGMPM >';" << "\n";
         output << "        echo '<option '; if($FGMPM=='') echo 'selected'; echo ' value= >GM or PM</option>';" << "\n";
         output << "" << "\n";
-        output << "        $FGMPM_List = array('GMPM', 'GM', 'PM', 'Tailing_Ratio', 'A_Tail', 'C_Tail', 'G_Tail', 'T_Tail', 'Other_Tail');" << "\n";
+        output << "        $FGMPM_List = array('GMPM', 'GM', 'PM', 'Tailing_Ratio', 'A_Tail', 'C_Tail', 'G_Tail', 'U_Tail', 'Other_Tail');" << "\n";
         output << "        $FGMPM_Size = Count( $FGMPM_List );" << "\n";
         output << "" << "\n";
         output << "        For( $i = 0; $i < $FGMPM_Size; ++$i )" << "\n";

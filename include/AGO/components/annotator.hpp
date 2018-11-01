@@ -295,6 +295,7 @@ class Annotator : public engine::NamedComponent
                 {
                     for( int i = 0; i < info.size(); i+=2 )
                     {
+                        if( info[i] == "mirbase" ) continue;
                         if( temp_map.find( info[i] ) == temp_map.end() )
                         {
                             bioindex.emplace( info[i] );
@@ -330,6 +331,8 @@ class Annotator : public engine::NamedComponent
 
         for( auto& biotype : bioindex )
         {
+            if( biotype == "mirbase" ) continue;
+
             output << biotype;
 
             for( size_t smp = 0; smp < bed_samples.size(); ++smp )
