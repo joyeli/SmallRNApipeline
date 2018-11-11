@@ -183,14 +183,18 @@ class GeneTypeAnalyzerTaildot
             )
     {
         std::ofstream output( output_name + sample_name + "-isomiRs.tsv" );
-        output << sample_name << "\tGMPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tU_Tail％\tOther_Tail％\n";
+        output << sample_name << "\tGMPM\tGM\tPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tU_Tail％\tOther_Tail％\n";
 
         for( auto& anno : ano_len_idx.first )
         {
             output << anno << ( anno_mark.find( anno ) != anno_mark.end() ? anno_mark[ anno ] : "" );
 
-            for( auto& ratio : tail_table[ anno ] )
-                output << "\t" << std::setprecision( 2 ) << std::fixed << ratio;
+            output << "\t" << std::setprecision( 2 ) << std::fixed << tail_table[ anno ][0];
+            output << "\t" << std::setprecision( 2 ) << std::fixed << tail_table[ anno ][0] - tail_table[ anno ][0] * tail_table[ anno ][2];
+            output << "\t" << std::setprecision( 2 ) << std::fixed << tail_table[ anno ][0] * tail_table[ anno ][2];
+
+            for( std::size_t i = 1; i < tail_table[ anno ].size(); ++i )
+                output << "\t" << std::setprecision( 2 ) << std::fixed << tail_table[ anno ][i];
 
             output << "\n";
         }
@@ -224,14 +228,18 @@ class GeneTypeAnalyzerTaildot
         }
 
         std::ofstream output( output_name + sample_name + ".tsv" );
-        output << sample_name << "\tGMPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tU_Tail％\tOther_Tail％\tHeter_5End\tHeter_3End\tHete_Tail\tEntpy_5End\tEntpy_Mid\tEntpy_3End\tEntpy_Tail\n";
+        output << sample_name << "\tGMPM\tGM\tPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tU_Tail％\tOther_Tail％\tHeter_5End\tHeter_3End\tHete_Tail\tEntpy_5End\tEntpy_Mid\tEntpy_3End\tEntpy_Tail\n";
 
         for( auto& anno : anno_idx_set )
         {
             output << anno << ( anno_mark_set.find( anno ) != anno_mark_set.end() ? "!" : "" );
 
-            for( auto& ratio : tail_table[ anno ] )
-                output << "\t" << std::setprecision( 2 ) << std::fixed << ratio;
+            output << "\t" << std::setprecision( 2 ) << std::fixed << tail_table[ anno ][0];
+            output << "\t" << std::setprecision( 2 ) << std::fixed << tail_table[ anno ][0] - tail_table[ anno ][0] * tail_table[ anno ][2];
+            output << "\t" << std::setprecision( 2 ) << std::fixed << tail_table[ anno ][0] * tail_table[ anno ][2];
+
+            for( std::size_t i = 1; i < tail_table[ anno ].size(); ++i )
+                output << "\t" << std::setprecision( 2 ) << std::fixed << tail_table[ anno ][i];
 
             output << "\n";
         }
