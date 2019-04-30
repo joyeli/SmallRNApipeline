@@ -159,6 +159,7 @@ class GeneTypeAnalyzerValplot
         output << "        $FGMPM = $_POST['FGMPM'];" << "\n"; 
         output << "        $isLog = $_POST['isLog'];" << "\n"; 
         output << "        $Filter = $_POST['Filter'];" << "\n"; 
+        output << "        $is5p3p = $_POST['is5p3p'];" << "\n";
         output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $TSV_File = $_POST['TSV_File'];" << "\n"; 
         output << "        $FilterMin = $_POST['FilterMin'];" << "\n"; 
@@ -222,6 +223,7 @@ class GeneTypeAnalyzerValplot
             output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
             output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
             output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
             output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
             output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
@@ -237,6 +239,35 @@ class GeneTypeAnalyzerValplot
             output << "        $IsomiRs = 'No';" << "\n";
         }
 
+        output << "" << "\n"; 
+        output << "#<!--================ 5p3pSelector ==================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=is5p3p onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($is5p3p=='') echo 'selected'; echo 'value= >5p3p</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $Arm_List = array( '5p', '3p' );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Arm_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Arm_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $is5p3p == $Arm_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>'.$Arm_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+        output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n";
+        output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n";
+        output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+        output << "            </form>\";" << "\n";
         output << "" << "\n"; 
         output << "#<!--================== TSV File ====================-->" << "\n"; 
         output << "" << "\n"; 
@@ -294,6 +325,7 @@ class GeneTypeAnalyzerValplot
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMax' value='$FilterMax' />" << "\n"; 
@@ -329,6 +361,7 @@ class GeneTypeAnalyzerValplot
             output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
             output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
             output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
             output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
@@ -364,6 +397,7 @@ class GeneTypeAnalyzerValplot
         output << "        echo \"</select>" << "\n"; 
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n"; 
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n"; 
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
         output << "            <input type='hidden' name='FilterMin' value='$FilterMin' />" << "\n"; 
@@ -419,6 +453,7 @@ class GeneTypeAnalyzerValplot
         output << "" << "\n"; 
         output << "        echo \"" << "\n"; 
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n"; 
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n"; 
         output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n"; 
@@ -509,6 +544,9 @@ class GeneTypeAnalyzerValplot
         output << "                        if( Count( $miRNA ) != 2 )" << "\n"; 
         output << "                            $Check_Filter = 'notkeep';" << "\n"; 
         output << "                    }" << "\n"; 
+        output << "" << "\n"; 
+        output << "                    if( $is5p3p == '5p' && StrPos( $inFile_Line[0], '5p' ) === false ) $Check_Filter = 'notkeep';" << "\n";
+        output << "                    if( $is5p3p == '3p' && StrPos( $inFile_Line[0], '3p' ) === false ) $Check_Filter = 'notkeep';" << "\n";
         output << "" << "\n"; 
         output << "                    if( $Check_Filter == 'keep' )" << "\n"; 
         output << "                    {" << "\n"; 

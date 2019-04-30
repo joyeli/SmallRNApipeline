@@ -80,6 +80,7 @@ class GeneTypeAnalyzerBoxPlot
         output << "            <input type='hidden' name='fValue' value='$fValue' />" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
         output << "            <input type='hidden' name='Header' value='$Header' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='isTrimmed' value='$isTrimmed' />" << "\n";
         output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
         output << "            <input type='hidden' name='Filter_Type' value='$Filter_Type' />" << "\n";
@@ -165,6 +166,7 @@ class GeneTypeAnalyzerBoxPlot
         output << "            <input type='hidden' name='fType' value='$fType' />" << "\n";
         output << "            <input type='hidden' name='fValue' value='$fValue' />" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='isIsomer' value='$isIsomer' />" << "\n";
         output << "            <input type='hidden' name='isTrimmed' value='$isTrimmed' />" << "\n";
         output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
@@ -267,6 +269,7 @@ class GeneTypeAnalyzerBoxPlot
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Header' value='$Header' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='isIsomer' value='$isIsomer' />" << "\n";
         output << "            <input type='hidden' name='isTrimmed' value='$isTrimmed' />" << "\n";
         output << "            <input type='submit' value='Submit' /> " << "\n";
@@ -342,7 +345,7 @@ class GeneTypeAnalyzerBoxPlot
         output << "" << "\n";
         output << "                if( In_Array( $inFile_Lines[0], $Filter_Anno[ $i ] ) === false ) continue;" << "\n";
         output << "                if( $is5p3p == '5p' && StrPos( $inFile_Lines[0], '5p' ) === false ) continue;" << "\n";
-        output << "                if( $is5p3p == '5p' && StrPos( $inFile_Lines[0], '5p' ) === false ) continue;" << "\n";
+        output << "                if( $is5p3p == '3p' && StrPos( $inFile_Lines[0], '3p' ) === false ) continue;" << "\n";
         output << "" << "\n";
         output << "                if( $FilterIdx == 4 && $inFile_Lines[ $FilterIdx ] == 1 ) continue;" << "\n";
         output << "                if( $FilterIdx != 0 && $inFile_Lines[ $FilterIdx ] == 0 ) continue;" << "\n";

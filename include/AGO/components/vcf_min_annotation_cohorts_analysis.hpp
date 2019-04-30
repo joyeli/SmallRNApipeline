@@ -90,8 +90,8 @@ class VcfMinAnnotationCohortsAnalysis : public engine::NamedComponent
 
             if( type == "Gencode" ) ann_bed.gene = name;
             if( type == "RMSK" || type == "NonRMSKofDuplications1000Base" ) ann_bed.rmsk = "Y";
-            if( type == "Snp150All" ) ann_bed.dbsnp = name;
-            if( type == "Snp150Common" ) ann_bed.comonsnp = "Y";
+            if( type == "SnpAll" ) ann_bed.dbsnp = name;
+            if( type == "SnpCommon" ) ann_bed.comonsnp = "Y";
             if( type == "PubsMarkerSnp" ) ann_bed.pub = "Y";
             if( type == "Omim" ) ann_bed.omim = name;
             if( type == "Clinvar" ) ann_bed.clinvar = name;

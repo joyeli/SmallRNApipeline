@@ -41,7 +41,7 @@ class GeneTypeAnalyzerTaildot
         {
             boost::iter_split( split, anno, boost::algorithm::first_finder( "_" ));
             anno_map.emplace(( !isSeed ? split[0] : anno ), std::vector< double >( 15, 0.0 ));
-            // GMPM TailLens    Tailing％   A_Tail％    C_Tail％    G_Tail％    U_Tail％    Other_Tail％    Heter_5End  Heter_3End  Hete_Tail   Entpy_5End  Entpy_Mid   Entpy_3End  Entpy_Tail
+            // GMPM TailLens    Tailing％   A_Tail％    C_Tail％    G_Tail％    U_Tail％    Other_Tail％    Heter_5End  Heter_3End  Heter_Tail   Entpy_5End  Entpy_Mid   Entpy_3End  Entpy_Tail
             // 0    1           2           3           4           5           6           7
 
             isom_map.emplace( anno, std::vector< double >( 8, 0.0 ));
@@ -228,7 +228,7 @@ class GeneTypeAnalyzerTaildot
         }
 
         std::ofstream output( output_name + sample_name + ".tsv" );
-        output << sample_name << "\tGMPM\tGM\tPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tU_Tail％\tOther_Tail％\tHeter_5End\tHeter_3End\tHete_Tail\tEntpy_5End\tEntpy_Mid\tEntpy_3End\tEntpy_Tail\n";
+        output << sample_name << "\tGMPM\tGM\tPM\tTailLens\tTailing％\tA_Tail％\tC_Tail％\tG_Tail％\tU_Tail％\tOther_Tail％\tHeter_5End\tHeter_3End\tHeter_Tail\tEntpy_5End\tEntpy_Mid\tEntpy_3End\tEntpy_Tail\n";
 
         for( auto& anno : anno_idx_set )
         {
@@ -264,6 +264,7 @@ class GeneTypeAnalyzerTaildot
         output << "        $yMax = $_POST['yMax'];" << "\n";
         output << "        $isLog = $_POST['isLog'];" << "\n";
         output << "        $Filter = $_POST['Filter'];" << "\n";
+        output << "        $is5p3p = $_POST['is5p3p'];" << "\n";
         output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $TSV_File = $_POST['TSV_File'];" << "\n";
         output << "        $XaxisType = $_POST['XaxisType'];" << "\n";
@@ -323,7 +324,10 @@ class GeneTypeAnalyzerTaildot
         output << "        echo '<select name=XaxisType onchange=this.form.submit();>';" << "\n";
         output << "        echo '<option '; if($XaxisType=='') echo 'selected'; echo '>XaxisType</option>';" << "\n";
         output << "" << "\n";
-        output << "        $XaxisType_List = $IsomiRs == 'Yes' ? array('GMPM', 'TailLens') : array('GMPM', 'TailLens'" << ( isSeed ? "" : ", '5pHeterorgeneity', '3pHeterorgeneity'" ) << ");" << "\n";
+        output << "        $XaxisType_List = $IsomiRs == 'Yes'" << "\n";
+        output << "            ? array('GMPM','GM','PM','TailLens')" << "\n";
+        output << "            : array('GMPM','GM','PM','TailLens','Heter_5End','Heter_3End','Hetet_Tail','Entpy_5End','Entpy_Mid','Entpy_3End','Entpy_Tail');" << "\n";
+        output << "" << "\n";
         output << "        $XaxisType_Size = Count( $XaxisType_List );" << "\n";
         output << "" << "\n";
         output << "        For( $i = 0; $i < $XaxisType_Size; ++$i )" << "\n";
@@ -342,6 +346,7 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
@@ -352,41 +357,6 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='Filter_Samp' value='$Filter_Samp' />" << "\n";
         output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
         output << "            </form>\";" << "\n";
-        output << "" << "\n";
-        output << "#<!--=============== ReadHeterFile ==================-->" << "\n";
-        output << "" << "\n";
-        output << "        $Heter_TSV = '';" << "\n";
-        output << "        $Heter_Sample = 0;" << "\n";
-        output << "        $Heter_Array = Array();" << "\n";
-        output << "" << "\n";
-        output << "        if( $XaxisType == '5pHeterorgeneity' ) $Heter_TSV = 'Heterorgeneity_5p.tsv';" << "\n";
-        output << "        if( $XaxisType == '3pHeterorgeneity' ) $Heter_TSV = 'Heterorgeneity_3p.tsv';" << "\n";
-        output << "" << "\n";
-        output << "        if( $Heter_TSV != '' )" << "\n";
-        output << "        {" << "\n";
-        output << "            $isHeader = true;" << "\n";
-        output << "            $inFile = new SplFileObject( $Heter_TSV );" << "\n";
-        output << "" << "\n";
-        output << "            while( !$inFile->eof() )" << "\n";
-        output << "            {" << "\n";
-        output << "                $inFile_Lines = $inFile->fgets();" << "\n";
-        output << "                $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
-        output << "" << "\n";
-        output << "                if( $isHeader )" << "\n";
-        output << "                {" << "\n";
-        output << "                    For( $i = 1; $i < Count( $inFile_Line ); ++$i )" << "\n";
-        output << "                    {" << "\n";
-        output << "                        $Sample = Explode( '-', $inFile_Line[$i] );" << "\n";
-        output << "                        if( $Sample[0] == $TSV_File ) $Heter_Sample = $i;" << "\n";
-        output << "                    }" << "\n";
-        output << "" << "\n";
-        output << "                    $isHeader = false;" << "\n";
-        output << "                    continue;" << "\n";
-        output << "                }" << "\n";
-        output << "" << "\n";
-        output << "                $Heter_Array[ $inFile_Line[0] ] = $inFile_Line[ $Heter_Sample ];" << "\n";
-        output << "            }" << "\n";
-        output << "        }" << "\n";
         output << "" << "\n";
         output << "#<!--================ RatioType =================-->" << "\n";
         output << "" << "\n";
@@ -415,6 +385,7 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
@@ -453,6 +424,8 @@ class GeneTypeAnalyzerTaildot
             output << "            <input type='hidden' name='yMin' value='$yMin' />" << "\n";
             output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
             output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+            output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
             output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
             output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
@@ -469,6 +442,43 @@ class GeneTypeAnalyzerTaildot
             output << "        $IsomiRs == 'No';" << "\n";
         }
 
+        output << "" << "\n";
+        output << "#<!--================ 5p3pSelector ==================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=is5p3p onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($is5p3p=='') echo 'selected'; echo 'value= >5p3p</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $Arm_List = array( '5p', '3p' );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Arm_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Arm_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $is5p3p == $Arm_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>'.$Arm_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='xMin' value='$xMin' />" << "\n";
+        output << "            <input type='hidden' name='xMax' value='$xMax' />" << "\n";
+        output << "            <input type='hidden' name='yMin' value='$yMin' />" << "\n";
+        output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+        output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
+        output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
+        output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
+        output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+        output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Type' value='$Filter_Type' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Samp' value='$Filter_Samp' />" << "\n";
+        output << "            <input type='hidden' name='Filter_Pref' value='$Filter_Pref' />" << "\n";
+        output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--================== TSV File ====================-->" << "\n";
         output << "" << "\n";
@@ -522,6 +532,7 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
         output << "            <input type='hidden' name='RatioType' value='$RatioType' />" << "\n";
@@ -564,6 +575,7 @@ class GeneTypeAnalyzerTaildot
             output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
             output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
             output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
             output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
@@ -607,6 +619,7 @@ class GeneTypeAnalyzerTaildot
         output << "            <input type='hidden' name='yMin' value='$yMin' />" << "\n";
         output << "            <input type='hidden' name='yMax' value='$yMax' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
@@ -722,6 +735,7 @@ class GeneTypeAnalyzerTaildot
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
         output << "            <input type='hidden' name='XaxisType' value='$XaxisType' />" << "\n";
@@ -754,7 +768,6 @@ class GeneTypeAnalyzerTaildot
         output << "        $AColumn = 0;" << "\n";
         output << "        $RColumn = 0;" << "\n";
         output << "        $TColumn = 1;" << "\n";
-        output << "        $LColumn = 2;" << "\n";
         output << "" << "\n";
         output << "        $minX = 30;" << "\n";
         output << "        $maxX = 0;" << "\n";
@@ -778,6 +791,18 @@ class GeneTypeAnalyzerTaildot
         output << "            $inFile_Line = Explode( \"\\t\", $inFile_Lines[$i] );" << "\n";
         output << "            $miRNA_Seed  = Explode( '*', $inFile_Line[ $AColumn ]);" << "\n";
         output << "" << "\n";
+        output << "            if( $XaxisType == 'GMPM'       ) $TColumn = 1;" << "\n";
+        output << "            if( $XaxisType == 'GM'         ) $TColumn = 2;" << "\n";
+        output << "            if( $XaxisType == 'PM'         ) $TColumn = 3;" << "\n";
+        output << "            if( $XaxisType == 'TailLens'   ) $TColumn = 4;" << "\n";
+        output << "            if( $XaxisType == 'Heter_5End' ) $TColumn = 11;" << "\n";
+        output << "            if( $XaxisType == 'Heter_3End' ) $TColumn = 12;" << "\n";
+        output << "            if( $XaxisType == 'Heter_Tail' ) $TColumn = 13;" << "\n";
+        output << "            if( $XaxisType == 'Entpy_5End' ) $TColumn = 14;" << "\n";
+        output << "            if( $XaxisType == 'Entpy_Mid'  ) $TColumn = 15;" << "\n";
+        output << "            if( $XaxisType == 'Entpy_3End' ) $TColumn = 16;" << "\n";
+        output << "            if( $XaxisType == 'Entpy_Tail' ) $TColumn = 17;" << "\n";
+        output << "" << "\n";
         output << "            if( $i == 0 )" << "\n";
         output << "            {" << "\n";
         output << "                For( $j = 0; $j < Count( $inFile_Line ); ++$j )" << "\n";
@@ -786,19 +811,10 @@ class GeneTypeAnalyzerTaildot
         output << "                        $RColumn = $j;" << "\n";
         output << "                }" << "\n";
         output << "" << "\n";
-        output << "                Array_Push( $Header, Substr( $inFile_Line[ $AColumn ], 0, Strlen( $inFile_Line[ $AColumn ]) ));" << "\n";
-        output << "" << "\n";
-        output << "                if( $XaxisType == 'GMPM' )" << "\n";
-        output << "                    Array_Push( $Header, Substr( $inFile_Line[ $TColumn ], 0, Strlen( $inFile_Line[ $TColumn ]) ));" << "\n";
-        output << "" << "\n";
-        output << "                if( $XaxisType == 'TailLens' )" << "\n";
-        output << "                    Array_Push( $Header, Substr( $inFile_Line[ $LColumn ], 0, Strlen( $inFile_Line[ $LColumn ]) ));" << "\n";
-        output << "" << "\n";
-        output << "                if( $XaxisType == '5pHeterorgeneity' || $XaxisType == '3pHeterorgeneity' )" << "\n";
-        output << "                    Array_Push( $Header, 'Heterorgeneity' );" << "\n";
-        output << "" << "\n";
+        output << "                Array_Push( $Header, $inFile_Line[ $AColumn ]);" << "\n";
+        output << "                Array_Push( $Header, $inFile_Line[ $TColumn ]);" << "\n";
         output << "                Array_Push( $Header, Substr( $inFile_Line[ $RColumn ], 0, Strlen( $inFile_Line[ $RColumn ]) -3 ));" << "\n";
-        output << "                Array_Push( $Header, Substr( $inFile_Line[ $TColumn ], 0, Strlen( $inFile_Line[ $TColumn ]) ));" << "\n";
+        output << "                Array_Push( $Header, $inFile_Line[ $AColumn ]);" << "\n";
         output << "" << "\n";
         output << "                Fwrite( $Ftemp, \"miRNA\\t\".$Header[1].\"\\t\".$Header[2].\"\\t\".$Header[3].\"\\n\" );" << "\n";
         output << "            }" << "\n";
@@ -812,21 +828,11 @@ class GeneTypeAnalyzerTaildot
         output << "" << "\n";
         output << "                $miRNA = Explode( '!', $inFile_Line[ $AColumn ]);" << "\n";
         output << "" << "\n";
-        output << "                if( $XaxisType == 'GMPM' )" << "\n";
-        output << "                {" << "\n";
-        output << "                    if( $minX > $inFile_Line[ $TColumn ] && $inFile_Line[ $TColumn ] != 0 ) $minX = $inFile_Line[ $TColumn ];" << "\n";
-        output << "                    if( $maxX < $inFile_Line[ $TColumn ] )  $maxX = $inFile_Line[ $TColumn ];" << "\n";
-        output << "                }" << "\n";
-        output << "                else if( $XaxisType == 'TailLens' )" << "\n";
-        output << "                {" << "\n";
-        output << "                    if( $minX > $inFile_Line[ $LColumn ] && $inFile_Line[ $LColumn ] != 0 ) $minX = $inFile_Line[ $LColumn ];" << "\n";
-        output << "                    if( $maxX < $inFile_Line[ $LColumn ] )  $maxX = $inFile_Line[ $LColumn ];" << "\n";
-        output << "                }" << "\n";
-        output << "                else if( $XaxisType == '5pHeterorgeneity' || $XaxisType == '3pHeterorgeneity' )" << "\n";
-        output << "                {" << "\n";
-        output << "                    if( $minX > $Heter_Array[ $miRNA[0] ] ) $minX = $Heter_Array[ $miRNA[0] ];" << "\n";
-        output << "                    if( $maxX < $Heter_Array[ $miRNA[0] ] ) $maxX = $Heter_Array[ $miRNA[0] ];" << "\n";
-        output << "                }" << "\n";
+        output << "                if( $is5p3p == '5p' && StrPos( $miRNA[0], '5p' ) === false ) continue;" << "\n";
+        output << "                if( $is5p3p == '3p' && StrPos( $miRNA[0], '3p' ) === false ) continue;" << "\n";
+        output << "" << "\n";
+        output << "                if( $minX > $inFile_Line[ $TColumn ] && $inFile_Line[ $TColumn ] != 0 ) $minX = $inFile_Line[ $TColumn ];" << "\n";
+        output << "                if( $maxX < $inFile_Line[ $TColumn ] )  $maxX = $inFile_Line[ $TColumn ];" << "\n";
         output << "" << "\n";
         output << "                if( $maxY   < $inFile_Line[ $RColumn ] ) $maxY   = $inFile_Line[ $RColumn ];" << "\n";
         output << "                if( $minPPM > $inFile_Line[ $TColumn ] ) $minPPM = $inFile_Line[ $TColumn ];" << "\n";
@@ -834,7 +840,7 @@ class GeneTypeAnalyzerTaildot
         output << "" << "\n";
         output << "                Fwrite( $Ftemp," << "\n";
         output << "                    $miRNA_Seed[0].\"\\t\"." << "\n";
-        output << "                    ( $XaxisType == 'GMPM' ? $inFile_Line[ $TColumn ] : ( $XaxisType == 'TailLens' ? $inFile_Line[ $LColumn ] : $Heter_Array[ $miRNA[0] ] )).\"\\t\"." << "\n";
+        output << "                    $inFile_Line[ $TColumn ].\"\\t\"." << "\n";
         output << "                    $inFile_Line[ $RColumn ].\"\\t\"." << "\n";
         output << "                    $inFile_Line[ $TColumn ].\"\\n\"" << "\n";
         output << "                );" << "\n";

@@ -198,6 +198,7 @@ class GeneTypeAnalyzerDotplot
         output << "        $GMPM = $_POST['GMPM'];" << "\n";
         output << "        $FGMPM = $_POST['FGMPM'];" << "\n";
         output << "        $isLog = $_POST['isLog'];" << "\n";
+        output << "        $is5p3p = $_POST['is5p3p'];" << "\n";
         output << "        $Filter = $_POST['Filter'];" << "\n";
         output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $ForceMin = $_POST['ForceMin'];" << "\n";
@@ -272,6 +273,7 @@ class GeneTypeAnalyzerDotplot
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='ForceMin' value='$ForceMin' />" << "\n";
@@ -309,6 +311,7 @@ class GeneTypeAnalyzerDotplot
             output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
             output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n";
             output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
             output << "            <input type='hidden' name='ForceMin' value='$ForceMin' />" << "\n";
             output << "            <input type='hidden' name='ForceMax' value='$ForceMax' />" << "\n";
@@ -324,6 +327,39 @@ class GeneTypeAnalyzerDotplot
             output << "        $IsomiRs == 'No';" << "\n";
         }
 
+        output << "" << "\n";
+        output << "#<!--================ 5p3pSelector ==================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=is5p3p onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($is5p3p=='') echo 'selected'; echo 'value= >5p3p</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $Arm_List = array( '5p', '3p' );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Arm_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Arm_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $is5p3p == $Arm_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>'.$Arm_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='ForceMin' value='$ForceMin' />" << "\n";
+        output << "            <input type='hidden' name='ForceMax' value='$ForceMax' />" << "\n";
+        output << "            <input type='hidden' name='TSV_File1' value='$TSV_File1' />" << "\n";
+        output << "            <input type='hidden' name='TSV_File2' value='$TSV_File2' />" << "\n";
+        output << "            <input type='hidden' name='Color_Low' value='$Color_Low' />" << "\n";
+        output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+        output << "            <input type='hidden' name='Color_Hight' value='$Color_Hight' />" << "\n";
+        output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--================== TSV File ====================-->" << "\n";
         output << "" << "\n";
@@ -397,6 +433,7 @@ class GeneTypeAnalyzerDotplot
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='ForceMin' value='$ForceMin' />" << "\n";
@@ -434,6 +471,7 @@ class GeneTypeAnalyzerDotplot
             output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
             output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n";
             output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
             output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
             output << "            <input type='hidden' name='ForceMin' value='$ForceMin' />" << "\n";
@@ -473,6 +511,7 @@ class GeneTypeAnalyzerDotplot
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='FGMPM' value='$FGMPM' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='ForceMin' value='$ForceMin' />" << "\n";
@@ -545,6 +584,7 @@ class GeneTypeAnalyzerDotplot
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
         output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='TSV_File1' value='$TSV_File1' />" << "\n";
         output << "            <input type='hidden' name='TSV_File2' value='$TSV_File2' />" << "\n";
@@ -585,6 +625,9 @@ class GeneTypeAnalyzerDotplot
         output << "" << "\n";
         output << "                    if( $isAbundant == 'MostAbundant' && $IsomiRs == 'Yes' && Count( $miRNA_Seed ) == 1 )" << "\n";
         output << "                        continue;" << "\n";
+        output << "" << "\n";
+        output << "                    if( $is5p3p == '5p' && StrPos( $miRNA_Seed[0], '5p' ) === false ) continue;" << "\n";
+        output << "                    if( $is5p3p == '3p' && StrPos( $miRNA_Seed[0], '3p' ) === false ) continue;" << "\n";
         output << "" << "\n";
         output << "                    Array_Push( $Index, $miRNA_Seed[0] );" << "\n";
         output << "                }" << "\n";

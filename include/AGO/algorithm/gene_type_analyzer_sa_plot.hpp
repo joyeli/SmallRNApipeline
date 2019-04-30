@@ -341,6 +341,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "        $isGM = $_POST['isGM'];" << "\n";
         output << "        $isBin = $_POST['isBin'];" << "\n";
         output << "        $Filter = $_POST['Filter'];" << "\n";
+        output << "        $is5p3p = $_POST['is5p3p'];" << "\n";
         output << "        $Ranking = $_POST['Ranking'];" << "\n";
         output << "        $nNumber = $_POST['nNumber'];" << "\n";
         output << "        $isRatio = $_POST['isRatio'];" << "\n";
@@ -351,6 +352,36 @@ class GeneTypeAnalyzerSA_Plot
         output << "        echo '<script src=https://code.jquery.com/jquery-3.3.1.min.js></script>';" << "\n";
         output << "        echo '<script src=https://cdn.rawgit.com/novus/nvd3/v1.8.6/build/nv.d3.min.js></script>';" << "\n";
         output << "        echo '<link href=https://cdn.rawgit.com/novus/nvd3/v1.8.6/build/nv.d3.css rel=stylesheet type=text/css>';" << "\n";
+        output << "" << "\n";
+        output << "#<!--================ 5p3pSelector ==================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=is5p3p onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($is5p3p=='') echo 'selected'; echo 'value= >5p3p</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $Arm_List = array( '5p', '3p' );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Arm_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Arm_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $is5p3p == $Arm_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>'.$Arm_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
+        output << "            <input type='hidden' name='isGM' value='$isGM' />" << "\n";
+        output << "            <input type='hidden' name='isBin' value='$isBin' />" << "\n";
+        output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='Ranking' value='$Ranking' />" << "\n";
+        output << "            <input type='hidden' name='nNumber' value='$nNumber' />" << "\n";
+        output << "            <input type='hidden' name='isRatio' value='$isRatio' />" << "\n";
+        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+        output << "            <input type='hidden' name='isTrimmed' value='$isTrimmed' />" << "\n";
+        output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--================== Type ====================-->" << "\n";
         output << "" << "\n";
@@ -397,6 +428,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "            <input type='hidden' name='isGM' value='$isGM' />" << "\n";
         output << "            <input type='hidden' name='isBin' value='$isBin' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Ranking' value='$Ranking' />" << "\n";
         output << "            <input type='hidden' name='nNumber' value='$nNumber' />" << "\n";
         output << "            <input type='hidden' name='isRatio' value='$isRatio' />" << "\n";
@@ -432,6 +464,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "            <input type='hidden' name='isGM' value='$isGM' />" << "\n";
         output << "            <input type='hidden' name='isBin' value='$isBin' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Ranking' value='$Ranking' />" << "\n";
         output << "            <input type='hidden' name='nNumber' value='$nNumber' />" << "\n";
         output << "            <input type='hidden' name='isRatio' value='$isRatio' />" << "\n";
@@ -475,6 +508,9 @@ class GeneTypeAnalyzerSA_Plot
         output << "                    $isHeader = false;" << "\n";
         output << "                    continue;" << "\n";
         output << "                }" << "\n";
+        output << "" << "\n";
+        output << "                if( $is5p3p == '5p' && StrPos( $inFile_Line[0], '5p' ) === false ) continue;" << "\n";
+        output << "                if( $is5p3p == '3p' && StrPos( $inFile_Line[0], '3p' ) === false ) continue;" << "\n";
         output << "" << "\n";
         output << "                if( $Filter != '' && $Filter != 'FilterGMPM' && $inFile_Line[1] < $Filter  ) continue;" << "\n";
         output << "                if( $Ranking == 'Tailing％' && $inFile_Line[3] == 0 ) continue;" << "\n";
@@ -534,6 +570,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "            <input type='hidden' name='isGM' value='$isGM' />" << "\n";
         output << "            <input type='hidden' name='isBin' value='$isBin' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='nNumber' value='$nNumber' />" << "\n";
         output << "            <input type='hidden' name='isRatio' value='$isRatio' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -566,6 +603,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "                <input type='hidden' name='Type' value='$Type' />" << "\n";
         output << "                <input type='hidden' name='isBin' value='$isBin' />" << "\n";
         output << "                <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "                <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "                <input type='hidden' name='Ranking' value='$Ranking' />" << "\n";
         output << "                <input type='hidden' name='nNumber' value='$nNumber' />" << "\n";
         output << "                <input type='hidden' name='isRatio' value='$isRatio' />" << "\n";
@@ -599,6 +637,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "            <input type='hidden' name='isGM' value='$isGM' />" << "\n";
         output << "            <input type='hidden' name='isBin' value='$isBin' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Ranking' value='$Ranking' />" << "\n";
         output << "            <input type='hidden' name='nNumber' value='$nNumber' />" << "\n";
         output << "            <input type='hidden' name='isRatio' value='$isRatio' />" << "\n";
@@ -628,6 +667,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
         output << "            <input type='hidden' name='isGM' value='$isGM' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Ranking' value='$Ranking' />" << "\n";
         output << "            <input type='hidden' name='nNumber' value='$nNumber' />" << "\n";
         output << "            <input type='hidden' name='isRatio' value='$isRatio' />" << "\n";
@@ -659,6 +699,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "            <input type='hidden' name='isGM' value='$isGM' />" << "\n";
         output << "            <input type='hidden' name='isBin' value='$isBin' />" << "\n";
         output << "            <input type='hidden' name='Filter' value='$Filter' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Ranking' value='$Ranking' />" << "\n";
         output << "            <input type='hidden' name='nNumber' value='$nNumber' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -689,6 +730,7 @@ class GeneTypeAnalyzerSA_Plot
         output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
         output << "            <input type='hidden' name='isGM' value='$isGM' />" << "\n";
         output << "            <input type='hidden' name='isBin' value='$isBin' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='Ranking' value='$Ranking' />" << "\n";
         output << "            <input type='hidden' name='isRatio' value='$isRatio' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";

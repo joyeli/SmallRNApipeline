@@ -372,8 +372,6 @@ class GeneTypeAnalyzerEachtype
             { // must do after boxplot done
                 std::chrono::time_point< std::chrono::system_clock > start_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
 
-                GeneTypeAnalyzerHisGram::output_hisgram_from_heter( output_path + hisgram );
-                GeneTypeAnalyzerHisGram::output_hisgram_from_entro( output_path + hisgram );
                 GeneTypeAnalyzerHisGram::output_hisgram_visualization( output_path + hisgram );
 
                 std::chrono::time_point< std::chrono::system_clock > end_time = std::chrono::time_point< std::chrono::system_clock >( std::chrono::system_clock::now() );
@@ -577,12 +575,11 @@ class GeneTypeAnalyzerEachtype
         // parallel_pool.flush_pool();
 
         GeneTypeAnalyzerVolcano::output_volcano_visualization( output_path + volcano, is_seed, biotype );
-        if( !is_seed ) GeneTypeAnalyzerVolcano::output_heter_for_volcano( output_path + volcano, hetemap );
+
         if( is_all && ( biotype.substr( 0, 5 ) == "miRNA" || biotype == "mirtron" ))
         {
             boost::filesystem::create_directory( boost::filesystem::path( output_path + diffarm ));
             GeneTypeAnalyzerDiffarm::output_diffarm_visualization( output_path + diffarm );
-            GeneTypeAnalyzerDiffarm::get_diffarm( output_path + diffarm );
         }
     }
 };

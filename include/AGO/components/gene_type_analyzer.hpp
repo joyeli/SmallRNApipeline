@@ -238,17 +238,17 @@ class GeneTypeAnalyzer
             //         do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, quantiled_ppm, ano_len_idx, anno_mark, output_path, std::to_string( len ));
             //     });
 
-            if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
-            {
-                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &quantiled_ppm, &anno_mark, &output_path, this ] ()
-                {
-                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, quantiled_ppm, ano_len_idx, anno_mark, output_path, "5p" );
-                });
-                ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &quantiled_ppm, &anno_mark, &output_path, this ] ()
-                {
-                    do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, quantiled_ppm, ano_len_idx, anno_mark, output_path, "3p" );
-                });
-            }
+            // if( biotype == "miRNA_mirtron" || biotype == "miRNA" || biotype == "mirtron" )
+            // {
+            //     ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &quantiled_ppm, &anno_mark, &output_path, this ] ()
+            //     {
+            //         do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, quantiled_ppm, ano_len_idx, anno_mark, output_path, "5p" );
+            //     });
+            //     ana_parallel_pool.job_post([ &biotype, &bed_samples, &genome_table, &anno_table_tail, &anno_table_trim, &ano_len_idx, &quantiled_ppm, &anno_mark, &output_path, this ] ()
+            //     {
+            //         do_analysis( biotype, bed_samples, genome_table, filter_ppm, anno_table_tail, anno_table_trim, quantiled_ppm, ano_len_idx, anno_mark, output_path, "3p" );
+            //     });
+            // }
 
             ana_parallel_pool.flush_pool();
 

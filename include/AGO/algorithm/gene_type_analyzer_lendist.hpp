@@ -198,6 +198,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        $ForceY = $_POST['ForceY'];" << "\n";
         output << "        $Dvided = $_POST['Dvided'];" << "\n";
+        output << "        $is5p3p = $_POST['is5p3p'];" << "\n";
         output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $Trimmed = $_POST['Trimmed'];" << "\n";
         output << "        $PPMFilter = $_POST['PPMFilter'];" << "\n";
@@ -244,6 +245,7 @@ class GeneTypeAnalyzerLendist
             output << "        echo \"</select>" << "\n";
             output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
             output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
             output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
             output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
@@ -277,6 +279,7 @@ class GeneTypeAnalyzerLendist
             output << "        echo \"</select>" << "\n";
             output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
             output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
             output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
             output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
@@ -293,6 +296,35 @@ class GeneTypeAnalyzerLendist
             output << "        $IsomiRs = 'Yes';" << "\n";
         }
 
+        output << "" << "\n";
+        output << "#<!--================ 5p3pSelector ==================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=is5p3p onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($is5p3p=='') echo 'selected'; echo 'value= >5p3p</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $Arm_List = array( '5p', '3p' );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Arm_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Arm_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $is5p3p == $Arm_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>'.$Arm_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
+        output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
+        output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
+        output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
+        output << "            <input type='hidden' name='annotation_select' value='$annotation_select' />" << "\n";
+        output << "            <input type='hidden' name='isAbundant' value='$isAbundant' />" << "\n";
+        output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--================== TSV File ====================-->" << "\n";
         output << "" << "\n";
@@ -364,6 +396,7 @@ class GeneTypeAnalyzerLendist
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
         output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
@@ -397,6 +430,7 @@ class GeneTypeAnalyzerLendist
             output << "        echo \"</select>" << "\n";
             output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
             output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
             output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
             output << "            <input type='hidden' name='PPMFilter' value='$PPMFilter' />" << "\n";
@@ -426,6 +460,7 @@ class GeneTypeAnalyzerLendist
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
         output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -448,6 +483,10 @@ class GeneTypeAnalyzerLendist
         output << "            $Annotation = Explode( '*', $anno[0] );" << "\n";
         output << "" << "\n";
         output << "            if( $isAbundant == 'MostAbundant' && Count( $Annotation ) != 2 ) continue;" << "\n";
+        output << "" << "\n";
+        output << "            if( $is5p3p == '5p' && StrPos( $Annotation[0], '5p' ) === false ) continue;" << "\n";
+        output << "            if( $is5p3p == '3p' && StrPos( $Annotation[0], '3p' ) === false ) continue;" << "\n";
+        output << "" << "\n";
         output << "            if( !Array_Key_Exists( $anno[0], $Anno_Array )) $Anno_Array[ $anno[0] ] = 0;" << "\n";
         output << "" << "\n";
         output << "            for( $k = 1; $k < Count( $inFile_Line ); ++$k )" << "\n";
@@ -501,6 +540,7 @@ class GeneTypeAnalyzerLendist
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='ForceY' value='$ForceY' />" << "\n";
         output << "            <input type='hidden' name='Dvided' value='$Dvided' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
@@ -545,6 +585,7 @@ class GeneTypeAnalyzerLendist
         output << "" << "\n";
         output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
         output << "        echo \"" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Trimmed' value='$Trimmed' />" << "\n";
         output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";

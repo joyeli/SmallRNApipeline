@@ -561,6 +561,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
         output << "        $Diff = $_POST['Diff'];" << "\n";
         output << "        $GMPM = $_POST['GMPM'];" << "\n";
+        output << "        $is5p3p = $_POST['is5p3p'];" << "\n";
         output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
         output << "        $P_Value = $_POST['P_Value'];" << "\n";
         output << "        $Sample1 = $_POST['Sample1'];" << "\n";
@@ -598,6 +599,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        }" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
@@ -631,6 +633,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        }" << "\n";
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
@@ -685,6 +688,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -716,6 +720,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
@@ -754,6 +759,7 @@ class GeneTypeAnalyzerDiffBar
             output << "        echo \"</select>" << "\n";
             output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
             output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+            output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
             output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
             output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
             output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -772,6 +778,41 @@ class GeneTypeAnalyzerDiffBar
             output << "        $IsomiRs = 'No';" << "\n";
         }
 
+        output << "" << "\n";
+        output << "#<!--================ 5p3pSelector ==================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=is5p3p onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($is5p3p=='') echo 'selected'; echo 'value= >5p3p</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $Arm_List = array( '5p', '3p' );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Arm_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Arm_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $is5p3p == $Arm_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>'.$Arm_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
+        output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
+        output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+        output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+        output << "            <input type='hidden' name='MaxHight' value='$MaxHight' />" << "\n";
+        output << "            <input type='hidden' name='Top_miRNA' value='$Top_miRNA' />" << "\n";
+        output << "            <input type='hidden' name='Min_Length' value='$Min_Length' />" << "\n";
+        output << "            <input type='hidden' name='Max_Length' value='$Max_Length' />" << "\n";
+        output << "            <input type='hidden' name='Fold_Change' value='$Fold_Change' />" << "\n";
+        output << "            <input type='hidden' name='barPlotType' value='$barPlotType' />" << "\n";
+        output << "            <input type='hidden' name='Select_Type' value='$Select_Type' />" << "\n";
+        output << "            <input type='hidden' name='Single_Anno' value='$Single_Anno' />" << "\n";
+        output << "            </form>\";" << "\n";
         output << "" << "\n";
         output << "#<!--================== barPlotType ====================-->" << "\n";
         output << "" << "\n";
@@ -792,6 +833,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
@@ -823,6 +865,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"</select>" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
@@ -846,6 +889,7 @@ class GeneTypeAnalyzerDiffBar
         output << "            echo \" onfocus=\\\"{this.value='';}\\\">" << "\n";
         output << "                <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "                <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "                <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "                <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "                <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "                <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
@@ -931,6 +975,9 @@ class GeneTypeAnalyzerDiffBar
         output << "            if( !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs ))" << "\n";
         output << "                continue;" << "\n";
         output << "" << "\n";
+        output << "            if( $is5p3p == '5p' && StrPos( $inFile_Line[0], '5p' ) === false ) continue;" << "\n";
+        output << "            if( $is5p3p == '3p' && StrPos( $inFile_Line[0], '3p' ) === false ) continue;" << "\n";
+        output << "" << "\n";
         output << "            Array_Push( $Single_Anno_List, $inFile_Line[0] );" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
@@ -957,6 +1004,7 @@ class GeneTypeAnalyzerDiffBar
         output << "            echo \"</select>" << "\n";
         output << "                <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "                <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "                <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "                <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "                <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "                <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
@@ -1019,6 +1067,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
@@ -1035,6 +1084,7 @@ class GeneTypeAnalyzerDiffBar
         output << "        echo \"" << "\n";
         output << "            <input type='hidden' name='Diff' value='$Diff' />" << "\n";
         output << "            <input type='hidden' name='GMPM' value='$GMPM' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
         output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='hidden' name='P_Value' value='$P_Value' />" << "\n";
         output << "            <input type='hidden' name='Sample2' value='$Sample1' />" << "\n";
@@ -1115,6 +1165,9 @@ class GeneTypeAnalyzerDiffBar
         output << "                }" << "\n";
         output << "" << "\n";
         output << "                $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
+        output << "" << "\n";
+        output << "                if( $is5p3p == '5p' && StrPos( $inFile_Line[0], '5p' ) === false ) continue;" << "\n";
+        output << "                if( $is5p3p == '3p' && StrPos( $inFile_Line[0], '3p' ) === false ) continue;" << "\n";
         output << "" << "\n";
         output << "                if( $Single_Anno != '' && $inFile_Line[0] != $Single_Anno ) continue;" << "\n";
         output << "                if( !Array_Key_Exists( $inFile_Line[0], $Filtered_miRNAs )) continue;" << "\n";

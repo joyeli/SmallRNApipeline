@@ -10,235 +10,27 @@ class GeneTypeAnalyzerHisGram
     GeneTypeAnalyzerHisGram()
     {}
 
-    static std::map< std::string, std::vector< double >> read_tsv( const std::string& output_name, std::map< std::size_t, std::string >& headers )
+    static void make_file_link( const std::string& p )
     {
-        bool is_skip = false;
-        std::size_t line_count = 0;
-        std::string line;
-        std::ifstream infile( output_name );
+        std::string filename;
+        std::vector< std::string > list;
+        boost::filesystem::path path( p + "../TailDot/" );
 
-        std::vector< double > values;
-        std::vector< std::string > split;
-        std::map< std::string, std::vector< double >> table;
-
-        while( std::getline( infile, line ))
+        for( auto& file : boost::filesystem::directory_iterator( path ))
         {
-            line_count++;
-            values.clear();
-            is_skip = false;
-
-            boost::iter_split( split, line, boost::algorithm::first_finder( "\t" ));
-
-            for( std::size_t i = 1; i < split.size(); ++i )
-            {
-                if( line_count != 1 )
-                {
-                    if( split[i] == "0" )
-                    {
-                        is_skip = true;
-                        break;
-                    }
-                    else values.emplace_back( std::stod( split[i] ));
-                }
-                else
-                {
-                    is_skip = true;
-                    headers.emplace( i-1, split[i] );
-                }
-            }
-
-            if( is_skip ) continue;
-            table[ split[0] ] = values;
+            filename = file.path().filename().string();
+            if( filename.substr( filename.length() -3  ) == "tsv" )
+                list.emplace_back( filename );
         }
 
-        return table;
-    }
-
-    static std::vector< std::vector< std::pair< std::size_t, std::string >>>
-        get_smp_compare( std::map< std::size_t, std::string >& headers )
-    {
-        std::vector< std::pair< std::size_t, std::string >> compares_temp;
-        std::vector< std::vector< std::pair< std::size_t, std::string >>> compares;
-
-        std::set< std::pair< std::size_t, std::string >> smp_check_temp;
-        std::set< std::set< std::pair< std::size_t, std::string >>> smp_check;
-
-        for( auto& header1 : headers )
-        {
-            for( auto& header2 : headers )
-            {
-                if( header1.second == header2.second ) continue;
-                smp_check_temp.emplace( header1 );
-                smp_check_temp.emplace( header2 );
-                smp_check.emplace( smp_check_temp );
-                smp_check_temp.clear();
-            }
-        }
-
-        for( auto& compare : smp_check )
-        {
-            for( auto& smp : compare ) compares_temp.emplace_back( smp );
-            compares.emplace_back( compares_temp );
-            compares_temp.clear();
-        }
-
-        return compares;
-    }
-
-    static int get_bin( const int& value, double bin )
-    {
-        int tmp = (int)( value < 0 ? (-bin) : bin );
-        int res = (( value + tmp ) - ( value + tmp ) % tmp );
-        return ( bin < 0 ? ( res - tmp ) : res );
-    }
-
-    static std::map< double, std::pair< int, int >> make_hisgram( auto& dists, double bin = 0.025, int shift = 1000 )
-    {
-        int min = 0;
-        int max = 0;
-        int tmp = 0;
-
-        bin = bin * shift;
-        std::map< int,    std::pair< int, int >> hisgrams_temp;
-        std::map< double, std::pair< int, int >> hisgrams;
-
-        for( auto dist : dists )
-        {
-            tmp = dist.second * shift;
-            if( tmp < min ) min = tmp;
-            if( tmp > max ) max = tmp;
-        }
-
-        if( std::abs( min ) > max )
-            max = std::abs( min );
-
-        min = get_bin( min, bin );
-        max = get_bin( max, bin );
-
-        for( std::size_t i = bin; i <= max; i += bin )
-            hisgrams_temp[i] = { 0, 0 };
-
-        for( auto& dist : dists )
-        {
-            tmp = dist.second * shift;
-            tmp = get_bin( tmp, bin );
-
-            if( tmp > 0 ) hisgrams_temp[ tmp ].first++;
-            if( tmp < 0 ) hisgrams_temp[ std::abs( tmp ) ].second--;
-        }
-
-        for( auto& histram : hisgrams_temp )
-            hisgrams[ (double)histram.first / (double)shift ] = histram.second;
-
-        return hisgrams;
-    }
-
-    static void output_hisgram_from_heter( const std::string& output_name )
-    {
-        if( !boost::filesystem::exists( output_name + "../BoxPlot/Heterorgeneity_5p.tsv" ) ||
-            !boost::filesystem::exists( output_name + "../BoxPlot/Heterorgeneity_3p.tsv" ) )
-            return;
-
-        std::map< std::string, double > dists;
-        std::map< double, std::pair< int, int >> hisgrams;
-        std::map< std::size_t, std::string > headers;
-        std::map< std::string, std::map< std::string, std::vector< double >>> tables;
-
-        std::vector< std::vector< std::pair< std::size_t, std::string >>> compares;
-        std::ofstream output;
-
-        tables[ "5p" ] = read_tsv( output_name + "../BoxPlot/Heterorgeneity_5p.tsv", headers );
-        tables[ "3p" ] = read_tsv( output_name + "../BoxPlot/Heterorgeneity_3p.tsv", headers );
-
-        for( auto& compare : get_smp_compare( headers ))
-        {
-            auto& s1 = compare[0];
-            auto& s2 = compare[1];
-
-            for( auto& table : tables )
-            {
-                for( auto& anno : table.second )
-                    dists[ anno.first ] = anno.second[ s1.first ] - anno.second[ s2.first ];
-
-                output.open( output_name + "Heterorgeneity_" + table.first + "_" + s1.second + "_" + s2.second + "_raw.tsv" );
-                output << "Anno\t" << s1.second << "-" << s2.second;
-
-                for( auto& dist : dists )
-                    output << "\n" << dist.first << "\t" << dist.second;
-
-                output.close();
-
-                hisgrams = make_hisgram( dists );
-
-                output.open( output_name + "Heterorgeneity_" + table.first + "_" + s1.second + "_" + s2.second + ".tsv" );
-                output << s1.second << "-" << s2.second << "\t+\t-";
-
-                for( auto& hisgram : hisgrams )
-                    output << "\n" << hisgram.first << "\t" << hisgram.second.first << "\t" << hisgram.second.second;
-
-                output.close();
-                hisgrams.clear();
-                dists.clear();
-            }
-        }
-    }
-
-    static void output_hisgram_from_entro( const std::string& output_name )
-    {
-        if( !boost::filesystem::exists( output_name + "../BoxPlot/Entropy_5p.tsv"  ) ||
-            !boost::filesystem::exists( output_name + "../BoxPlot/Entropy_mid.tsv" ) ||
-            !boost::filesystem::exists( output_name + "../BoxPlot/Entropy_3p.tsv"  ) ||
-            !boost::filesystem::exists( output_name + "../BoxPlot/Entropy_3pTailOnly.tsv" ))
-            return;
-
-        std::map< std::string, double > dists;
-        std::map< double, std::pair< int, int >> hisgrams;
-        std::map< std::size_t, std::string > headers;
-        std::map< std::string, std::map< std::string, std::vector< double >>> tables;
-
-        std::vector< std::vector< std::pair< std::size_t, std::string >>> compares;
-        std::ofstream output;
-
-        tables[ "5p"  ] = read_tsv( output_name + "../BoxPlot/Entropy_5p.tsv" , headers );
-        tables[ "mid" ] = read_tsv( output_name + "../BoxPlot/Entropy_mid.tsv", headers );
-        tables[ "3p"  ] = read_tsv( output_name + "../BoxPlot/Entropy_3p.tsv" , headers );
-        tables[ "3pTailOnly" ] = read_tsv( output_name + "../BoxPlot/Entropy_3pTailOnly.tsv", headers );
-
-        for( auto& compare : get_smp_compare( headers ))
-        {
-            auto& s1 = compare[0];
-            auto& s2 = compare[1];
-
-            for( auto& table : tables )
-            {
-                for( auto& anno : table.second )
-                    dists[ anno.first ] = anno.second[ s1.first ] - anno.second[ s2.first ];
-
-                output.open( output_name + "Entropy_" + table.first + "_" + s1.second + "_" + s2.second + "_raw.tsv" );
-                output << "Anno\t" << s1.second << "-" << s2.second;
-
-                for( auto& dist : dists )
-                    output << "\n" << dist.first << "\t" << dist.second;
-
-                output.close();
-
-                hisgrams = make_hisgram( dists );
-
-                output.open( output_name + "Entropy_" + table.first + "_" + s1.second + "_" + s2.second + ".tsv" );
-                output << s1.second << "-" << s2.second << "\t+\t-";
-
-                for( auto& hisgram : hisgrams )
-                    output << "\n" << hisgram.first << "\t" << hisgram.second.first << "\t-" << hisgram.second.second;
-
-                output.close();
-                hisgrams.clear();
-                dists.clear();
-            }
-        }
+        for( auto& file : list )
+            if( !boost::filesystem::exists( p + file ))
+                 boost::filesystem::create_symlink(( "../TailDot/" + file ).c_str(), ( p + file ).c_str() );
     }
 
     static void output_hisgram_visualization( const std::string& output_name )
     {
+        make_file_link( output_name );
         std::ofstream output( output_name + "index.php" );
 
         output << "<!DOCTYPE html>" << "\n";
@@ -249,182 +41,374 @@ class GeneTypeAnalyzerHisGram
         output << "    <? " << "\n";
         output << "        Shell_Exec( 'rm /tmp/*' );" << "\n";
         output << "" << "\n";
-        output << "        $Bin_Size = $_POST['Bin_Size'];" << "\n";
-        output << "        $TSV_File = $_POST['TSV_File'];" << "\n";
-        output << "        $BinFilter = $_POST['BinFilter'];" << "\n";
-        output << "        $TSV_Sample = $_POST['TSV_Sample'];" << "\n";
+        output << "        $Type = $_POST['Type'];" << "\n";
+        output << "        $isLog = $_POST['isLog'];" << "\n";
+        output << "        $is5p3p = $_POST['is5p3p'];" << "\n";
+        output << "        $Sample1 = $_POST['Sample1'];" << "\n";
+        output << "        $Sample2 = $_POST['Sample2'];" << "\n";
+        output << "        $IsomiRs = $_POST['IsomiRs'];" << "\n";
+        output << "        $BinCounts = $_POST['BinCounts'];" << "\n";
+        output << "        $FilterTop = $_POST['FilterTop'];" << "\n";
+        output << "        $FilterDwn = $_POST['FilterDwn'];" << "\n";
         output << "" << "\n";
         output << "        echo '<script src=https://d3js.org/d3.v3.js></script>';" << "\n";
         output << "        echo '<script src=https://cdn.rawgit.com/novus/nvd3/v1.8.6/build/nv.d3.min.js></script>';" << "\n";
         output << "        echo '<link href=https://cdn.rawgit.com/novus/nvd3/v1.8.6/build/nv.d3.css rel=stylesheet type=text/css>';" << "\n";
         output << "" << "\n";
-        output << "#<!--================== TSV File ====================-->" << "\n";
+        output << "#<!--=================== GetSamp =====================-->" << "\n";
+        output << "        " << "\n";
+        output << "        $Samp = Shell_Exec( 'ls *-isomiRs.tsv' );" << "\n";
+        output << "        $Samp_List = Explode( \"\\n\", $Samp );" << "\n";
+        output << "        $Sample_List = Array();" << "\n";
         output << "" << "\n";
-        output << "        $TSV = Shell_Exec( 'ls | grep _raw.tsv' );" << "\n";
-        output << "        $TSV_List = Explode( \"\\n\", $TSV );" << "\n";
-        output << "        $TSV_Array = Array();" << "\n";
-        output << "" << "\n";
-        output << "        For( $i = 0; $i < Count( $TSV_List ); ++$i )" << "\n";
+        output << "        For( $i = 0; $i < Count( $Samp_List ); ++$i )" << "\n";
         output << "        {" << "\n";
-        output << "            if( $TSV_List[$i] == '' ) continue;" << "\n";
-        output << "            $TSV_Name = Explode( '_', $TSV_List[$i] );" << "\n";
-        output << "            $TSV_Temp = $TSV_Name[0].'_'.$TSV_Name[1];" << "\n";
-        output << "" << "\n";
-        output << "            if( !Array_Key_Exists( $TSV_Temp, $TSV_Array ))" << "\n";
-        output << "                $TSV_Array[ $TSV_Temp ] = Array();" << "\n";
-        output << "" << "\n";
-        output << "            Array_Push( $TSV_Array[ $TSV_Temp ], $TSV_Name[2].'_'.$TSV_Name[3] );" << "\n";
+        output << "            if( $Samp_List[$i] == '' ) continue;" << "\n";
+        output << "            $Samp_Name = Explode( '-', $Samp_List[$i] );" << "\n";
+        output << "            $Samp_Name = Explode( '/', $Samp_Name[ 0] );" << "\n";
+        output << "            Array_Push( $Sample_List, $Samp_Name[ Count( $Samp_Name ) -1 ]);" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
-        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
-        output << "        echo '<select name=TSV_File onchange=this.form.submit();>';" << "\n";
-        output << "        echo '<option '; if($TSV_File=='') echo 'selected'; echo 'value= >Select TSV</option>';" << "\n";
-        output << "" << "\n";
-        output << "        Foreach( $TSV_Array as $TSV_Name => $TSV_Files )" << "\n";
-        output << "        {" << "\n";
-        output << "            echo '<option value='.$TSV_Name.' ';" << "\n";
-        output << "            if( $TSV_File == $TSV_Name ) echo 'selected ';" << "\n";
-        output << "            echo '>'.$TSV_Name.'</option>';" << "\n";
-        output << "        }" << "\n";
-        output << "" << "\n";
-        output << "        echo \"</select>" << "\n";
-        output << "            <input type='hidden' name='Bin_Size' value='$Bin_Size' />" << "\n";
-        output << "            <input type='hidden' name='BinFilter' value='$BinFilter' />" << "\n";
-        output << "            <input type='hidden' name='TSV_Sample' value='$TSV_Sample' />" << "\n";
-        output << "            </form>\";" << "\n";
-        output << "" << "\n";
-        output << "#<!--================== TSV Sample ====================-->" << "\n";
+        output << "#<!--=================== Sample1 =====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
-        output << "        echo '<select name=TSV_Sample onchange=this.form.submit();>';" << "\n";
-        output << "        echo '<option '; if($TSV_Sample=='') echo 'selected'; echo 'value= >Select Sample</option>';" << "\n";
+        output << "        echo '<select name=Sample1 onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($Sample1=='') echo 'selected'; echo '>Select Sample1</option>';" << "\n";
         output << "" << "\n";
-        output << "        Foreach( $TSV_Array[ $TSV_File ] as $Samples )" << "\n";
+        output << "        For( $i = 0; $i < Count( $Sample_List ); ++$i )" << "\n";
         output << "        {" << "\n";
-        output << "            echo '<option value='.$Samples.' ';" << "\n";
-        output << "            if( $TSV_Sample == $Samples ) echo 'selected ';" << "\n";
-        output << "            echo '>'.Str_Replace( '_', '-', $Samples ).'</option>';" << "\n";
+        output << "            if( $Sample_List[$i] == '' ) continue;" << "\n";
+        output << "            if( $Sample_List[$i] == $Sample2 ) continue;" << "\n";
+        output << "            echo '<option value='.$Sample_List[$i].' ';" << "\n";
+        output << "            if( $Sample1 == $Sample_List[$i] ) echo 'selected ';" << "\n";
+        output << "            echo '>'.$Sample_List[$i].'</option>';" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
-        output << "            <input type='hidden' name='Bin_Size' value='$Bin_Size' />" << "\n";
-        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
-        output << "            <input type='hidden' name='BinFilter' value='$BinFilter' />" << "\n";
+        output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
+        output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='BinCounts' value='$BinCounts' />" << "\n";
+        output << "            <input type='hidden' name='FilterTop' value='$FilterTop' />" << "\n";
+        output << "            <input type='hidden' name='FilterDwn' value='$FilterDwn' />" << "\n";
         output << "            </form>\";" << "\n";
         output << "" << "\n";
-        output << "#<!--=================== Bin =====================-->" << "\n";
+        output << "#<!--=================== Sample2 =====================-->" << "\n";
         output << "" << "\n";
         output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
-        output << "        echo '<select name=Bin_Size onchange=this.form.submit();>';" << "\n";
-        output << "        echo '<option '; if($Bin_Size=='') echo 'selected'; echo 'value= >Bin Size</option>';" << "\n";
+        output << "        echo '<select name=Sample2 onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($Sample2=='') echo 'selected'; echo '>Select Sample2</option>';" << "\n";
         output << "" << "\n";
-        output << "        $Bin_List = array( 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1 );" << "\n";
-        output << "" << "\n";
-        output << "        For( $i = 0; $i < Count( $Bin_List ); ++$i )" << "\n";
+        output << "        For( $i = 0; $i < Count( $Sample_List ); ++$i )" << "\n";
         output << "        {" << "\n";
-        output << "            echo '<option value='.$Bin_List[$i].' ';" << "\n";
+        output << "            if( $Sample_List[$i] == '' ) continue;" << "\n";
+        output << "            if( $Sample_List[$i] == $Sample1 ) continue;" << "\n";
+        output << "            echo '<option value='.$Sample_List[$i].' ';" << "\n";
+        output << "            if( $Sample2 == $Sample_List[$i] ) echo 'selected ';" << "\n";
+        output << "            echo '>'.$Sample_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
         output << "" << "\n";
-        output << "            if( $Bin_Size == $Bin_List[$i] )" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
+        output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='BinCounts' value='$BinCounts' />" << "\n";
+        output << "            <input type='hidden' name='FilterTop' value='$FilterTop' />" << "\n";
+        output << "            <input type='hidden' name='FilterDwn' value='$FilterDwn' />" << "\n";
+        output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--================ 5p3pSelector ==================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=is5p3p onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($is5p3p=='') echo 'selected'; echo 'value= >5p3p</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $Arm_List = array( '5p', '3p' );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $Arm_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$Arm_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $is5p3p == $Arm_List[$i] )" << "\n";
         output << "                echo 'selected ';" << "\n";
         output << "" << "\n";
-        output << "            echo '>'.$Bin_List[$i].'</option>';" << "\n";
+        output << "            echo '>'.$Arm_List[$i].'</option>';" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "        echo \"</select>" << "\n";
-        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
-        output << "            <input type='hidden' name='BinFilter' value='$BinFilter' />" << "\n";
-        output << "            <input type='hidden' name='TSV_Sample' value='$TSV_Sample' />" << "\n";
+        output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+        output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='BinCounts' value='$BinCounts' />" << "\n";
+        output << "            <input type='hidden' name='FilterTop' value='$FilterTop' />" << "\n";
+        output << "            <input type='hidden' name='FilterDwn' value='$FilterDwn' />" << "\n";
         output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--================== IsomiRs =====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "" << "\n";
+        output << "        echo '<select name=IsomiRs onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($IsomiRs=='') echo 'selected'; echo '>Show IsomiRs?</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $miR_List = array('Yes', 'No');" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < Count( $miR_List ); ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$miR_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $IsomiRs == $miR_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>' . $miR_List[$i] . '</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
+        output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+        output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+        output << "            <input type='hidden' name='BinCounts' value='$BinCounts' />" << "\n";
+        output << "            <input type='hidden' name='FilterTop' value='$FilterTop' />" << "\n";
+        output << "            <input type='hidden' name='FilterDwn' value='$FilterDwn' />" << "\n";
+        output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--=============== Type ==================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "" << "\n";
+        output << "        echo '<select name=Type onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($Type=='') echo 'selected'; echo '>Select Types</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $inFileHeader = new SplFileObject( $Sample1.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.tsv' );" << "\n";
+        output << "        $inHeaders = Explode( \"\\t\", $inFileHeader->fgets() );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 1; $i < Count( $inHeaders ); ++$i )" << "\n";
+        output << "            echo '<option value='.$i.( $Type == $i ? ' selected' : '' ).' >'.$inHeaders[$i].'</option>';" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
+        output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+        output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='BinCounts' value='$BinCounts' />" << "\n";
+        output << "            <input type='hidden' name='FilterTop' value='$FilterTop' />" << "\n";
+        output << "            <input type='hidden' name='FilterDwn' value='$FilterDwn' />" << "\n";
+        output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--================== isLog ====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo '<select name=isLog onchange=this.form.submit();>';" << "\n";
+        output << "        echo '<option '; if($isLog=='') echo 'selected'; echo 'value= >isLog</option>';" << "\n";
+        output << "" << "\n";
+        output << "        $isLog_List = array(2, 4, 6, 8, 10);" << "\n";
+        output << "        $isLog_Size = Count( $isLog_List );" << "\n";
+        output << "" << "\n";
+        output << "        For( $i = 0; $i < $isLog_Size; ++$i )" << "\n";
+        output << "        {" << "\n";
+        output << "            echo '<option value='.$isLog_List[$i].' ';" << "\n";
+        output << "" << "\n";
+        output << "            if( $isLog == $isLog_List[$i] )" << "\n";
+        output << "                echo 'selected ';" << "\n";
+        output << "" << "\n";
+        output << "            echo '>'.$isLog_List[$i].'</option>';" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        echo \"</select>" << "\n";
+        output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
+        output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+        output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='BinCounts' value='$BinCounts' />" << "\n";
+        output << "            <input type='hidden' name='FilterTop' value='$FilterTop' />" << "\n";
+        output << "            <input type='hidden' name='FilterDwn' value='$FilterDwn' />" << "\n";
+        output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--=================== Bin Counts =====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "" << "\n";
+        output << "        echo '<input type=text name=BinCounts size=4 value=';" << "\n";
+        output << "        echo $BinCounts == '' ? 'BinCounts' : $BinCounts;" << "\n";
+        output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
         output << "" << "\n";
         output << "#<!--================== Bin Filter ====================-->" << "\n";
         output << "" << "\n";
-        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
-        output << "        echo '<input type=text name=BinFilter size=3 value=';" << "\n";
-        output << "" << "\n";
-        output << "        if( $BinFilter=='' )" << "\n";
-        output << "            echo 'BinFilter';" << "\n";
-        output << "        else" << "\n";
-        output << "            echo $BinFilter;" << "\n";
-        output << "" << "\n";
+        output << "        echo '<input type=text name=FilterTop size=3 value=';" << "\n";
+        output << "        echo $FilterTop == '' ? 'FilterTop' : $FilterTop;" << "\n";
         output << "        echo \" onfocus=\\\"{this.value='';}\\\">\";" << "\n";
-        output << "        echo \"" << "\n";
-        output << "            <input type='hidden' name='Bin_Size' value='$Bin_Size' />" << "\n";
-        output << "            <input type='hidden' name='TSV_File' value='$TSV_File' />" << "\n";
-        output << "            <input type='hidden' name='TSV_Sample' value='$TSV_Sample' />" << "\n";
+        output << "" << "\n";
+        output << "        echo '<input type=text name=FilterDwn size=3 value=';" << "\n";
+        output << "        echo $FilterDwn == '' ? 'FilterDwn' : $FilterDwn;" << "\n";
+        output << "        echo \" onfocus=\\\"{this.value='';}\\\">" << "\n";
+        output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
+        output << "            <input type='hidden' name='Sample1' value='$Sample1' />" << "\n";
+        output << "            <input type='hidden' name='Sample2' value='$Sample2' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
         output << "            <input type='submit' value='Submit' />" << "\n";
+        output << "            </form>\";" << "\n";
+        output << "" << "\n";
+        output << "#<!--==================== Switch =====================-->" << "\n";
+        output << "" << "\n";
+        output << "        echo '<form action='.$_SERVER['PHP_SELF'].' method=post style=display:inline;>';" << "\n";
+        output << "        echo \"" << "\n";
+        output << "            <input type='submit' value='Switch Samples' /> " << "\n";
+        output << "            <input type='hidden' name='Type' value='$Type' />" << "\n";
+        output << "            <input type='hidden' name='isLog' value='$isLog' />" << "\n";
+        output << "            <input type='hidden' name='is5p3p' value='$is5p3p' />" << "\n";
+        output << "            <input type='hidden' name='Sample1' value='$Sample2' />" << "\n";
+        output << "            <input type='hidden' name='Sample2' value='$Sample1' />" << "\n";
+        output << "            <input type='hidden' name='IsomiRs' value='$IsomiRs' />" << "\n";
+        output << "            <input type='hidden' name='BinCounts' value='$BinCounts' />" << "\n";
+        output << "            <input type='hidden' name='FilterTop' value='$FilterTop' />" << "\n";
+        output << "            <input type='hidden' name='FilterDwn' value='$FilterDwn' />" << "\n";
         output << "            </form><br/>\";" << "\n";
         output << "" << "\n";
         output << "#<!--=================== Read File =====================-->" << "\n";
         output << "" << "\n";
         output << "        $Value_Array = Array();" << "\n";
-        output << "        $Min = 0.0;" << "\n";
-        output << "        $Max = 0.0;" << "\n";
-        output << "" << "\n";
-        output << "        $Header = '';" << "\n";
-        output << "        $isHeader = true;" << "\n";
-        output << "        $inFile = new SplFileObject( $TSV_File.'_'.$TSV_Sample.'_raw.tsv' );" << "\n";
+        output << "        $inFile = new SplFileObject( $Sample1.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.tsv' );" << "\n";
         output << "" << "\n";
         output << "        while( !$inFile->eof() )" << "\n";
         output << "        {" << "\n";
         output << "            $inFile_Lines = $inFile->fgets();" << "\n";
         output << "            if( $inFile_Lines == '' ) continue;" << "\n";
-        output << "            $inFile_Line = Explode( \"\\t\", Rtrim( $inFile_Lines ));" << "\n";
         output << "" << "\n";
-        output << "            if( $isHeader )" << "\n";
+        output << "            $inFile_Line = Explode( \"\\t\", $inFile_Lines );" << "\n";
+        output << "" << "\n";
+        output << "            if( $inFile_Line[0] == $Sample1 ) continue;" << "\n";
+        output << "            if( $is5p3p == '5p' && StrPos( $inFile_Line[0], '5p' ) === false ) continue;" << "\n";
+        output << "            if( $is5p3p == '3p' && StrPos( $inFile_Line[0], '3p' ) === false ) continue;" << "\n";
+        output << "" << "\n";
+        output << "            if( $isLog != '' && $inFile_Line[ $Type ] != 0 )" << "\n";
+        output << "               $inFile_Line[ $Type ] = Log( $inFile_Line[ $Type ], $isLog );" << "\n";
+        output << "" << "\n";
+        output << "            if( !array_key_exists( $inFile_Line[0], $Value_Array ))" << "\n";
         output << "            {" << "\n";
-        output << "                $Header = $inFile_Line[1];" << "\n";
-        output << "                $isHeader = false;" << "\n";
+        output << "                $Value_Array[ $inFile_Line[0] ] = Array();" << "\n";
+        output << "                $Value_Array[ $inFile_Line[0] ][ $Sample1 ] = 0;" << "\n";
+        output << "                $Value_Array[ $inFile_Line[0] ][ $Sample2 ] = 0;" << "\n";
+        output << "                $Value_Array[ $inFile_Line[0] ][ 'Diff' ] = 0;" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
+        output << "            $Value_Array[ $inFile_Line[0] ][ $Sample1 ] = $inFile_Line[ $Type ];" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        $inFile = new SplFileObject( $Sample2.( $IsomiRs == 'Yes' ? '-isomiRs' : '' ).'.tsv' );" << "\n";
+        output << "" << "\n";
+        output << "        while( !$inFile->eof() )" << "\n";
+        output << "        {" << "\n";
+        output << "            $inFile_Lines = $inFile->fgets();" << "\n";
+        output << "            if( $inFile_Lines == '' ) continue;" << "\n";
+        output << "" << "\n";
+        output << "            $inFile_Line = Explode( \"\\t\", $inFile_Lines );" << "\n";
+        output << "" << "\n";
+        output << "            if( $inFile_Line[0] == $Sample2 ) continue;" << "\n";
+        output << "            if( $is5p3p == '5p' && StrPos( $inFile_Line[0], '5p' ) === false ) continue;" << "\n";
+        output << "            if( $is5p3p == '3p' && StrPos( $inFile_Line[0], '3p' ) === false ) continue;" << "\n";
+        output << "" << "\n";
+        output << "            if( $isLog != '' && $inFile_Line[ $Type ] != 0 )" << "\n";
+        output << "               $inFile_Line[ $Type ] = Log( $inFile_Line[ $Type ], $isLog );" << "\n";
+        output << "" << "\n";
+        output << "            if( !array_key_exists( $inFile_Line[0], $Value_Array ))" << "\n";
+        output << "            {" << "\n";
+        output << "                $Value_Array[ $inFile_Line[0] ] = Array();" << "\n";
+        output << "                $Value_Array[ $inFile_Line[0] ][ $Sample1 ] = 0;" << "\n";
+        output << "                $Value_Array[ $inFile_Line[0] ][ $Sample2 ] = 0;" << "\n";
+        output << "                $Value_Array[ $inFile_Line[0] ][ 'Diff' ] = 0;" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
+        output << "            $Value_Array[ $inFile_Line[0] ][ $Sample2 ] = $inFile_Line[ $Type ];" << "\n";
+        output << "        }" << "\n";
+        output << "" << "\n";
+        output << "#<!--=================== DiffValue =====================-->" << "\n";
+        output << "        " << "\n";
+        output << "        $binMin = 9999999;" << "\n";
+        output << "        $binMax = 0;" << "\n";
+        output << "" << "\n";
+        output << "        foreach( $Value_Array as $Key => $Value )" << "\n";
+        output << "        {" << "\n";
+        output << "            if( $Value_Array[ $Key ][ $Sample1 ] == 0 && $Value_Array[ $Key ][ $Sample2 ] == 0 )" << "\n";
+        output << "            {" << "\n";
+        output << "                unset( $Value_Array[ $Key ] );" << "\n";
         output << "                continue;" << "\n";
         output << "            }" << "\n";
         output << "" << "\n";
-        output << "            if( $BinFilter != '' && $BinFilter != 'BinFilter' && Abs( $inFile_Line[1] ) > $BinFilter )" << "\n";
-        output << "                continue;" << "\n";
+        output << "            $Value_Array[ $Key ][ 'Diff' ] = $Value_Array[ $Key ][ $Sample1 ] - $Value_Array[ $Key ][ $Sample2 ];" << "\n";
         output << "" << "\n";
-        output << "            Array_Push( $Value_Array, Round( $inFile_Line[1] * 1000 ));" << "\n";
-        output << "            $Temp = Abs( Round( $inFile_Line[1] * 1000 ));" << "\n";
-        output << "            if( $Temp > $Max ) $Max = $Temp;" << "\n";
+        output << "            if( $FilterTop != '' && $FilterTop != 'FilterTop' && Abs( $Value_Array[ $Key ][ 'Diff' ] ) > $FilterTop )" << "\n";
+        output << "            {" << "\n";
+        output << "                unset( $Value_Array[ $Key ] );" << "\n";
+        output << "                continue;" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
+        output << "            if( $FilterDwn != '' && $FilterDwn != 'FilterDwn' && Abs( $Value_Array[ $Key ][ 'Diff' ] ) < $FilterDwn )" << "\n";
+        output << "            {" << "\n";
+        output << "                unset( $Value_Array[ $Key ] );" << "\n";
+        output << "                continue;" << "\n";
+        output << "            }" << "\n";
+        output << "" << "\n";
+        output << "            $Value_Array[ $Key ][ 'Diff' ] = Floor( $Value_Array[ $Key ][ 'Diff' ] * 1000 );" << "\n";
+        output << "" << "\n";
+        output << "            if( Abs( $Value_Array[ $Key ][ 'Diff' ]) < $binMin ) $binMin = Abs( $Value_Array[ $Key ][ 'Diff' ]);" << "\n";
+        output << "            if( Abs( $Value_Array[ $Key ][ 'Diff' ]) > $binMax ) $binMax = Abs( $Value_Array[ $Key ][ 'Diff' ]);" << "\n";
         output << "        }" << "\n";
+        output << "" << "\n";
+        output << "        $binMax += 1;" << "\n";
+        output << "" << "\n";
+        output << "        $binCount = $BinCounts == '' || $BinCounts == 'BinCounts' ? 10 : $BinCounts;" << "\n";
+        output << "        $binRange = ( $binMax - $binMin ) / $binCount;" << "\n";
         output << "" << "\n";
         output << "#<!--=================== Make Bin Array =====================-->" << "\n";
         output << "" << "\n";
+        output << "        $yMax = 0;" << "\n";
+        output << "        $Rcount = $binCount -1;" << "\n";
+        output << "        $Ranges = Array();" << "\n";
+        output << "" << "\n";
         output << "        $Data_Array = Array();" << "\n";
-        output << "        $Bin = $Bin_Size * 1000;" << "\n";
+        output << "        $Data_Array[ $Sample2 ] = Array();" << "\n";
+        output << "        $Data_Array[ $Sample1 ] = Array();" << "\n";
         output << "" << "\n";
-        output << "        $Data_Array[ '<0' ] = Array();" << "\n";
-        output << "        $Data_Array[ '>0' ] = Array();" << "\n";
-        output << "" << "\n";
-        output << "        $xMax = 0;" << "\n";
-        output << "        $Max = (( $Max + $Bin ) - (( $Max + $Bin ) % $Bin ));" << "\n";
-        output << "" << "\n";
-        output << "        For( $i = $Max ; $i > 0; $i -= $Bin )" << "\n";
+        output << "        For( $i = $binMax ; $i > $binMin; $i -= $binRange )" << "\n";
         output << "        {" << "\n";
-        output << "            $Range1 = Number_Format((( $i - $Bin ) / 1000.0 ), 3, '.', '' );" << "\n";
-        output << "            $Range2 = Number_Format(( $i / 1000.0 ), 3, '.', '' );" << "\n";
+        output << "            if( $Rcount < 0 ) break;" << "\n";
+        output << "" << "\n";
+        output << "            $Range1 = Number_Format(( $i - $binRange ) / 1000, 3, '.', '' );" << "\n";
+        output << "            $Range2 = Number_Format( $i / 1000, 3, '.', '' );" << "\n";
         output << "" << "\n";
         output << "            $Range = $Range1.'~'.$Range2;" << "\n";
-        output << "            $Data_Array[ '<0' ][ $Range ] = 0;" << "\n";
-        output << "            $Data_Array[ '>0' ][ $Range ] = 0;" << "\n";
+        output << "            $Data_Array[ $Sample2 ][ $Range ] = 0;" << "\n";
+        output << "            $Data_Array[ $Sample1 ][ $Range ] = 0;" << "\n";
+        output << "" << "\n";
+        output << "            $Ranges[ $Rcount ] = $Range;" << "\n";
+        output << "            $Rcount--;" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
-        output << "        Foreach( $Value_Array as $Value )" << "\n";
+        output << "        Foreach( $Value_Array as &$Value )" << "\n";
         output << "        {" << "\n";
-        output << "            $Temp = Abs( $Value );" << "\n";
-        output << "            $Temp = (( $Temp + $Bin ) - (( $Temp + $Bin ) % $Bin ));" << "\n";
+        output << "            $Temp = Abs( $Value[ 'Diff' ]);" << "\n";
         output << "" << "\n";
-        output << "            $Range1 = Number_Format((( $Temp - $Bin ) / 1000.0 ), 3, '.', '' );" << "\n";
-        output << "            $Range2 = Number_Format(( $Temp / 1000.0 ), 3, '.', '' );" << "\n";
+        output << "            if( Intval( $Temp / $binRange ) >= Count( $Ranges )) continue;" << "\n";
+        output << "            if( $Value[ 'Diff' ] < 0 ) $Data_Array[ $Sample2 ][ $Ranges[ Intval( $Temp / $binRange )]] -= 1;" << "\n";
+        output << "            if( $Value[ 'Diff' ] > 0 ) $Data_Array[ $Sample1 ][ $Ranges[ Intval( $Temp / $binRange )]] += 1;" << "\n";
         output << "" << "\n";
-        output << "            $Range = $Range1.'~'.$Range2;" << "\n";
-        output << "            if( $Value < 0 ) $Data_Array[ '<0' ][ $Range ] -= 1;" << "\n";
-        output << "            if( $Value > 0 ) $Data_Array[ '>0' ][ $Range ] += 1;" << "\n";
-        output << "        }" << "\n";
+        output << "            if( Abs( $Data_Array[ $Sample2 ][ $Ranges[ Intval( $Temp / $binRange )]]) > $yMax )" << "\n";
+        output << "                $yMax = Abs( $Data_Array[ $Sample2 ][ $Ranges[ Intval( $Temp / $binRange )]]);" << "\n";
         output << "" << "\n";
-        output << "        Foreach( $Data_Array as $Key => $Data )" << "\n";
-        output << "        {" << "\n";
-        output << "            Foreach( $Data as $Label => $Value )" << "\n";
-        output << "            {" << "\n";
-        output << "                if( $xMax < Abs( $Value )) $xMax = Abs( $Value );" << "\n";
-        output << "            }" << "\n";
+        output << "            if( Abs( $Data_Array[ $Sample1 ][ $Ranges[ Intval( $Temp / $binRange )]]) > $yMax )" << "\n";
+        output << "                $yMax = Abs( $Data_Array[ $Sample1 ][ $Ranges[ Intval( $Temp / $binRange )]]);" << "\n";
         output << "        }" << "\n";
         output << "" << "\n";
         output << "#<!--================== HisGram ====================-->" << "\n";
@@ -449,11 +433,12 @@ class GeneTypeAnalyzerHisGram
         output << "                    .x(function(d) { return d.label })" << "\n";
         output << "                    .y(function(d) { return d.value })" << "\n";
         output << "                    .color([ '#d67777', '#4f99b4' ])" << "\n";
-        output << "                    .margin({left: 80})" << "\n";
+        output << "                    .margin({left: 140})" << "\n";
         output << "                    .groupSpacing(0)" << "\n";
         output << "                    .showControls(true)" << "\n";
         output << "                    .showValues(true)" << "\n";
         output << "                    .stacked(true)" << "\n";
+        output << "                    .forceY([-$yMax,0,$yMax])" << "\n";
         output << "                    ;" << "\n";
         output << "" << "\n";
         output << "                d3.select('#svg svg')" << "\n";
