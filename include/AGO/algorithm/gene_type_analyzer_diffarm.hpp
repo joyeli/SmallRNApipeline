@@ -217,7 +217,7 @@ class GeneTypeAnalyzerDiffarm
         output << "        $Data_Array[ '3p' ] = Array();" << "\n";
         output << "" << "\n";
         output << "        Foreach( $Value_Array as $miR => $Value )" << "\n";
-        output << "            Array_Push( $Sort_Array, $Value_Array[ $miR ][ 'GMPM' ]);" << "\n";
+        output << "            Array_Push( $Sort_Array, $Value_Array[ $miR ][ '5p' ] - $Value_Array[ $miR ][ '3p' ]);" << "\n";
         output << "" << "\n";
         output << "        Array_Multisort( $Sort_Array, SORT_NUMERIC, SORT_DESC, $Value_Array );" << "\n";
         output << "" << "\n";
