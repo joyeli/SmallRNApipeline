@@ -195,7 +195,8 @@ class GeneTypeAnalyzerDiffarm
         output << "            if(( $Value_Array[ $miR ][ 'GMPM' ] == 0 ) ||" << "\n";
         output << "               ( $FilterTop != '' && $FilterTop != 'FilterTop' && Abs( $Value_Array[ $miR ][ 'GMPM' ]) > $FilterTop ) ||" << "\n";
         output << "               ( $FilterDwn != '' && $FilterDwn != 'FilterDwn' && Abs( $Value_Array[ $miR ][ 'GMPM' ]) < $FilterDwn ) ||" << "\n";
-        output << "               ( $isPair == 'Yes' && ( $Value_Array[ $miR ][ '5p' ] == 0 || $Value_Array[ $miR ][ '3p' ] == 0 )   ) )" << "\n";
+        output << "               ( $isPair == 'Yes' && ( $Value_Array[ $miR ][ '5p' ] == 0 || $Value_Array[ $miR ][ '3p' ] == 0 )     ) ||" << "\n";
+        output << "               ( $Value_Array[ $miR ][ '5p' ] == 0 && $Value_Array[ $miR ][ '3p' ] == 0 ))" << "\n";
         output << "            {" << "\n";
         output << "                unset( $Value_Array[ $miR ] );" << "\n";
         output << "                continue;" << "\n";
